@@ -30,7 +30,7 @@ export interface Note {
   tags: string[];
   isGlobal: boolean; // If true, shows up in overall notes too
   timestamp: number;
-  order: number;
+  order: string;
 }
 
 export type ViewMode = 'dashboard' | 'game-detail' | 'session-view' | 'all-insights' | 'all-notes' | 'quick-note';
