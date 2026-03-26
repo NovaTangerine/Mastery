@@ -1,0 +1,140 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: games
+    // Document ID: auto-generated
+    // Fields:
+    //   - title: string (required)
+    //   - platform: string (optional)
+    //   - status: string (required, enum: ['playing', 'completed', 'backlog', 'abandoned'])
+    //   - coverUrl: string (optional)
+    //   - overallNotes: string (optional)
+    //   - storySynopsis: string (optional)
+    //   - uid: string (required)
+    //   - createdAt: number (required)
+    //   - updatedAt: number (required)
+    //
+    // Collection: sessions
+    // Document ID: auto-generated
+    // Fields:
+    //   - gameId: string (required)
+    //   - uid: string (required)
+    //   - startTime: number (required)
+    //   - endTime: number (optional)
+    //   - progressMarker: string (required)
+    //
+    // Collection: notes
+    // Document ID: auto-generated
+    // Fields:
+    //   - gameId: string (required)
+    //   - sessionId: string (optional)
+    //   - uid: string (required)
+    //   - content: string (required)
+    //   - tags: list (optional)
+    //   - isGlobal: bool (optional)
+    //   - timestamp: number (required)
+    //   - order: number (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+
+    function uidUnchanged() {
+      return !('uid' in request.resource.data) || request.resource.data.uid == request.auth.uid;
+    }
+
+    function uidNotModified() {
+      return !('uid' in request.resource.data) || request.resource.data.uid == resource.data.uid;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "kyledk05@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    function isValidGame(data) {
+      return data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.status in ['playing', 'completed', 'backlog', 'abandoned'] &&
+             data.uid is string &&
+             data.createdAt is number &&
+             data.updatedAt is number;
+    }
+
+    function isValidSession(data) {
+      return data.gameId is string &&
+             data.uid is string &&
+             data.startTime is number &&
+             data.progressMarker is string && data.progressMarker.size() < 100 &&
+             (!('name' in data) || data.name == null || (data.name is string && data.name.size() < 100)) &&
+             (!('chapter' in data) || data.chapter == null || (data.chapter is string && data.chapter.size() < 100)) &&
+             (!('hoursPlayed' in data) || data.hoursPlayed == null || (data.hoursPlayed is number && data.hoursPlayed >= 0));
+    }
+
+    function isValidNote(data) {
+      return data.gameId is string &&
+             data.uid is string &&
+             data.content is string && data.content.size() > 0 && data.content.size() < 10000 &&
+             data.timestamp is number &&
+             data.order is number;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+    match /games/{gameId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidGame(request.resource.data) && uidUnchanged();
+      allow update: if isDocOwner() && isValidGame(request.resource.data) && uidNotModified();
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /sessions/{sessionId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidSession(request.resource.data) && uidUnchanged();
+      allow update: if isDocOwner() && isValidSession(request.resource.data) && uidNotModified();
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /notes/{noteId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidNote(request.resource.data) && uidUnchanged();
+      allow update: if isDocOwner() && isValidNote(request.resource.data) && uidNotModified();
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isOwner(userId) && request.resource.data.role == 'user';
+      allow update: if (isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin();
+    }
+  }
+}
