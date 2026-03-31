@@ -2,15 +2,18 @@ import React, { useRef, useEffect, useState } from 'react';
 import { X, Plus, PenLine } from 'lucide-react';
 import { format } from 'date-fns';
 import { useGameContext } from '../contexts/GameContext';
+import { useUI } from '../contexts/UIContext';
+import { useNotes } from '../hooks/useNotes';
 
 export default function QuickNoteView() {
+  const { goBack } = useUI();
+  const { selectedGame } = useGameContext();
+
   const {
-    selectedGame,
     notes,
-    goBack,
     handleAddNote,
     isSubmittingNote
-  } = useGameContext();
+  } = useNotes(selectedGame?.id || null);
 
   const [noteInput, setNoteInput] = useState('');
   const notesEndRef = useRef<HTMLDivElement>(null);
@@ -31,7 +34,7 @@ export default function QuickNoteView() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto h-[calc(100vh-120px)] flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="max-w-3xl w-full mx-auto flex-1 min-h-0 flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">{selectedGame.title}</h2>

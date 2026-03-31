@@ -2,13 +2,14 @@ import React from 'react';
 import { X, Lightbulb } from 'lucide-react';
 import { format } from 'date-fns';
 import { useGameContext } from '../contexts/GameContext';
+import { useUI } from '../contexts/UIContext';
+import { useNotes } from '../hooks/useNotes';
 
 export default function AllInsightsView() {
-  const {
-    selectedGame,
-    notes,
-    goBack
-  } = useGameContext();
+  const { goBack } = useUI();
+  const { selectedGame } = useGameContext();
+
+  const { notes } = useNotes(selectedGame?.id || null);
 
   if (!selectedGame) return null;
 

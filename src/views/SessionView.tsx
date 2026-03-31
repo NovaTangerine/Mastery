@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Plus, BookOpen, Clock, PenLine, X, Send, ChevronRight, Trash2 } from 'lucide-react';
+import { Plus, BookOpen, Clock, PenLine, X, Send, ChevronRight, Trash2, List, LayoutDashboard, ChevronUp, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
 import {
   DndContext, 
@@ -16,36 +16,89 @@ import {
 } from '@dnd-kit/sortable';
 
 import { useGameContext } from '../contexts/GameContext';
+import { useUI } from '../contexts/UIContext';
+import { useNotes } from '../hooks/useNotes';
 import { SortableNote } from '../components/SortableNote';
+import { TrackerCard } from '../components/TrackerCard';
+import { AddTrackerMenu } from '../components/AddTrackerMenu';
 import { useVirtualizer } from '@tanstack/react-virtual';
 
 export default function SessionView() {
+  const { goBack, navigateTo, isCompactMode } = useUI();
   const {
     selectedGame,
     sessions,
     activeSession,
-    notes,
     handleStartSession,
     handleResumeSession,
     handleUpdateSessionDetails,
-    goBack,
-    handleDragEnd,
+    handleAddTracker,
+    handleAddTrackerItem,
+    handleRemoveTrackerItem,
+    handleDeleteTracker,
+    sessionGroups,
+    handleCreateSessionGroup,
+    handleUpdateSessionGroup,
+    handleDeleteSessionGroup,
+    handleUpdateSessionGroupMembership,
+  } = useGameContext();
+
+  const {
+    notes,
+    notesLimit,
+    loadMoreNotes,
+    handleAddNote,
     handleUpdateNote,
     handleDeleteNote,
     handleAddTag,
     handleRemoveTag,
-    handleAddNote,
-    isSubmittingNote
-  } = useGameContext();
+    handleDragEnd,
+    isSubmittingNote,
+    taggingStatus,
+    handleRetryTagging
+  } = useNotes(selectedGame?.id || null, activeSession?.id || null);
 
   const [noteInput, setNoteInput] = useState('');
   const [isEditingSessionDetails, setIsEditingSessionDetails] = useState(false);
   const [sessionNameInput, setSessionNameInput] = useState('');
   const [sessionChapterInput, setSessionChapterInput] = useState('');
   const [sessionHoursInput, setSessionHoursInput] = useState('');
+  const [sessionGroupIdInput, setSessionGroupIdInput] = useState<string | undefined>(undefined);
+  const [isCreatingNewGroup, setIsCreatingNewGroup] = useState(false);
+  const [newGroupNameInput, setNewGroupNameInput] = useState('');
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+  const [editingGroupTitle, setEditingGroupTitle] = useState('');
+  const [selectedSessionIdsForGroup, setSelectedSessionIdsForGroup] = useState<Set<string>>(new Set());
+  const [isCreatingGroupFromList, setIsCreatingGroupFromList] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [activeMobileTab, setActiveMobileTab] = useState<'sessions' | 'notes' | 'trackers'>('notes');
+  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
+
+  const toggleGroupCollapse = (groupId: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(groupId)) {
+        next.delete(groupId);
+      } else {
+        next.add(groupId);
+      }
+      return next;
+    });
+  };
 
   const parentRef = useRef<HTMLDivElement>(null);
   const notesEndRef = useRef<HTMLDivElement>(null);
+  const lastScrollY = useRef(0);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const currentScrollY = e.currentTarget.scrollTop;
+    if (currentScrollY > lastScrollY.current && currentScrollY > 20 && !isHeaderCollapsed) {
+      setIsHeaderCollapsed(true);
+    } else if (currentScrollY < 10 && isHeaderCollapsed) {
+      setIsHeaderCollapsed(false);
+    }
+    lastScrollY.current = currentScrollY;
+  };
 
   const sessionNotes = notes.filter(n => n.sessionId === activeSession?.id);
 
@@ -85,89 +138,333 @@ export default function SessionView() {
   };
 
   const saveSessionDetails = async () => {
-    await handleUpdateSessionDetails(sessionNameInput, sessionChapterInput, sessionHoursInput);
+    let finalGroupId = sessionGroupIdInput;
+    
+    if (isCreatingNewGroup && newGroupNameInput.trim()) {
+      const newGroup = await handleCreateSessionGroup(newGroupNameInput.trim());
+      if (newGroup) {
+        finalGroupId = newGroup.id;
+      }
+    }
+
+    await handleUpdateSessionDetails(sessionNameInput, sessionChapterInput, sessionHoursInput, finalGroupId);
     setIsEditingSessionDetails(false);
+    setIsCreatingNewGroup(false);
+    setNewGroupNameInput('');
   };
 
+  const groupedSessions = sessionGroups.map(group => ({
+    ...group,
+    sessions: sessions.filter(s => s.groupId === group.id)
+  }));
+
+  const ungroupedSessions = sessions.filter(s => !s.groupId);
+
   return (
-    <div className="h-[calc(100vh-120px)] flex justify-center gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="flex-1 min-h-0 pb-[72px] sm:pb-20 lg:pb-0 flex flex-col lg:flex-row justify-start lg:justify-center gap-4 sm:gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
       {/* Sidebar for Sessions */}
-      <div className="w-72 shrink-0 hidden md:flex flex-col border-r border-zinc-800/50 pr-6">
+      <div className={`w-full lg:w-72 shrink-0 flex-col lg:border-r border-zinc-800/50 lg:pr-6 min-h-0 ${activeMobileTab === 'sessions' ? 'flex' : 'hidden lg:flex'}`}>
         <div className="flex items-center justify-between mb-6">
           <h3 className="font-bold uppercase tracking-widest text-xs text-zinc-400">Sessions</h3>
-          <button 
-            onClick={() => handleStartSession()}
-            className="p-1.5 bg-zinc-900 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-zinc-100 transition-colors"
-            title="New Session"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-2">
-          {sessions.map(session => (
-            <button
-              key={session.id}
-              onClick={() => handleResumeSession(session)}
-              className={`w-full text-left p-3 rounded-xl transition-all ${activeSession.id === session.id ? 'bg-zinc-800 border border-zinc-700' : 'bg-transparent hover:bg-zinc-900 border border-transparent'}`}
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setIsCreatingGroupFromList(true)}
+              className="p-1.5 bg-zinc-900 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-zinc-100 transition-colors"
+              title="New Group"
             >
-              <p className={`font-bold text-sm truncate ${activeSession.id === session.id ? 'text-zinc-100' : 'text-zinc-400'}`}>{session.name || session.progressMarker}</p>
-              <p className="text-zinc-500 text-[10px] mt-1">{format(session.startTime, 'MMM d, yyyy')}</p>
+              <LayoutDashboard className="w-4 h-4" />
             </button>
-          ))}
+            <button 
+              onClick={() => handleStartSession()}
+              className="p-1.5 bg-zinc-900 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-zinc-100 transition-colors"
+              title="New Session"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {isCreatingGroupFromList && (
+          <div className="mb-4 p-3 bg-zinc-900/50 border border-zinc-800 rounded-xl space-y-3">
+            <input
+              type="text"
+              value={newGroupNameInput}
+              onChange={(e) => setNewGroupNameInput(e.target.value)}
+              placeholder="New Group Name"
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-zinc-600 transition-colors"
+              autoFocus
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setIsCreatingGroupFromList(false);
+                  setNewGroupNameInput('');
+                }}
+                className="px-3 py-1.5 text-xs font-bold text-zinc-400 hover:text-zinc-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (newGroupNameInput.trim()) {
+                    await handleCreateSessionGroup(newGroupNameInput.trim());
+                    setIsCreatingGroupFromList(false);
+                    setNewGroupNameInput('');
+                  }
+                }}
+                className="px-3 py-1.5 text-xs font-bold bg-zinc-100 text-zinc-950 rounded-lg hover:bg-white transition-colors"
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-2">
+          {groupedSessions.map(group => {
+            const isCollapsed = collapsedGroups.has(group.id);
+            return (
+            <div key={group.id} className="space-y-2">
+              <div 
+                className="flex items-center justify-between px-2 group/header cursor-pointer hover:bg-zinc-900/50 rounded py-1 -mx-2"
+                onClick={(e) => {
+                  // Don't toggle if clicking on buttons or inputs
+                  const target = e.target as HTMLElement;
+                  if (target.closest('button') || target.closest('input')) return;
+                  toggleGroupCollapse(group.id);
+                }}
+              >
+                <div className="flex items-center gap-2 flex-1">
+                  {isCollapsed ? (
+                    <ChevronRight className="w-3.5 h-3.5 text-zinc-500" />
+                  ) : (
+                    <ChevronDown className="w-3.5 h-3.5 text-zinc-500" />
+                  )}
+                  {editingGroupId === group.id ? (
+                    <input
+                      type="text"
+                      value={editingGroupTitle}
+                      onChange={(e) => setEditingGroupTitle(e.target.value)}
+                      className="flex-1 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-xs font-bold text-zinc-100 focus:outline-none focus:border-zinc-600"
+                      autoFocus
+                    />
+                  ) : (
+                    <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">{group.title}</h4>
+                  )}
+                </div>
+                
+                <div className="flex items-center gap-1 opacity-0 group-hover/header:opacity-100 transition-opacity">
+                  {editingGroupId === group.id ? (
+                    <>
+                      <button
+                        onClick={async () => {
+                          if (editingGroupTitle.trim() && editingGroupTitle !== group.title) {
+                            await handleUpdateSessionGroup(group.id, editingGroupTitle.trim());
+                          }
+                          await handleUpdateSessionGroupMembership(group.id, Array.from(selectedSessionIdsForGroup));
+                          setEditingGroupId(null);
+                        }}
+                        className="p-1 text-green-500 hover:bg-zinc-800 rounded"
+                      >
+                        <PenLine className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={() => setEditingGroupId(null)}
+                        className="p-1 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => {
+                          setEditingGroupId(group.id);
+                          setEditingGroupTitle(group.title);
+                          setSelectedSessionIdsForGroup(new Set(group.sessions.map(s => s.id)));
+                        }}
+                        className="p-1 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded"
+                      >
+                        <PenLine className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (window.confirm('Are you sure you want to delete this group? Sessions will be ungrouped.')) {
+                            handleDeleteSessionGroup(group.id);
+                          }
+                        }}
+                        className="p-1 text-red-400 hover:text-red-300 hover:bg-zinc-800 rounded"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+              
+              {!isCollapsed && (
+                <div className="space-y-2">
+                  {group.sessions.map(session => (
+                    <div key={session.id} className="flex items-center gap-2">
+                      {editingGroupId !== null && (
+                        <input
+                          type="checkbox"
+                          checked={selectedSessionIdsForGroup.has(session.id)}
+                          onChange={(e) => {
+                            const newSet = new Set(selectedSessionIdsForGroup);
+                            if (e.target.checked) {
+                              newSet.add(session.id);
+                            } else {
+                              newSet.delete(session.id);
+                            }
+                            setSelectedSessionIdsForGroup(newSet);
+                          }}
+                          className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-zinc-100 focus:ring-zinc-600 focus:ring-offset-zinc-950"
+                        />
+                      )}
+                      <button
+                        onClick={() => handleResumeSession(session)}
+                        className={`flex-1 text-left p-3 rounded-xl transition-all ${activeSession.id === session.id ? 'bg-zinc-800 border border-zinc-700' : 'bg-transparent hover:bg-zinc-900 border border-transparent'}`}
+                      >
+                        <p className={`font-bold text-sm truncate ${activeSession.id === session.id ? 'text-zinc-100' : 'text-zinc-400'}`}>{session.name || session.progressMarker}</p>
+                        <p className="text-zinc-500 text-[10px] mt-1">{format(session.startTime, 'MMM d, yyyy')}</p>
+                      </button>
+                    </div>
+                  ))}
+                  {group.sessions.length === 0 && (
+                    <p className="text-xs text-zinc-600 italic px-2">No sessions in this group</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )})}
+
+          {ungroupedSessions.length > 0 && (
+            <div className="space-y-2">
+              {groupedSessions.length > 0 && (
+                <div 
+                  className="flex items-center justify-between px-2 mt-4 cursor-pointer hover:bg-zinc-900/50 rounded py-1 -mx-2"
+                  onClick={() => toggleGroupCollapse('ungrouped')}
+                >
+                  <div className="flex items-center gap-2">
+                    {collapsedGroups.has('ungrouped') ? (
+                      <ChevronRight className="w-3.5 h-3.5 text-zinc-500" />
+                    ) : (
+                      <ChevronDown className="w-3.5 h-3.5 text-zinc-500" />
+                    )}
+                    <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Ungrouped</h4>
+                  </div>
+                </div>
+              )}
+              {!collapsedGroups.has('ungrouped') && (
+                <div className="space-y-2">
+                  {ungroupedSessions.map(session => (
+                    <div key={session.id} className="flex items-center gap-2">
+                      {editingGroupId !== null && (
+                        <input
+                          type="checkbox"
+                          checked={selectedSessionIdsForGroup.has(session.id)}
+                          onChange={(e) => {
+                            const newSet = new Set(selectedSessionIdsForGroup);
+                            if (e.target.checked) {
+                              newSet.add(session.id);
+                            } else {
+                              newSet.delete(session.id);
+                            }
+                            setSelectedSessionIdsForGroup(newSet);
+                          }}
+                          className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-zinc-100 focus:ring-zinc-600 focus:ring-offset-zinc-950"
+                        />
+                      )}
+                      <button
+                        onClick={() => handleResumeSession(session)}
+                        className={`flex-1 text-left p-3 rounded-xl transition-all ${activeSession.id === session.id ? 'bg-zinc-800 border border-zinc-700' : 'bg-transparent hover:bg-zinc-900 border border-transparent'}`}
+                      >
+                        <p className={`font-bold text-sm truncate ${activeSession.id === session.id ? 'text-zinc-100' : 'text-zinc-400'}`}>{session.name || session.progressMarker}</p>
+                        <p className="text-zinc-500 text-[10px] mt-1">{format(session.startTime, 'MMM d, yyyy')}</p>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
       {/* Main Session View */}
-      <div className="flex-1 w-full max-w-2xl flex flex-col min-w-0">
+      <div className={`flex-1 w-full lg:max-w-2xl flex-col min-w-0 min-h-0 ${activeMobileTab === 'notes' ? 'flex' : 'hidden lg:flex'}`}>
         {/* Compact Session Header */}
-        <div className="mb-6 bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-4 shrink-0">
+        <div 
+          className="mb-3 sm:mb-6 bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-3 sm:p-4 shrink-0 flex flex-col transition-all duration-300"
+          onMouseEnter={() => setIsHeaderCollapsed(false)}
+        >
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4 flex-wrap flex-1 min-w-0">
-              <h2 className="text-xl font-bold truncate">
-                {activeSession.name || activeSession.progressMarker}
-              </h2>
-              
-              {!isEditingSessionDetails && (
-                <div className="flex items-center gap-3 text-zinc-400 text-xs">
+            <h2 className="text-xl font-bold truncate">
+              {activeSession.name || activeSession.progressMarker}
+            </h2>
+            
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={goBack}
+                className="hidden sm:block px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs font-bold hover:bg-zinc-800 transition-colors shrink-0 text-center"
+              >
+                End Session
+              </button>
+              <button 
+                onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
+                className="p-1.5 text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 rounded-lg transition-colors shrink-0"
+              >
+                {isHeaderCollapsed ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+              </button>
+            </div>
+          </div>
+
+          <div className={`flex flex-col overflow-hidden transition-all duration-300 ${isHeaderCollapsed ? 'max-h-0 opacity-0' : 'max-h-[500px] opacity-100 mt-4 sm:mt-2'}`}>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between sm:justify-start gap-4 w-full">
+                <div className="flex items-center gap-3 text-zinc-400 text-xs flex-wrap flex-1">
                   <div className="flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
                     Live
                   </div>
                   {activeSession.chapter && (
                     <div className="flex items-center gap-1.5">
-                      <BookOpen className="w-3.5 h-3.5 text-zinc-500" />
-                      {activeSession.chapter}
+                      <BookOpen className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                      <span className="truncate max-w-[100px] sm:max-w-none">{activeSession.chapter}</span>
                     </div>
                   )}
                   {activeSession.hoursPlayed && (
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 shrink-0">
                       <Clock className="w-3.5 h-3.5 text-zinc-500" />
                       {activeSession.hoursPlayed} hrs
                     </div>
                   )}
                 </div>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={() => {
-                  if (isEditingSessionDetails) {
-                    setIsEditingSessionDetails(false);
-                  } else {
-                    setSessionNameInput(activeSession.name || '');
-                    setSessionChapterInput(activeSession.chapter || '');
-                    setSessionHoursInput(activeSession.hoursPlayed ? activeSession.hoursPlayed.toString() : '');
-                    setIsEditingSessionDetails(true);
-                  }
-                }}
-                className="p-1.5 text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 rounded-lg transition-colors"
-              >
-                {isEditingSessionDetails ? <X className="w-4 h-4" /> : <PenLine className="w-4 h-4" />}
-              </button>
+                
+                <button
+                  onClick={() => {
+                    if (isEditingSessionDetails) {
+                      setIsEditingSessionDetails(false);
+                      setIsCreatingNewGroup(false);
+                      setNewGroupNameInput('');
+                    } else {
+                      setSessionNameInput(activeSession.name || '');
+                      setSessionChapterInput(activeSession.chapter || '');
+                      setSessionHoursInput(activeSession.hoursPlayed ? activeSession.hoursPlayed.toString() : '');
+                      setSessionGroupIdInput(activeSession.groupId);
+                      setIsEditingSessionDetails(true);
+                    }
+                  }}
+                  className="p-1.5 text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 rounded-lg transition-colors shrink-0 self-end sm:self-auto"
+                >
+                  {isEditingSessionDetails ? <X className="w-4 h-4" /> : <PenLine className="w-4 h-4" />}
+                </button>
+              </div>
+              
               <button 
                 onClick={goBack}
-                className="px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs font-bold hover:bg-zinc-800 transition-colors"
+                className="sm:hidden w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-xs font-bold hover:bg-zinc-800 transition-colors shrink-0 text-center mt-2"
               >
                 End Session
               </button>
@@ -175,8 +472,8 @@ export default function SessionView() {
           </div>
 
           {isEditingSessionDetails && (
-            <div className="mt-4 pt-4 border-t border-zinc-800/50 animate-in fade-in slide-in-from-top-2 duration-200">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className={`mt-4 pt-4 border-t border-zinc-800/50 animate-in fade-in slide-in-from-top-2 duration-200 ${isHeaderCollapsed ? 'hidden' : ''}`}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Session Name</label>
                   <input
@@ -208,8 +505,61 @@ export default function SessionView() {
                     className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-zinc-600 transition-colors"
                   />
                 </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Session Group</label>
+                  {!isCreatingNewGroup ? (
+                    <select
+                      value={sessionGroupIdInput || ''}
+                      onChange={(e) => {
+                        if (e.target.value === 'new') {
+                          setIsCreatingNewGroup(true);
+                          setSessionGroupIdInput(undefined);
+                        } else {
+                          setSessionGroupIdInput(e.target.value || undefined);
+                        }
+                      }}
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-zinc-600 transition-colors"
+                    >
+                      <option value="">None</option>
+                      {sessionGroups.map(group => (
+                        <option key={group.id} value={group.id}>{group.title}</option>
+                      ))}
+                      <option value="new">+ Create New Group</option>
+                    </select>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={newGroupNameInput}
+                        onChange={(e) => setNewGroupNameInput(e.target.value)}
+                        placeholder="New Group Name"
+                        className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-zinc-600 transition-colors"
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => {
+                          setIsCreatingNewGroup(false);
+                          setNewGroupNameInput('');
+                        }}
+                        className="p-2 text-zinc-400 hover:text-zinc-100 rounded-lg hover:bg-zinc-800 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="flex justify-end mt-4">
+              <div className="flex justify-end gap-3 mt-4">
+                <button
+                  onClick={() => {
+                    setIsEditingSessionDetails(false);
+                    setIsCreatingNewGroup(false);
+                    setNewGroupNameInput('');
+                  }}
+                  className="px-4 py-2 bg-transparent text-zinc-400 hover:text-zinc-100 rounded-xl text-sm font-bold transition-colors"
+                >
+                  Cancel
+                </button>
                 <button
                   onClick={saveSessionDetails}
                   className="px-4 py-2 bg-zinc-100 text-zinc-950 rounded-xl text-sm font-bold hover:bg-white transition-colors"
@@ -224,8 +574,24 @@ export default function SessionView() {
         {/* Notes Feed */}
         <div 
           ref={parentRef} 
-          className="flex-1 overflow-y-auto mb-6 pr-2 custom-scrollbar"
+          className="flex-1 overflow-y-auto mb-2 pr-2 custom-scrollbar"
+          onScroll={handleScroll}
+          onMouseEnter={() => {
+            if (parentRef.current && parentRef.current.scrollTop > 20) {
+              setIsHeaderCollapsed(true);
+            }
+          }}
         >
+          {sessionNotes.length >= notesLimit && (
+            <div className="flex justify-center mb-6 mt-2">
+              <button 
+                onClick={loadMoreNotes}
+                className="bg-zinc-900 border border-zinc-800 text-zinc-400 px-6 py-2 rounded-full font-bold text-xs hover:text-zinc-100 hover:bg-zinc-800 transition-all"
+              >
+                Load Older Notes
+              </button>
+            </div>
+          )}
           {sessionNotes.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-8">
               <div className="w-16 h-16 bg-zinc-900/50 rounded-full flex items-center justify-center mb-4">
@@ -275,6 +641,9 @@ export default function SessionView() {
                           onDelete={handleDeleteNote}
                           onAddTag={handleAddTag}
                           onRemoveTag={handleRemoveTag}
+                          isCompactMode={isCompactMode}
+                          taggingStatus={taggingStatus[note.id]}
+                          onRetryTagging={handleRetryTagging}
                         />
                       </div>
                     );
@@ -287,13 +656,13 @@ export default function SessionView() {
         </div>
 
         {/* Input Area */}
-        <div className="sticky bottom-0 bg-zinc-950 pt-4">
+        <div className="shrink-0 bg-zinc-950 pt-2 hidden lg:block">
           <form onSubmit={submitNote} className="relative">
             <textarea 
               value={noteInput}
               onChange={(e) => setNoteInput(e.target.value)}
               placeholder="Type a note about your experience..."
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-3xl px-6 py-5 pr-16 focus:outline-none focus:border-zinc-100 transition-all duration-300 resize-none min-h-[60px] hover:min-h-[120px] focus:min-h-[120px] shadow-2xl"
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-3xl pl-6 pr-14 py-3.5 focus:outline-none focus:border-zinc-100 transition-all duration-300 resize-none min-h-[52px] hover:min-h-[120px] focus:min-h-[120px] shadow-2xl"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
@@ -304,7 +673,7 @@ export default function SessionView() {
             <button 
               type="submit"
               disabled={!noteInput.trim() || isSubmittingNote}
-              className="absolute right-4 bottom-4 p-3 bg-zinc-100 text-zinc-950 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white transition-all active:scale-95"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-zinc-100 text-zinc-950 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white transition-all active:scale-95"
             >
               {isSubmittingNote ? (
                 <div className="w-5 h-5 border-2 border-zinc-950 border-t-transparent rounded-full animate-spin" />
@@ -313,11 +682,60 @@ export default function SessionView() {
               )}
             </button>
           </form>
-          <p className="text-center text-[10px] text-zinc-600 mt-4 uppercase tracking-widest">
-            Press Enter to send • Shift+Enter for new line
-          </p>
         </div>
       </div>
+
+      {/* Right Column: Trackers */}
+      <div className={`w-full lg:w-80 shrink-0 flex-col lg:border-l border-zinc-800/50 lg:pl-6 min-h-0 ${activeMobileTab === 'trackers' ? 'flex' : 'hidden lg:flex'}`}>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="font-bold uppercase tracking-widest text-xs text-zinc-400">Trackers</h3>
+        </div>
+        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 pb-4 grid grid-cols-1 md:grid-cols-2 lg:flex lg:flex-col gap-4 items-start lg:items-stretch content-start">
+          {activeSession.trackers?.map(tracker => (
+            <TrackerCard 
+              key={tracker.id}
+              tracker={tracker}
+              onAddItem={handleAddTrackerItem}
+              onRemoveItem={handleRemoveTrackerItem}
+              onDeleteTracker={handleDeleteTracker}
+            />
+          ))}
+          <AddTrackerMenu onAddTracker={handleAddTracker} />
+        </div>
+      </div>
+
+      {/* Mobile Bottom Navigation */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-zinc-950 border-t border-zinc-800/50 flex items-center justify-around p-2 z-50">
+        <button 
+          onClick={() => setActiveMobileTab('sessions')} 
+          className={`p-3 flex flex-col items-center gap-1 rounded-xl flex-1 ${activeMobileTab === 'sessions' ? 'text-zinc-100 bg-zinc-900' : 'text-zinc-500'}`}
+        >
+          <List className="w-5 h-5" />
+          <span className="text-[10px] font-bold uppercase tracking-wider">Sessions</span>
+        </button>
+        <button 
+          onClick={() => setActiveMobileTab('notes')} 
+          className={`p-3 flex flex-col items-center gap-1 rounded-xl flex-1 ${activeMobileTab === 'notes' ? 'text-zinc-100 bg-zinc-900' : 'text-zinc-500'}`}
+        >
+          <PenLine className="w-5 h-5" />
+          <span className="text-[10px] font-bold uppercase tracking-wider">Notes</span>
+        </button>
+        <button 
+          onClick={() => setActiveMobileTab('trackers')} 
+          className={`p-3 flex flex-col items-center gap-1 rounded-xl flex-1 ${activeMobileTab === 'trackers' ? 'text-zinc-100 bg-zinc-900' : 'text-zinc-500'}`}
+        >
+          <LayoutDashboard className="w-5 h-5" />
+          <span className="text-[10px] font-bold uppercase tracking-wider">Trackers</span>
+        </button>
+      </div>
+
+      {/* Mobile FAB */}
+      <button 
+        onClick={() => navigateTo('note-editor')}
+        className="lg:hidden fixed right-6 bottom-24 w-14 h-14 bg-zinc-100 text-zinc-950 rounded-full shadow-2xl flex items-center justify-center z-40 active:scale-90 transition-transform"
+      >
+        <Plus className="w-8 h-8" />
+      </button>
     </div>
   );
 }

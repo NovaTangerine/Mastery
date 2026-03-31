@@ -6,8 +6,14 @@ export const ErrorBoundary = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const handleError = (event: ErrorEvent) => {
+      if (
+        event.message.includes('ResizeObserver loop completed with undelivered notifications') ||
+        event.message.includes('ResizeObserver loop limit exceeded')
+      ) {
+        return;
+      }
       setHasError(true);
-      setError(event.error?.message || 'An unexpected error occurred');
+      setError(event.error?.message || event.message || 'An unexpected error occurred');
     };
     window.addEventListener('error', handleError);
     return () => window.removeEventListener('error', handleError);

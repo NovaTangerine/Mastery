@@ -1,6 +1,4 @@
-import { GoogleGenAI, Type } from "@google/genai";
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+import { auth } from "../firebase";
 
 export interface TagSuggestion {
   tags: string[];
@@ -10,39 +8,37 @@ export interface TagSuggestion {
 
 export async function suggestTags(noteContent: string): Promise<TagSuggestion> {
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: `Analyze the following video game note and suggest 1-3 short tags (e.g., 'Combat', 'Story', 'Upgrade', 'Bug', 'Exploration'). Also determine if this note is a general thought about the game as a whole (isGlobal: true) or a specific moment (isGlobal: false).
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error("User not authenticated");
+    }
 
-Note: "${noteContent}"`,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            tags: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING },
-              description: "1-3 short tags describing the note content.",
-            },
-            isGlobal: {
-              type: Type.BOOLEAN,
-              description: "True if the note is a general observation about the game as a whole.",
-            },
-            summary: {
-              type: Type.STRING,
-              description: "A very brief 1-sentence summary of the note.",
-            },
-          },
-          required: ["tags", "isGlobal"],
-        },
+    const idToken = await currentUser.getIdToken();
+
+    const response = await fetch("/api/tags/suggest", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${idToken}`
       },
+      body: JSON.stringify({ noteContent }),
     });
 
-    const result = JSON.parse(response.text || '{"tags": [], "isGlobal": false}');
+    if (!response.ok) {
+      if (response.status === 429) {
+        throw new Error("Too many requests. Please try again later.");
+      }
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    const result = await response.json();
     return result;
   } catch (error) {
     console.error("Error suggesting tags:", error);
+    // Rethrow if it's a rate limit error so the UI can show a toast
+    if (error instanceof Error && error.message.includes("Too many requests")) {
+      throw error;
+    }
     return { tags: ["General"], isGlobal: false };
   }
 }

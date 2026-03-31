@@ -2,16 +2,19 @@ import React from 'react';
 import { X, BookOpen } from 'lucide-react';
 import { format } from 'date-fns';
 import { useGameContext } from '../contexts/GameContext';
+import { useUI } from '../contexts/UIContext';
+import { useNotes } from '../hooks/useNotes';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
 
 export default function AllNotesView() {
+  const { goBack } = useUI();
+  const { selectedGame } = useGameContext();
+
   const {
-    selectedGame,
     notes,
     notesLimit,
-    loadMoreNotes,
-    goBack
-  } = useGameContext();
+    loadMoreNotes
+  } = useNotes(selectedGame?.id || null);
 
   const reversedNotes = [...notes].reverse();
 

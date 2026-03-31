@@ -2,7 +2,7 @@ import React, { useState, memo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { format } from 'date-fns';
-import { GripVertical, X, Edit3, Trash2 } from 'lucide-react';
+import { GripVertical, X, Edit3, Trash2, Sparkles, AlertCircle, RefreshCw } from 'lucide-react';
 import { Note } from '../types';
 import { cn } from '../lib/utils';
 
@@ -11,18 +11,25 @@ export const SortableNote = memo(({
   onUpdate, 
   onDelete, 
   onAddTag, 
-  onRemoveTag
+  onRemoveTag,
+  isCompactMode,
+  taggingStatus,
+  onRetryTagging
 }: { 
   note: Note; 
   onUpdate: (id: string, content: string) => void;
   onDelete: (id: string) => void;
   onAddTag: (id: string, tag: string) => void;
   onRemoveTag: (id: string, tag: string) => void;
+  isCompactMode?: boolean;
+  taggingStatus?: 'loading' | 'error';
+  onRetryTagging?: (id: string, content: string) => void;
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingContent, setEditingContent] = useState(note.content);
   const [isManagingTags, setIsManagingTags] = useState(false);
   const [newTagInput, setNewTagInput] = useState('');
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const {
     attributes,
@@ -44,17 +51,35 @@ export const SortableNote = memo(({
     <div 
       ref={setNodeRef} 
       style={style} 
+      onClick={(e) => {
+        if (!isEditing) {
+          const target = e.target as HTMLElement;
+          if (target.closest('button') || target.closest('input')) {
+            return;
+          }
+          setIsExpanded(!isExpanded);
+        }
+      }}
       className={cn(
-        "group relative bg-zinc-900 border border-zinc-800 rounded-2xl p-5 transition-all hover:border-zinc-700",
+        "group relative bg-zinc-900 border border-zinc-800 rounded-2xl transition-all hover:border-zinc-700 cursor-pointer",
+        isCompactMode ? "p-3 sm:p-4" : "p-5",
         isDragging && "shadow-2xl border-zinc-500"
       )}
     >
-      <div className="flex justify-between items-center mb-2 gap-4">
+      <div className={cn(
+        "flex justify-between items-center gap-4 overflow-hidden transition-all duration-300 ease-in-out",
+        isCompactMode 
+          ? (isExpanded ? "max-h-12 opacity-100 mb-2" : "max-h-0 opacity-0 mb-0")
+          : (isExpanded ? "max-h-12 opacity-100 mb-2" : "max-h-0 opacity-0 mb-0")
+      )}>
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <button 
             {...attributes} 
             {...listeners} 
-            className="p-1 text-zinc-700 hover:text-zinc-400 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+            className={cn(
+              "p-1 text-zinc-700 hover:text-zinc-400 cursor-grab active:cursor-grabbing transition-opacity shrink-0",
+              isExpanded ? "opacity-100" : "opacity-0"
+            )}
           >
             <GripVertical className="w-4 h-4" />
           </button>
@@ -75,7 +100,30 @@ export const SortableNote = memo(({
               </span>
             ))}
             
-            {isManagingTags ? (
+            {taggingStatus === 'loading' && (
+              <span className="flex items-center gap-1 px-2 py-0.5 bg-zinc-800/50 rounded text-[10px] font-bold text-zinc-500 uppercase tracking-tighter shrink-0">
+                <Sparkles className="w-3 h-3 animate-spin text-zinc-400" />
+                Tagging...
+              </span>
+            )}
+
+            {taggingStatus === 'error' && (
+              <div className="flex items-center gap-1 shrink-0">
+                <span className="flex items-center gap-1 px-2 py-0.5 bg-red-500/10 border border-red-500/20 rounded text-[10px] font-bold text-red-400 uppercase tracking-tighter">
+                  <AlertCircle className="w-3 h-3" />
+                  Failed
+                </span>
+                <button 
+                  onClick={() => onRetryTagging?.(note.id, note.content)}
+                  className="p-1 text-zinc-500 hover:text-zinc-300 transition-colors"
+                  title="Retry AI Tagging"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+
+            {!taggingStatus && isManagingTags ? (
               <div className="flex items-center gap-1 shrink-0">
                 <input 
                   autoFocus
@@ -118,7 +166,10 @@ export const SortableNote = memo(({
                   setIsManagingTags(true);
                   setNewTagInput('');
                 }}
-                className="shrink-0 px-2 py-0.5 border border-dashed border-zinc-700 rounded text-[10px] font-bold text-zinc-500 uppercase tracking-tighter hover:border-zinc-500 hover:text-zinc-300 transition-colors opacity-0 group-hover:opacity-100"
+                className={cn(
+                  "shrink-0 px-2 py-0.5 border border-dashed border-zinc-700 rounded text-[10px] font-bold text-zinc-500 uppercase tracking-tighter hover:border-zinc-500 hover:text-zinc-300 transition-colors",
+                  isExpanded ? "opacity-100" : "opacity-0"
+                )}
               >
                 + Tag
               </button>
@@ -131,7 +182,10 @@ export const SortableNote = memo(({
             {format(note.timestamp, 'HH:mm')}
           </span>
           
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+          <div className={cn(
+            "flex items-center gap-1 transition-opacity shrink-0",
+            isExpanded ? "opacity-100" : "opacity-0"
+          )}>
             <button 
               onClick={() => {
                 setIsEditing(true);

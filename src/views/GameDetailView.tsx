@@ -2,22 +2,27 @@ import React, { useState } from 'react';
 import { Plus, Trash2, PenLine, BookOpen, Edit3, Save, Star, ChevronRight, History, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { useGameContext } from '../contexts/GameContext';
+import { useUI } from '../contexts/UIContext';
+import { useNotes } from '../hooks/useNotes';
 import { cn } from '../lib/utils';
 
 import { GameSession } from '../types';
 
 export default function GameDetailView() {
+  const { navigateTo } = useUI();
   const {
     selectedGame,
     sessions,
-    notes,
+    sessionsLimit,
+    loadMoreSessions,
     handleStartSession,
     handleResumeSession,
     handleUpdateGameField,
     handleDeleteGame,
     handleDeleteSession,
-    navigateTo,
   } = useGameContext();
+
+  const { notes } = useNotes(selectedGame?.id || null);
 
   const [isEditingOverallThoughts, setIsEditingOverallThoughts] = useState(false);
   const [overallThoughtsDraft, setOverallThoughtsDraft] = useState('');
@@ -379,6 +384,16 @@ export default function GameDetailView() {
                     </div>
                   </div>
                 ))
+              )}
+              {sessions.length >= sessionsLimit && (
+                <div className="flex justify-center mt-6">
+                  <button 
+                    onClick={loadMoreSessions}
+                    className="bg-zinc-900 border border-zinc-800 text-zinc-400 px-6 py-3 rounded-full font-bold text-sm hover:text-zinc-100 hover:bg-zinc-800 transition-all"
+                  >
+                    Load More Sessions
+                  </button>
+                </div>
               )}
             </div>
           </section>

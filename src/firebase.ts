@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, User } from 'firebase/auth';
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDocFromServer } from 'firebase/firestore';
+import { getAnalytics, isSupported, logEvent, Analytics } from 'firebase/analytics';
 
 // Import the Firebase configuration
 import firebaseConfig from '../firebase-applet-config.json';
@@ -12,6 +13,19 @@ export const db = initializeFirestore(app, {
 }, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+
+let analytics: Analytics | null = null;
+isSupported().then(supported => {
+  if (supported) {
+    analytics = getAnalytics(app);
+  }
+});
+
+export const logAppEvent = (eventName: string, eventParams?: Record<string, any>) => {
+  if (analytics) {
+    logEvent(analytics, eventName, eventParams);
+  }
+};
 
 export const signInWithGoogle = () => signInWithPopup(auth, googleProvider);
 export const signOut = () => auth.signOut();

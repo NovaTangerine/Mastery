@@ -13,195 +13,126 @@ import {
   getDoc,
   limit
 } from 'firebase/firestore';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { db, auth, handleFirestoreError, OperationType } from '../firebase';
-import { Game, GameSession, Note, ViewMode } from '../types';
+import { db, handleFirestoreError, OperationType, logAppEvent } from '../firebase';
+import { Game, GameSession, Note, ViewMode, Draft, SessionGroup } from '../types';
 import { toast } from 'sonner';
 import { deadSpace2MockData } from '../mockData/deadSpace2';
-import { suggestTags } from '../services/geminiService';
-import { arrayMove } from '@dnd-kit/sortable';
-import { DragEndEvent } from '@dnd-kit/core';
-import { generateKeyBetween } from 'fractional-indexing';
+import { safeGenerateKeyBetween } from '../lib/fractionalIndexing';
+import { writeBatch } from 'firebase/firestore';
+import { useAuth } from './AuthContext';
+import { useUI } from './UIContext';
 
 interface GameContextType {
-  user: User | null;
-  isAuthReady: boolean;
-  view: ViewMode;
-  history: { view: ViewMode, gameId: string | null, sessionId: string | null }[];
   games: Game[];
   selectedGame: Game | null;
   sessions: GameSession[];
+  sessionGroups: SessionGroup[];
   activeSession: GameSession | null;
-  notes: Note[];
-  notesLimit: number;
-  loadMoreNotes: () => void;
-  isSubmittingNote: boolean;
+  drafts: Draft[];
 
-  navigateTo: (newView: ViewMode, game?: Game | null, session?: GameSession | null) => void;
-  goBack: () => void;
+  gamesLimit: number;
+  loadMoreGames: () => void;
+  sessionsLimit: number;
+  loadMoreSessions: () => void;
+  sessionGroupsLimit: number;
+  loadMoreSessionGroups: () => void;
+  draftsLimit: number;
+  loadMoreDrafts: () => void;
+
   handleImportDeadSpace2Logs: () => Promise<void>;
   handleAddGame: (title: string) => Promise<void>;
   handleStartSession: () => Promise<void>;
   handleResumeSession: (session: GameSession) => void;
-  handleUpdateSessionDetails: (name: string, chapter: string, hoursPlayed: string) => Promise<void>;
-  handleAddNote: (content: string) => Promise<void>;
-  handleUpdateNote: (noteId: string, content: string) => Promise<void>;
-  handleDeleteNote: (noteId: string) => Promise<void>;
-  handleAddTag: (noteId: string, tag: string) => Promise<void>;
-  handleRemoveTag: (noteId: string, tagToRemove: string) => Promise<void>;
-  handleDragEnd: (event: DragEndEvent) => Promise<void>;
+  handleUpdateSessionDetails: (name: string, chapter: string, hoursPlayed: string, groupId?: string) => Promise<void>;
   handleUpdateGameField: (field: 'overallNotes' | 'storySynopsis', value: string) => Promise<void>;
   handleDeleteGame: () => Promise<void>;
   handleDeleteSession: (sessionId: string) => Promise<void>;
-  setHistory: React.Dispatch<React.SetStateAction<{ view: ViewMode, gameId: string | null, sessionId: string | null }[]>>;
+  handleCreateSessionGroup: (title: string) => Promise<{ id: string; title: string } | null>;
+  handleUpdateSessionGroup: (groupId: string, title: string) => Promise<void>;
+  handleDeleteSessionGroup: (groupId: string) => Promise<void>;
+  handleUpdateSessionGroupMembership: (groupId: string, sessionIds: string[]) => Promise<void>;
+  handleAddTracker: (title: string) => Promise<void>;
+  handleAddTrackerItem: (trackerId: string, item: string) => Promise<void>;
+  handleRemoveTrackerItem: (trackerId: string, itemIndex: number) => Promise<void>;
+  handleDeleteTracker: (trackerId: string) => Promise<void>;
+  handleSaveDraft: (content: string, tags: string[]) => Promise<void>;
+  handleDeleteDraft: (draftId: string) => Promise<void>;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const GameProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isAuthReady, setIsAuthReady] = useState(false);
-  const [view, setView] = useState<ViewMode>('dashboard');
-  const [history, setHistory] = useState<{ view: ViewMode, gameId: string | null, sessionId: string | null }[]>([]);
-  
+  const { user, isAuthReady } = useAuth();
+  const { selectedGameId, activeSessionId, navigateTo, clearHistory } = useUI();
+
   const [games, setGames] = useState<Game[]>([]);
-  const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [sessions, setSessions] = useState<GameSession[]>([]);
-  const [activeSession, setActiveSession] = useState<GameSession | null>(null);
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [notesLimit, setNotesLimit] = useState(50);
-  
-  const [isSubmittingNote, setIsSubmittingNote] = useState(false);
+  const [sessionGroups, setSessionGroups] = useState<SessionGroup[]>([]);
+  const [drafts, setDrafts] = useState<Draft[]>([]);
 
-  const loadMoreNotes = () => {
-    setNotesLimit(prev => prev + 50);
-  };
+  const [gamesLimit, setGamesLimit] = useState(50);
+  const [sessionsLimit, setSessionsLimit] = useState(50);
+  const [sessionGroupsLimit, setSessionGroupsLimit] = useState(50);
+  const [draftsLimit, setDraftsLimit] = useState(50);
 
-  // --- Auth Effect ---
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setIsAuthReady(true);
-    });
-    return () => unsubscribe();
-  }, []);
+  const loadMoreGames = () => setGamesLimit(prev => prev + 50);
+  const loadMoreSessions = () => setSessionsLimit(prev => prev + 50);
+  const loadMoreSessionGroups = () => setSessionGroupsLimit(prev => prev + 50);
+  const loadMoreDrafts = () => setDraftsLimit(prev => prev + 50);
+
+  const selectedGame = games.find(g => g.id === selectedGameId) || null;
+  const activeSession = sessions.find(s => s.id === activeSessionId) || null;
 
   // --- Data Fetching Effects ---
   useEffect(() => {
     if (!user || !isAuthReady) return;
 
-    const q = query(collection(db, 'games'), where('uid', '==', user.uid), orderBy('updatedAt', 'desc'));
+    const q = query(collection(db, 'games'), where('uid', '==', user.uid), orderBy('updatedAt', 'desc'), limit(gamesLimit));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const gamesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Game));
       setGames(gamesList);
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'games'));
 
     return () => unsubscribe();
-  }, [user, isAuthReady]);
+  }, [user, isAuthReady, gamesLimit]);
 
   useEffect(() => {
     if (!user || !selectedGame) return;
 
-    const q = query(collection(db, 'sessions'), where('gameId', '==', selectedGame.id), orderBy('startTime', 'desc'));
+    const q = query(collection(db, 'sessions'), where('gameId', '==', selectedGame.id), orderBy('startTime', 'desc'), limit(sessionsLimit));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const sessionsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GameSession));
       setSessions(sessionsList);
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'sessions'));
 
     return () => unsubscribe();
-  }, [user, selectedGame]);
+  }, [user, selectedGame, sessionsLimit]);
 
   useEffect(() => {
     if (!user || !selectedGame) return;
 
-    const q = query(
-      collection(db, 'notes'), 
-      where('gameId', '==', selectedGame.id), 
-      orderBy('order', 'desc'),
-      limit(notesLimit)
-    );
-    
+    const q = query(collection(db, 'sessionGroups'), where('gameId', '==', selectedGame.id), orderBy('createdAt', 'asc'), limit(sessionGroupsLimit));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const notesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Note));
-      // Reverse to display ascending
-      setNotes(notesList.reverse());
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'notes'));
+      const groupsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SessionGroup));
+      setSessionGroups(groupsList);
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'sessionGroups'));
 
     return () => unsubscribe();
-  }, [user, selectedGame, notesLimit]);
-
-  // Migration: Ensure all notes have an 'order' field for manual reordering
-  useEffect(() => {
-    const notesToUpdate = notes.filter(n => n.order === undefined);
-    if (notesToUpdate.length > 0) {
-      const migrate = async () => {
-        try {
-          const updates = notesToUpdate.map(note => 
-            updateDoc(doc(db, 'notes', note.id), { order: note.timestamp })
-          );
-          await Promise.all(updates);
-        } catch (error) {
-          console.error("Migration failed:", error);
-        }
-      };
-      migrate();
-    }
-  }, [notes, user, isAuthReady]);
+  }, [user, selectedGame, sessionGroupsLimit]);
 
   useEffect(() => {
-    if (activeSession) {
-      const updatedSession = sessions.find(s => s.id === activeSession.id);
-      if (updatedSession && JSON.stringify(updatedSession) !== JSON.stringify(activeSession)) {
-        setActiveSession(updatedSession);
-      }
-    }
-  }, [sessions, activeSession]);
+    if (!user || !isAuthReady) return;
 
-  useEffect(() => {
-    if (selectedGame) {
-      const updatedGame = games.find(g => g.id === selectedGame.id);
-      if (updatedGame && JSON.stringify(updatedGame) !== JSON.stringify(selectedGame)) {
-        setSelectedGame(updatedGame);
-      }
-    }
-  }, [games, selectedGame]);
+    const q = query(collection(db, 'drafts'), where('uid', '==', user.uid), orderBy('updatedAt', 'desc'), limit(draftsLimit));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const draftsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Draft));
+      setDrafts(draftsList);
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'drafts'));
 
-  const navigateTo = (newView: ViewMode, game: Game | null = selectedGame, session: GameSession | null = activeSession) => {
-    if (view !== newView || selectedGame?.id !== game?.id) {
-      setHistory(prev => [...prev, { view, gameId: selectedGame?.id || null, sessionId: activeSession?.id || null }]);
-    }
-    setView(newView);
-    setSelectedGame(game);
-    setActiveSession(session);
-  };
+    return () => unsubscribe();
+  }, [user, isAuthReady, draftsLimit]);
 
-  const goBack = () => {
-    if (history.length === 0) {
-      setView('dashboard');
-      setSelectedGame(null);
-      setActiveSession(null);
-      return;
-    }
-
-    const last = history[history.length - 1];
-    setHistory(prev => prev.slice(0, -1));
-    setView(last.view);
-    
-    if (last.gameId) {
-      const game = games.find(g => g.id === last.gameId);
-      setSelectedGame(game || null);
-    } else {
-      setSelectedGame(null);
-    }
-
-    if (last.sessionId) {
-      const session = sessions.find(s => s.id === last.sessionId);
-      setActiveSession(session || null);
-    } else {
-      setActiveSession(null);
-    }
-  };
-
+  // --- Handlers ---
   const handleImportDeadSpace2Logs = async () => {
     if (!user) return;
     
@@ -235,7 +166,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
 
         let lastOrder: string | null = null;
         for (const noteData of sessionData.notes) {
-          lastOrder = generateKeyBetween(lastOrder, null);
+          lastOrder = safeGenerateKeyBetween(lastOrder, null);
           await addDoc(collection(db, 'notes'), {
             gameId: gameDoc.id,
             sessionId: sessionDoc.id,
@@ -296,156 +227,103 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     toast.info(`Resumed session: ${session.name || session.progressMarker}`);
   };
 
-  const handleUpdateSessionDetails = async (name: string, chapter: string, hoursPlayed: string) => {
+  const handleUpdateSessionDetails = async (name: string, chapter: string, hoursPlayed: string, groupId?: string) => {
     if (!user || !activeSession) return;
     try {
-      await updateDoc(doc(db, 'sessions', activeSession.id), {
+      const updateData: any = {
         name: name,
         chapter: chapter,
         hoursPlayed: hoursPlayed ? parseFloat(hoursPlayed) : null,
-      });
+      };
+      if (groupId !== undefined) {
+        updateData.groupId = groupId === '' ? null : groupId;
+      }
+      await updateDoc(doc(db, 'sessions', activeSession.id), updateData);
       toast.success('Session details updated');
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `sessions/${activeSession.id}`);
     }
   };
 
-  const handleAddNote = async (content: string) => {
-    if (!user || !selectedGame || !content.trim()) return;
-
-    setIsSubmittingNote(true);
-
+  const handleCreateSessionGroup = async (title: string) => {
+    if (!user || !selectedGame || !title.trim()) return null;
     try {
-      const sessionNotes = notes.filter(n => n.sessionId === (activeSession?.id || null));
-      const lastNote = sessionNotes[sessionNotes.length - 1];
-      let newOrder = generateKeyBetween(null, null);
-      if (lastNote && typeof lastNote.order === 'string') {
-        try {
-          newOrder = generateKeyBetween(lastNote.order, null);
-        } catch (e) {
-          // Fallback if existing order is invalid
-          newOrder = generateKeyBetween(null, null);
-        }
+      const lastGroup = sessionGroups[sessionGroups.length - 1];
+      let newOrder = safeGenerateKeyBetween(null, null);
+      if (lastGroup && typeof lastGroup.order === 'string') {
+        newOrder = safeGenerateKeyBetween(lastGroup.order, null);
       }
 
-      // 1. Create the note immediately to ensure it appears in the UI instantly
-      const docRef = await addDoc(collection(db, 'notes'), {
+      const docRef = await addDoc(collection(db, 'sessionGroups'), {
         gameId: selectedGame.id,
-        sessionId: activeSession?.id || null,
         uid: user.uid,
-        content,
-        tags: [], // Start with empty tags
-        isGlobal: false,
-        timestamp: Date.now(),
+        title: title.trim(),
+        createdAt: Date.now(),
         order: newOrder
       });
+      toast.success('Group created');
+      return { id: docRef.id, title: title.trim() };
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'sessionGroups');
+      return null;
+    }
+  };
 
-      // 2. Update game's updatedAt
-      await updateDoc(doc(db, 'games', selectedGame.id), {
-        updatedAt: Date.now()
+  const handleUpdateSessionGroup = async (groupId: string, title: string) => {
+    if (!user || !title.trim()) return;
+    try {
+      await updateDoc(doc(db, 'sessionGroups', groupId), {
+        title: title.trim()
+      });
+      toast.success('Group updated');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `sessionGroups/${groupId}`);
+    }
+  };
+
+  const handleDeleteSessionGroup = async (groupId: string) => {
+    if (!user) return;
+    try {
+      // First, remove the groupId from any sessions that belong to it
+      const sessionsInGroup = sessions.filter(s => s.groupId === groupId);
+      if (sessionsInGroup.length > 0) {
+        const batch = writeBatch(db);
+        sessionsInGroup.forEach(session => {
+          batch.update(doc(db, 'sessions', session.id), { groupId: null });
+        });
+        await batch.commit();
+      }
+
+      // Then delete the group itself
+      await deleteDoc(doc(db, 'sessionGroups', groupId));
+      toast.success('Group deleted');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `sessionGroups/${groupId}`);
+    }
+  };
+
+  const handleUpdateSessionGroupMembership = async (groupId: string, sessionIds: string[]) => {
+    if (!user) return;
+    try {
+      const batch = writeBatch(db);
+      
+      // Update sessions that should be in the group
+      sessionIds.forEach(sessionId => {
+        batch.update(doc(db, 'sessions', sessionId), { groupId });
       });
 
-      setIsSubmittingNote(false);
-
-      // 3. Trigger AI tagging in the background without blocking the UI
-      suggestTags(content).then(async (suggestion) => {
-        try {
-          // Check if the note still exists before updating
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
-            await updateDoc(docRef, {
-              tags: suggestion.tags,
-              isGlobal: suggestion.isGlobal
-            });
-          }
-        } catch (err) {
-          console.error("Failed to update note with AI tags:", err);
+      // Find sessions currently in the group that are no longer in the list and remove them
+      const sessionsCurrentlyInGroup = sessions.filter(s => s.groupId === groupId);
+      sessionsCurrentlyInGroup.forEach(session => {
+        if (!sessionIds.includes(session.id)) {
+          batch.update(doc(db, 'sessions', session.id), { groupId: null });
         }
-      }).catch(err => {
-        console.error("AI tagging failed:", err);
       });
 
+      await batch.commit();
+      toast.success('Group membership updated');
     } catch (error) {
-      setIsSubmittingNote(false);
-      handleFirestoreError(error, OperationType.CREATE, 'notes');
-    }
-  };
-
-  const handleUpdateNote = async (noteId: string, content: string) => {
-    try {
-      await updateDoc(doc(db, 'notes', noteId), { content });
-      toast.success('Note updated');
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, 'notes');
-    }
-  };
-
-  const handleDeleteNote = async (noteId: string) => {
-    try {
-      await deleteDoc(doc(db, 'notes', noteId));
-      toast.success('Note deleted');
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, 'notes');
-    }
-  };
-
-  const handleAddTag = async (noteId: string, tag: string) => {
-    if (!tag.trim()) return;
-    const note = notes.find(n => n.id === noteId);
-    if (!note) return;
-    if (note.tags.includes(tag)) return;
-
-    try {
-      await updateDoc(doc(db, 'notes', noteId), {
-        tags: [...note.tags, tag]
-      });
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, 'notes');
-    }
-  };
-
-  const handleRemoveTag = async (noteId: string, tagToRemove: string) => {
-    const note = notes.find(n => n.id === noteId);
-    if (!note) return;
-
-    try {
-      await updateDoc(doc(db, 'notes', noteId), {
-        tags: note.tags.filter(t => t !== tagToRemove)
-      });
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, 'notes');
-    }
-  };
-
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-
-    const sessionNotes = notes.filter(n => n.sessionId === activeSession?.id);
-    const oldIndex = sessionNotes.findIndex(n => n.id === active.id);
-    const newIndex = sessionNotes.findIndex(n => n.id === over.id);
-
-    const newOrderArray = arrayMove(sessionNotes, oldIndex, newIndex);
-    
-    // Find the new neighbors
-    const prevNote = newIndex > 0 ? newOrderArray[newIndex - 1] : null;
-    const nextNote = newIndex < newOrderArray.length - 1 ? newOrderArray[newIndex + 1] : null;
-
-    let newOrderKey: string;
-    try {
-      const prevOrder = prevNote && typeof prevNote.order === 'string' ? prevNote.order : null;
-      const nextOrder = nextNote && typeof nextNote.order === 'string' ? nextNote.order : null;
-      newOrderKey = generateKeyBetween(prevOrder, nextOrder);
-    } catch (e) {
-      console.warn("Fractional indexing failed, generating fallback key", e);
-      newOrderKey = generateKeyBetween(null, null);
-    }
-
-    // Update order in Firestore for only the moved note
-    try {
-      await updateDoc(doc(db, 'notes', active.id as string), { order: newOrderKey });
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, 'notes');
+      handleFirestoreError(error, OperationType.UPDATE, `sessions batch update`);
     }
   };
 
@@ -486,7 +364,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       toast.success('Game deleted successfully');
       
       // Reset state
-      setHistory([]);
+      clearHistory();
       navigateTo('dashboard', null, null);
     } catch (error) {
       toast.dismiss(loadingToast);
@@ -517,36 +395,136 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const handleAddTracker = async (title: string) => {
+    if (!user || !activeSession) return;
+    try {
+      const newTracker = {
+        id: crypto.randomUUID(),
+        title,
+        items: [],
+        order: safeGenerateKeyBetween(null, null)
+      };
+      
+      const updatedTrackers = [...(activeSession.trackers || []), newTracker];
+      
+      await updateDoc(doc(db, 'sessions', activeSession.id), {
+        trackers: updatedTrackers
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'sessions');
+    }
+  };
+
+  const handleAddTrackerItem = async (trackerId: string, item: string) => {
+    if (!user || !activeSession) return;
+    try {
+      const updatedTrackers = (activeSession.trackers || []).map(t => {
+        if (t.id === trackerId) {
+          return { ...t, items: [...t.items, item] };
+        }
+        return t;
+      });
+      
+      await updateDoc(doc(db, 'sessions', activeSession.id), {
+        trackers: updatedTrackers
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'sessions');
+    }
+  };
+
+  const handleRemoveTrackerItem = async (trackerId: string, itemIndex: number) => {
+    if (!user || !activeSession) return;
+    try {
+      const updatedTrackers = (activeSession.trackers || []).map(t => {
+        if (t.id === trackerId) {
+          const newItems = [...t.items];
+          newItems.splice(itemIndex, 1);
+          return { ...t, items: newItems };
+        }
+        return t;
+      });
+      
+      await updateDoc(doc(db, 'sessions', activeSession.id), {
+        trackers: updatedTrackers
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'sessions');
+    }
+  };
+
+  const handleDeleteTracker = async (trackerId: string) => {
+    if (!user || !activeSession) return;
+    try {
+      const updatedTrackers = (activeSession.trackers || []).filter(t => t.id !== trackerId);
+      
+      await updateDoc(doc(db, 'sessions', activeSession.id), {
+        trackers: updatedTrackers
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'sessions');
+    }
+  };
+
+  const handleSaveDraft = async (content: string, tags: string[]) => {
+    if (!user || !selectedGame) return;
+    try {
+      await addDoc(collection(db, 'drafts'), {
+        gameId: selectedGame.id,
+        sessionId: activeSession?.id || null,
+        uid: user.uid,
+        content,
+        tags,
+        updatedAt: Date.now()
+      });
+      toast.success('Draft saved');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'drafts');
+    }
+  };
+
+  const handleDeleteDraft = async (draftId: string) => {
+    try {
+      await deleteDoc(doc(db, 'drafts', draftId));
+      toast.success('Draft deleted');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, 'drafts');
+    }
+  };
+
   const value = {
-    user,
-    isAuthReady,
-    view,
-    history,
     games,
     selectedGame,
     sessions,
+    sessionGroups,
     activeSession,
-    notes,
-    notesLimit,
-    loadMoreNotes,
-    isSubmittingNote,
-    navigateTo,
-    goBack,
+    drafts,
+    gamesLimit,
+    loadMoreGames,
+    sessionsLimit,
+    loadMoreSessions,
+    sessionGroupsLimit,
+    loadMoreSessionGroups,
+    draftsLimit,
+    loadMoreDrafts,
     handleImportDeadSpace2Logs,
     handleAddGame,
     handleStartSession,
     handleResumeSession,
     handleUpdateSessionDetails,
-    handleAddNote,
-    handleUpdateNote,
-    handleDeleteNote,
-    handleAddTag,
-    handleRemoveTag,
-    handleDragEnd,
     handleUpdateGameField,
     handleDeleteGame,
     handleDeleteSession,
-    setHistory
+    handleCreateSessionGroup,
+    handleUpdateSessionGroup,
+    handleDeleteSessionGroup,
+    handleUpdateSessionGroupMembership,
+    handleAddTracker,
+    handleAddTrackerItem,
+    handleRemoveTrackerItem,
+    handleDeleteTracker,
+    handleSaveDraft,
+    handleDeleteDraft
   };
 
   return (

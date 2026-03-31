@@ -50,12 +50,58 @@
         "timestamp": { "type": "number" }
       },
       "required": ["gameId", "uid", "content", "timestamp"]
+    },
+    "Draft": {
+      "title": "Draft",
+      "description": "An unfinished note saved for later.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "gameId": { "type": "string" },
+        "sessionId": { "type": "string" },
+        "uid": { "type": "string" },
+        "content": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["gameId", "uid", "content", "updatedAt"]
+    },
+    "SessionGroup": {
+      "title": "SessionGroup",
+      "description": "A group of game sessions.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "gameId": { "type": "string" },
+        "uid": { "type": "string" },
+        "title": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "order": { "type": "string" }
+      },
+      "required": ["gameId", "uid", "title", "createdAt", "order"]
+    },
+    "ApiUsage": {
+      "title": "ApiUsage",
+      "description": "Tracks Gemini API token usage per user.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "timestamp": { "type": "number" },
+        "promptTokenCount": { "type": "number" },
+        "candidatesTokenCount": { "type": "number" },
+        "totalTokenCount": { "type": "number" }
+      },
+      "required": ["uid", "timestamp", "promptTokenCount", "candidatesTokenCount", "totalTokenCount"]
     }
   },
   "firestore": {
     "/games/{gameId}": {
       "schema": "Game",
       "description": "User's games."
+    },
+    "/sessionGroups/{groupId}": {
+      "schema": "SessionGroup",
+      "description": "Groups of game sessions."
     },
     "/sessions/{sessionId}": {
       "schema": "GameSession",
@@ -64,6 +110,14 @@
     "/notes/{noteId}": {
       "schema": "Note",
       "description": "Individual notes."
+    },
+    "/drafts/{draftId}": {
+      "schema": "Draft",
+      "description": "Unfinished notes."
+    },
+    "/api_usage/{usageId}": {
+      "schema": "ApiUsage",
+      "description": "API usage tracking."
     }
   }
 }

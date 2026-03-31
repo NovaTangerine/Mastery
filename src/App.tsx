@@ -3,11 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Gamepad2, 
   LogOut, 
-  ChevronRight
+  ChevronRight,
+  Eye,
+  EyeOff,
+  ChevronUp,
+  ChevronDown,
+  WifiOff
 } from 'lucide-react';
 import { Toaster } from 'sonner';
 
@@ -16,10 +21,14 @@ import { signInWithGoogle, signOut } from './firebase';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 import { GameProvider, useGameContext } from './contexts/GameContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { UIProvider, useUI } from './contexts/UIContext';
+import { useNetworkStatus } from './hooks/useNetworkStatus';
 
 import DashboardView from './views/DashboardView';
 import GameDetailView from './views/GameDetailView';
 import SessionView from './views/SessionView';
+import { NoteEditorView } from './views/NoteEditorView';
 import QuickNoteView from './views/QuickNoteView';
 import AllInsightsView from './views/AllInsightsView';
 import AllNotesView from './views/AllNotesView';
@@ -27,15 +36,18 @@ import AllNotesView from './views/AllNotesView';
 // --- Components ---
 
 function MainApp() {
+  const [isBackBarVisible, setIsBackBarVisible] = useState(true);
+  const isOnline = useNetworkStatus();
+  const { user, isAuthReady } = useAuth();
   const {
-    user,
-    isAuthReady,
     view,
-    selectedGame,
-    setHistory,
+    isCompactMode,
+    setIsCompactMode,
     navigateTo,
-    goBack
-  } = useGameContext();
+    goBack,
+    clearHistory
+  } = useUI();
+  const { selectedGame } = useGameContext();
 
   // --- Render Helpers ---
 
@@ -72,15 +84,23 @@ function MainApp() {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-zinc-100 selection:text-zinc-950">
+      <div className="h-[100dvh] flex flex-col bg-zinc-950 text-zinc-100 font-sans selection:bg-zinc-100 selection:text-zinc-950">
         <Toaster position="top-center" theme="dark" />
         
+        {/* Offline Banner */}
+        {!isOnline && (
+          <div className="shrink-0 z-40 bg-amber-900/20 border-b border-amber-900/30 px-6 py-2 flex items-center justify-center text-amber-500 text-xs font-medium text-center">
+            ⚠️ Offline Mode: Changes are saved locally. Reconnect to sync and prevent data loss.
+          </div>
+        )}
+
         {/* Navigation Rail / Header & Back Bar */}
-        <div className="sticky top-0 z-50 flex flex-col">
-          <header className="bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-900 px-6 py-4 flex items-center justify-between">
+        {view !== 'note-editor' && (
+          <div className="shrink-0 z-50 flex flex-col">
+            <header className="bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-900 px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button 
-                onClick={() => { setHistory([]); navigateTo('dashboard', null, null); }}
+                onClick={() => { clearHistory(); navigateTo('dashboard', null, null); }}
                 className="flex items-center gap-2 group"
               >
                 <div className="w-8 h-8 bg-zinc-100 rounded-lg flex items-center justify-center group-hover:rotate-6 transition-transform">
@@ -100,6 +120,21 @@ function MainApp() {
             </div>
 
             <div className="flex items-center gap-3">
+              {!isOnline && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-900/30 border border-amber-900/50 rounded-full text-amber-500 text-xs font-medium" title="Offline Mode: Changes are saved locally. Reconnect to sync and prevent data loss.">
+                  <WifiOff className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Offline Mode</span>
+                </div>
+              )}
+              {view !== 'dashboard' && (
+                <button
+                  onClick={() => setIsBackBarVisible(!isBackBarVisible)}
+                  className="p-2 text-zinc-500 hover:text-zinc-100 transition-colors"
+                  title={isBackBarVisible ? "Hide back bar" : "Show back bar"}
+                >
+                  {isBackBarVisible ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                </button>
+              )}
               <button 
                 onClick={signOut}
                 className="p-2 text-zinc-500 hover:text-zinc-100 transition-colors"
@@ -113,27 +148,46 @@ function MainApp() {
 
           {/* Back Bar */}
           {view !== 'dashboard' && (
-            <button 
-              onClick={goBack}
-              className="w-full text-left bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-900 px-6 py-2 hover:bg-zinc-900/80 transition-colors group cursor-pointer"
-            >
-              <div className="max-w-6xl mx-auto">
-                <div className="flex items-center gap-2 text-zinc-500 group-hover:text-zinc-100 transition-colors text-xs font-bold uppercase tracking-widest">
-                  <ChevronRight className="w-4 h-4 rotate-180" />
-                  Back
+            <div className={`w-full bg-zinc-950/80 backdrop-blur-xl transition-all duration-300 ease-in-out overflow-hidden ${isBackBarVisible ? 'max-h-16 border-b border-zinc-900 opacity-100' : 'max-h-0 border-transparent opacity-0'}`}>
+              <div className="px-6 py-2">
+                <div className={`mx-auto flex items-center justify-between ${view === 'session-view' ? 'max-w-[1440px]' : 'max-w-6xl'}`}>
+                  <button 
+                    onClick={goBack}
+                    className="text-left hover:bg-zinc-900/80 transition-colors group cursor-pointer py-1 px-2 -ml-2 rounded-lg"
+                  >
+                    <div className="flex items-center gap-2 text-zinc-500 group-hover:text-zinc-100 transition-colors text-xs font-bold uppercase tracking-widest">
+                      <ChevronRight className="w-4 h-4 rotate-180" />
+                      Back
+                    </div>
+                  </button>
+                  
+                  {view === 'session-view' && (
+                    <button
+                      onClick={() => setIsCompactMode(!isCompactMode)}
+                      className="flex items-center gap-2 text-zinc-500 hover:text-zinc-100 transition-colors text-xs font-bold uppercase tracking-widest p-1 px-2 -mr-2 rounded-lg hover:bg-zinc-900/80"
+                      title={isCompactMode ? "Show utility bars" : "Hide utility bars"}
+                    >
+                      {isCompactMode ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                      <span className="hidden sm:inline">{isCompactMode ? "Show Utilities" : "Hide Utilities"}</span>
+                    </button>
+                  )}
                 </div>
               </div>
-            </button>
+            </div>
           )}
         </div>
+      )}
 
-        <main className="max-w-6xl mx-auto p-6">
-          {view === 'dashboard' && <DashboardView />}
-          {view === 'quick-note' && <QuickNoteView />}
-          {view === 'game-detail' && <GameDetailView />}
-          {view === 'all-insights' && <AllInsightsView />}
-          {view === 'all-notes' && <AllNotesView />}
-          {view === 'session-view' && <SessionView />}
+        <main className={`flex-1 min-h-0 w-full ${['session-view', 'quick-note', 'note-editor'].includes(view) ? 'flex flex-col' : 'overflow-y-auto'}`}>
+          <div className={`mx-auto w-full ${['session-view', 'quick-note', 'note-editor'].includes(view) ? (view === 'note-editor' ? 'p-0 flex-1 min-h-0 flex flex-col' : 'p-2 sm:p-6 flex-1 min-h-0 flex flex-col max-w-[1440px]') : 'p-4 sm:p-6 max-w-6xl'}`}>
+            {view === 'dashboard' && <DashboardView />}
+            {view === 'quick-note' && <QuickNoteView />}
+            {view === 'game-detail' && <GameDetailView />}
+            {view === 'all-insights' && <AllInsightsView />}
+            {view === 'all-notes' && <AllNotesView />}
+            {view === 'session-view' && <SessionView />}
+            {view === 'note-editor' && <NoteEditorView />}
+          </div>
         </main>
 
         <style>{`
@@ -158,8 +212,12 @@ function MainApp() {
 
 export default function App() {
   return (
-    <GameProvider>
-      <MainApp />
-    </GameProvider>
+    <AuthProvider>
+      <UIProvider>
+        <GameProvider>
+          <MainApp />
+        </GameProvider>
+      </UIProvider>
+    </AuthProvider>
   );
 }

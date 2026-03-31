@@ -2,13 +2,17 @@ import React, { useState } from 'react';
 import { Plus, Gamepad2, Clock, Feather, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { useGameContext } from '../contexts/GameContext';
+import { useAuth } from '../contexts/AuthContext';
+import { useUI } from '../contexts/UIContext';
 
 export default function DashboardView() {
+  const { user } = useAuth();
+  const { navigateTo } = useUI();
   const {
-    user,
     games,
+    gamesLimit,
+    loadMoreGames,
     handleAddGame,
-    navigateTo,
     handleImportDeadSpace2Logs
   } = useGameContext();
 
@@ -125,6 +129,17 @@ export default function DashboardView() {
           </div>
         )}
       </div>
+      
+      {games.length >= gamesLimit && (
+        <div className="flex justify-center mt-8">
+          <button 
+            onClick={loadMoreGames}
+            className="bg-zinc-900 border border-zinc-800 text-zinc-400 px-6 py-3 rounded-full font-bold text-sm hover:text-zinc-100 hover:bg-zinc-800 transition-all"
+          >
+            Load More Games
+          </button>
+        </div>
+      )}
     </div>
   );
 }
