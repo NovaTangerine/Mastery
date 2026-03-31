@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Plus, BookOpen, Clock, PenLine, X, Send, ChevronRight, Trash2, List, LayoutDashboard, ChevronUp, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
+import { motion } from 'motion/react';
 import {
   DndContext, 
   closestCenter,
@@ -161,7 +162,7 @@ export default function SessionView() {
   const ungroupedSessions = sessions.filter(s => !s.groupId);
 
   return (
-    <div className="flex-1 min-h-0 pb-[72px] sm:pb-20 lg:pb-0 flex flex-col lg:flex-row justify-start lg:justify-center gap-4 sm:gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
+    <div className="flex-1 min-h-0 pb-[58px] sm:pb-[58px] lg:pb-0 flex flex-col lg:flex-row justify-start lg:justify-center gap-4 sm:gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
       {/* Sidebar for Sessions */}
       <div className={`w-full lg:w-72 shrink-0 flex-col lg:border-r border-zinc-800/50 lg:pr-6 min-h-0 ${activeMobileTab === 'sessions' ? 'flex' : 'hidden lg:flex'}`}>
         <div className="flex items-center justify-between mb-6">
@@ -422,7 +423,7 @@ export default function SessionView() {
 
           <div className={`flex flex-col overflow-hidden transition-all duration-300 ${isHeaderCollapsed ? 'max-h-0 opacity-0' : 'max-h-[500px] opacity-100 mt-4 sm:mt-2'}`}>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between sm:justify-start gap-4 w-full">
+              <div className="flex flex-row items-center justify-between gap-4 w-full">
                 <div className="flex items-center gap-3 text-zinc-400 text-xs flex-wrap flex-1">
                   <div className="flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
@@ -456,7 +457,7 @@ export default function SessionView() {
                       setIsEditingSessionDetails(true);
                     }
                   }}
-                  className="p-1.5 text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 rounded-lg transition-colors shrink-0 self-end sm:self-auto"
+                  className="p-1.5 text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 rounded-lg transition-colors shrink-0"
                 >
                   {isEditingSessionDetails ? <X className="w-4 h-4" /> : <PenLine className="w-4 h-4" />}
                 </button>
@@ -574,7 +575,7 @@ export default function SessionView() {
         {/* Notes Feed */}
         <div 
           ref={parentRef} 
-          className="flex-1 overflow-y-auto mb-2 pr-2 custom-scrollbar"
+          className="flex-1 overflow-y-auto pr-2 custom-scrollbar"
           onScroll={handleScroll}
           onMouseEnter={() => {
             if (parentRef.current && parentRef.current.scrollTop > 20) {
@@ -657,31 +658,37 @@ export default function SessionView() {
 
         {/* Input Area */}
         <div className="shrink-0 bg-zinc-950 pt-2 hidden lg:block">
-          <form onSubmit={submitNote} className="relative">
-            <textarea 
-              value={noteInput}
-              onChange={(e) => setNoteInput(e.target.value)}
-              placeholder="Type a note about your experience..."
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-3xl pl-6 pr-14 py-3.5 focus:outline-none focus:border-zinc-100 transition-all duration-300 resize-none min-h-[52px] hover:min-h-[120px] focus:min-h-[120px] shadow-2xl"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  submitNote();
-                }
-              }}
-            />
-            <button 
-              type="submit"
-              disabled={!noteInput.trim() || isSubmittingNote}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-zinc-100 text-zinc-950 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white transition-all active:scale-95"
-            >
-              {isSubmittingNote ? (
-                <div className="w-5 h-5 border-2 border-zinc-950 border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <Send className="w-5 h-5" />
-              )}
-            </button>
-          </form>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-2 shadow-2xl transition-all duration-300 focus-within:border-zinc-700 hover:border-zinc-700">
+            <form onSubmit={submitNote} className="flex gap-2 items-end">
+              <textarea 
+                value={noteInput}
+                onChange={(e) => setNoteInput(e.target.value)}
+                placeholder="Type a note about your experience..."
+                rows={1}
+                className="flex-1 bg-transparent border-none focus:ring-0 text-zinc-100 px-4 py-3 placeholder:text-zinc-600 outline-none transition-all duration-300 resize-none h-[48px] hover:h-[120px] focus:h-[120px] custom-scrollbar"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    submitNote();
+                  }
+                }}
+              />
+              <button 
+                type="submit"
+                disabled={!noteInput.trim() || isSubmittingNote}
+                className="bg-zinc-100 text-zinc-950 px-6 h-[48px] rounded-2xl font-bold hover:bg-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shrink-0"
+              >
+                {isSubmittingNote ? (
+                  <div className="w-5 h-5 border-2 border-zinc-950 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Plus className="w-5 h-5" />
+                    <span className="hidden sm:inline">Save</span>
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
         </div>
       </div>
 
@@ -690,7 +697,7 @@ export default function SessionView() {
         <div className="flex items-center justify-between mb-6">
           <h3 className="font-bold uppercase tracking-widest text-xs text-zinc-400">Trackers</h3>
         </div>
-        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 pb-4 grid grid-cols-1 md:grid-cols-2 lg:flex lg:flex-col gap-4 items-start lg:items-stretch content-start">
+        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 grid grid-cols-1 md:grid-cols-2 lg:flex lg:flex-col gap-4 items-start lg:items-stretch content-start">
           {activeSession.trackers?.map(tracker => (
             <TrackerCard 
               key={tracker.id}
@@ -705,34 +712,39 @@ export default function SessionView() {
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-zinc-950 border-t border-zinc-800/50 flex items-center justify-around p-2 z-50">
-        <button 
-          onClick={() => setActiveMobileTab('sessions')} 
-          className={`p-3 flex flex-col items-center gap-1 rounded-xl flex-1 ${activeMobileTab === 'sessions' ? 'text-zinc-100 bg-zinc-900' : 'text-zinc-500'}`}
-        >
-          <List className="w-5 h-5" />
-          <span className="text-[10px] font-bold uppercase tracking-wider">Sessions</span>
-        </button>
-        <button 
-          onClick={() => setActiveMobileTab('notes')} 
-          className={`p-3 flex flex-col items-center gap-1 rounded-xl flex-1 ${activeMobileTab === 'notes' ? 'text-zinc-100 bg-zinc-900' : 'text-zinc-500'}`}
-        >
-          <PenLine className="w-5 h-5" />
-          <span className="text-[10px] font-bold uppercase tracking-wider">Notes</span>
-        </button>
-        <button 
-          onClick={() => setActiveMobileTab('trackers')} 
-          className={`p-3 flex flex-col items-center gap-1 rounded-xl flex-1 ${activeMobileTab === 'trackers' ? 'text-zinc-100 bg-zinc-900' : 'text-zinc-500'}`}
-        >
-          <LayoutDashboard className="w-5 h-5" />
-          <span className="text-[10px] font-bold uppercase tracking-wider">Trackers</span>
-        </button>
+      <div className="lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
+        <div className="bg-zinc-900/90 backdrop-blur-md border border-zinc-800/80 p-1 rounded-full flex items-center gap-1 shadow-2xl">
+          {(['sessions', 'notes', 'trackers'] as const).map((tab) => {
+            const isActive = activeMobileTab === tab;
+            return (
+              <button
+                key={tab}
+                onClick={() => setActiveMobileTab(tab)}
+                className={`relative px-3 py-1.5 rounded-full flex items-center gap-1.5 transition-colors ${isActive ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="activeMobileTab"
+                    className="absolute inset-0 bg-zinc-800 rounded-full"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+                <span className="relative z-10 flex items-center gap-1.5">
+                  {tab === 'sessions' && <List className="w-3.5 h-3.5" />}
+                  {tab === 'notes' && <PenLine className="w-3.5 h-3.5" />}
+                  {tab === 'trackers' && <LayoutDashboard className="w-3.5 h-3.5" />}
+                  <span className="text-[11px] font-bold capitalize leading-none pt-[1px]">{tab}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Mobile FAB */}
       <button 
         onClick={() => navigateTo('note-editor')}
-        className="lg:hidden fixed right-6 bottom-24 w-14 h-14 bg-zinc-100 text-zinc-950 rounded-full shadow-2xl flex items-center justify-center z-40 active:scale-90 transition-transform"
+        className="lg:hidden fixed right-6 bottom-[66px] w-14 h-14 bg-zinc-100 text-zinc-950 rounded-full shadow-2xl flex items-center justify-center z-40 active:scale-90 transition-transform"
       >
         <Plus className="w-8 h-8" />
       </button>

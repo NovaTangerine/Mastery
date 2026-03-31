@@ -32,6 +32,7 @@ import { NoteEditorView } from './views/NoteEditorView';
 import QuickNoteView from './views/QuickNoteView';
 import AllInsightsView from './views/AllInsightsView';
 import AllNotesView from './views/AllNotesView';
+import ProfileView from './views/ProfileView';
 
 // --- Components ---
 
@@ -142,7 +143,13 @@ function MainApp() {
               >
                 <LogOut className="w-5 h-5" />
               </button>
-              <img src={user.photoURL || ''} className="w-8 h-8 rounded-full border border-zinc-800" alt="Profile" />
+              <button 
+                onClick={() => navigateTo('profile')}
+                className="rounded-full border border-zinc-800 hover:border-zinc-600 transition-colors overflow-hidden"
+                title="View Profile"
+              >
+                <img src={user.photoURL || ''} className="w-8 h-8 object-cover" alt="Profile" />
+              </button>
             </div>
           </header>
 
@@ -187,6 +194,7 @@ function MainApp() {
             {view === 'all-notes' && <AllNotesView />}
             {view === 'session-view' && <SessionView />}
             {view === 'note-editor' && <NoteEditorView />}
+            {view === 'profile' && <ProfileView />}
           </div>
         </main>
 

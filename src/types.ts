@@ -60,4 +60,4 @@ export interface Draft {
   updatedAt: number;
 }
 
-export type ViewMode = 'dashboard' | 'game-detail' | 'session-view' | 'all-insights' | 'all-notes' | 'quick-note' | 'note-editor';
+export type ViewMode = 'dashboard' | 'game-detail' | 'session-view' | 'all-insights' | 'all-notes' | 'quick-note' | 'note-editor' | 'profile';
