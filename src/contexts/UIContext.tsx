@@ -4,8 +4,6 @@ import { ViewMode, Game, GameSession } from '../types';
 interface UIContextType {
   view: ViewMode;
   history: { view: ViewMode, gameId: string | null, sessionId: string | null }[];
-  isCompactMode: boolean;
-  setIsCompactMode: React.Dispatch<React.SetStateAction<boolean>>;
   selectedGameId: string | null;
   activeSessionId: string | null;
   navigateTo: (newView: ViewMode, game?: Game | null, session?: GameSession | null) => void;
@@ -18,7 +16,6 @@ const UIContext = createContext<UIContextType | undefined>(undefined);
 export const UIProvider = ({ children }: { children: React.ReactNode }) => {
   const [view, setView] = useState<ViewMode>('dashboard');
   const [history, setHistory] = useState<{ view: ViewMode, gameId: string | null, sessionId: string | null }[]>([]);
-  const [isCompactMode, setIsCompactMode] = useState(false);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
@@ -55,8 +52,6 @@ export const UIProvider = ({ children }: { children: React.ReactNode }) => {
     <UIContext.Provider value={{
       view,
       history,
-      isCompactMode,
-      setIsCompactMode,
       selectedGameId,
       activeSessionId,
       navigateTo,

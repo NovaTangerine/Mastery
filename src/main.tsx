@@ -22,8 +22,8 @@ console.error = (...args) => {
 
 window.addEventListener('error', (e) => {
   if (
-    e.message.includes('ResizeObserver loop completed with undelivered notifications') || 
-    e.message.includes('ResizeObserver loop limit exceeded')
+    e.message?.includes('ResizeObserver loop completed with undelivered notifications') || 
+    e.message?.includes('ResizeObserver loop limit exceeded')
   ) {
     e.stopImmediatePropagation();
     e.preventDefault();

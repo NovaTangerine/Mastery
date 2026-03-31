@@ -12,7 +12,6 @@ export const SortableNote = memo(({
   onDelete, 
   onAddTag, 
   onRemoveTag,
-  isCompactMode,
   taggingStatus,
   onRetryTagging
 }: { 
@@ -21,7 +20,6 @@ export const SortableNote = memo(({
   onDelete: (id: string) => void;
   onAddTag: (id: string, tag: string) => void;
   onRemoveTag: (id: string, tag: string) => void;
-  isCompactMode?: boolean;
   taggingStatus?: 'loading' | 'error';
   onRetryTagging?: (id: string, content: string) => void;
 }) => {
@@ -61,16 +59,13 @@ export const SortableNote = memo(({
         }
       }}
       className={cn(
-        "group relative bg-zinc-900 border border-zinc-800 rounded-2xl transition-all hover:border-zinc-700 cursor-pointer",
-        isCompactMode ? "p-3 sm:p-4" : "p-5",
+        "group relative bg-zinc-900 border border-zinc-800 rounded-2xl transition-all hover:border-zinc-700 cursor-pointer p-5",
         isDragging && "shadow-2xl border-zinc-500"
       )}
     >
       <div className={cn(
         "flex justify-between items-center gap-4 overflow-hidden transition-all duration-300 ease-in-out",
-        isCompactMode 
-          ? (isExpanded ? "max-h-12 opacity-100 mb-2" : "max-h-0 opacity-0 mb-0")
-          : (isExpanded ? "max-h-12 opacity-100 mb-2" : "max-h-0 opacity-0 mb-0")
+        isExpanded ? "max-h-12 opacity-100 mb-2" : "max-h-0 opacity-0 mb-0"
       )}>
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <button 

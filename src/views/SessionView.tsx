@@ -25,7 +25,7 @@ import { AddTrackerMenu } from '../components/AddTrackerMenu';
 import { useVirtualizer } from '@tanstack/react-virtual';
 
 export default function SessionView() {
-  const { goBack, navigateTo, isCompactMode } = useUI();
+  const { goBack, navigateTo } = useUI();
   const {
     selectedGame,
     sessions,
@@ -176,7 +176,10 @@ export default function SessionView() {
               <LayoutDashboard className="w-4 h-4" />
             </button>
             <button 
-              onClick={() => handleStartSession()}
+              onClick={() => {
+                handleStartSession();
+                setActiveMobileTab('notes');
+              }}
               className="p-1.5 bg-zinc-900 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-zinc-100 transition-colors"
               title="New Session"
             >
@@ -324,7 +327,10 @@ export default function SessionView() {
                         />
                       )}
                       <button
-                        onClick={() => handleResumeSession(session)}
+                        onClick={() => {
+                          handleResumeSession(session);
+                          setActiveMobileTab('notes');
+                        }}
                         className={`flex-1 text-left p-3 rounded-xl transition-all ${activeSession.id === session.id ? 'bg-zinc-800 border border-zinc-700' : 'bg-transparent hover:bg-zinc-900 border border-transparent'}`}
                       >
                         <p className={`font-bold text-sm truncate ${activeSession.id === session.id ? 'text-zinc-100' : 'text-zinc-400'}`}>{session.name || session.progressMarker}</p>
@@ -378,7 +384,10 @@ export default function SessionView() {
                         />
                       )}
                       <button
-                        onClick={() => handleResumeSession(session)}
+                        onClick={() => {
+                          handleResumeSession(session);
+                          setActiveMobileTab('notes');
+                        }}
                         className={`flex-1 text-left p-3 rounded-xl transition-all ${activeSession.id === session.id ? 'bg-zinc-800 border border-zinc-700' : 'bg-transparent hover:bg-zinc-900 border border-transparent'}`}
                       >
                         <p className={`font-bold text-sm truncate ${activeSession.id === session.id ? 'text-zinc-100' : 'text-zinc-400'}`}>{session.name || session.progressMarker}</p>
@@ -421,10 +430,10 @@ export default function SessionView() {
             </div>
           </div>
 
-          <div className={`flex flex-col overflow-hidden transition-all duration-300 ${isHeaderCollapsed ? 'max-h-0 opacity-0' : 'max-h-[500px] opacity-100 mt-4 sm:mt-2'}`}>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div className="flex flex-row items-center justify-between gap-4 w-full">
-                <div className="flex items-center gap-3 text-zinc-400 text-xs flex-wrap flex-1">
+          <div className={`flex flex-col overflow-hidden transition-all duration-300 ${isHeaderCollapsed ? 'max-h-0 opacity-0' : 'max-h-[500px] opacity-100 mt-1 sm:mt-2'}`}>
+            <div className="flex flex-col gap-2 sm:gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex flex-row items-center justify-start gap-4 w-full">
+                <div className="flex items-center gap-3 text-zinc-400 text-xs flex-wrap">
                   <div className="flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
                     Live
@@ -465,7 +474,7 @@ export default function SessionView() {
               
               <button 
                 onClick={goBack}
-                className="sm:hidden w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-xs font-bold hover:bg-zinc-800 transition-colors shrink-0 text-center mt-2"
+                className="sm:hidden w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-xs font-bold hover:bg-zinc-800 transition-colors shrink-0 text-center"
               >
                 End Session
               </button>
@@ -642,7 +651,6 @@ export default function SessionView() {
                           onDelete={handleDeleteNote}
                           onAddTag={handleAddTag}
                           onRemoveTag={handleRemoveTag}
-                          isCompactMode={isCompactMode}
                           taggingStatus={taggingStatus[note.id]}
                           onRetryTagging={handleRetryTagging}
                         />
