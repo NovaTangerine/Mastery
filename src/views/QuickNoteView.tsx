@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { X, Plus, PenLine } from 'lucide-react';
+import { X, Plus, PenLine, Tag as TagIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { useGameContext } from '../contexts/GameContext';
 import { useUI } from '../contexts/UIContext';
@@ -16,6 +16,9 @@ export default function QuickNoteView() {
   } = useNotes(selectedGame?.id || null);
 
   const [noteInput, setNoteInput] = useState('');
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const [noteTags, setNoteTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
   const notesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -29,8 +32,15 @@ export default function QuickNoteView() {
     if (!noteInput.trim() || isSubmittingNote) return;
     
     const content = noteInput;
+    const tagsToSubmit = [...noteTags];
+    if (tagInput.trim() && !tagsToSubmit.includes(tagInput.trim())) {
+      tagsToSubmit.push(tagInput.trim());
+    }
+    
     setNoteInput('');
-    await handleAddNote(content);
+    setNoteTags([]);
+    setTagInput('');
+    await handleAddNote(content, tagsToSubmit);
   };
 
   return (
@@ -88,25 +98,71 @@ export default function QuickNoteView() {
       </div>
 
       {/* Note Input */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-2 shrink-0">
-        <form onSubmit={submitNote} className="flex gap-2">
-          <input
-            type="text"
-            value={noteInput}
-            onChange={(e) => setNoteInput(e.target.value)}
-            placeholder="Jot down a quick thought..."
-            className="flex-1 bg-transparent border-none focus:ring-0 text-zinc-100 px-4 py-3 placeholder:text-zinc-600 outline-none"
-            disabled={isSubmittingNote}
-            autoFocus
-          />
-          <button
-            type="submit"
-            disabled={!noteInput.trim() || isSubmittingNote}
-            className="bg-zinc-100 text-zinc-950 px-6 py-3 rounded-2xl font-bold hover:bg-white transition-colors disabled:opacity-50 flex items-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            <span className="hidden sm:inline">Save</span>
-          </button>
+      <div 
+        className="bg-zinc-900 border border-zinc-800 rounded-3xl p-2 shrink-0 transition-all duration-300 focus-within:border-zinc-700 hover:border-zinc-700"
+        onFocus={() => setIsInputFocused(true)}
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget)) {
+            setIsInputFocused(false);
+          }
+        }}
+      >
+        <form onSubmit={submitNote} className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={noteInput}
+              onChange={(e) => setNoteInput(e.target.value)}
+              placeholder="Jot down a quick thought..."
+              className="flex-1 bg-transparent border-none focus:ring-0 text-zinc-100 px-4 py-3 placeholder:text-zinc-600 outline-none"
+              disabled={isSubmittingNote}
+              autoFocus
+            />
+            <button
+              type="submit"
+              disabled={!noteInput.trim() || isSubmittingNote}
+              className="bg-zinc-100 text-zinc-950 px-6 py-3 rounded-2xl font-bold hover:bg-white transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              <span className="hidden sm:inline">Save</span>
+            </button>
+          </div>
+          
+          {isInputFocused && (
+            <div className="px-4 pb-2 flex flex-wrap items-center gap-2 border-t border-zinc-800/50 pt-2 mt-1">
+              <TagIcon className="w-4 h-4 text-zinc-500" />
+              {noteTags.map(tag => (
+                <span key={tag} className="px-2 py-1 bg-zinc-800 text-zinc-300 text-xs rounded-md flex items-center gap-1">
+                  {tag}
+                  <button 
+                    type="button"
+                    onClick={() => setNoteTags(prev => prev.filter(t => t !== tag))}
+                    className="hover:text-white"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault();
+                    if (tagInput.trim() && !noteTags.includes(tagInput.trim())) {
+                      setNoteTags(prev => [...prev, tagInput.trim()]);
+                      setTagInput('');
+                    }
+                  } else if (e.key === 'Backspace' && !tagInput && noteTags.length > 0) {
+                    setNoteTags(prev => prev.slice(0, -1));
+                  }
+                }}
+                placeholder="Add tags (press Enter)..."
+                className="bg-transparent border-none focus:ring-0 text-sm text-zinc-300 placeholder:text-zinc-600 outline-none w-48"
+              />
+            </div>
+          )}
         </form>
       </div>
     </div>

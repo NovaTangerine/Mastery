@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, User } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, User, signInAnonymously } from 'firebase/auth';
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDocFromServer } from 'firebase/firestore';
 import { getAnalytics, isSupported, logEvent, Analytics } from 'firebase/analytics';
 
@@ -27,7 +27,26 @@ export const logAppEvent = (eventName: string, eventParams?: Record<string, any>
   }
 };
 
-export const signInWithGoogle = () => signInWithPopup(auth, googleProvider);
+export const signInWithGoogle = async () => {
+  try {
+    await signInWithPopup(auth, googleProvider);
+  } catch (error: any) {
+    if (error.code === 'auth/popup-closed-by-user') {
+      console.log('Sign-in popup closed by user.');
+    } else {
+      console.error('Error signing in with Google:', error);
+      throw error;
+    }
+  }
+};
+export const signInWithDemo = async () => {
+  try {
+    await signInAnonymously(auth);
+  } catch (error) {
+    console.error('Error signing in anonymously:', error);
+    throw error;
+  }
+};
 export const signOut = () => auth.signOut();
 
 // Connection test

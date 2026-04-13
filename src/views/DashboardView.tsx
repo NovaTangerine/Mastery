@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { useGameContext } from '../contexts/GameContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useUI } from '../contexts/UIContext';
+import GameSearchModal from '../components/GameSearchModal';
 
 export default function DashboardView() {
   const { user } = useAuth();
@@ -17,17 +18,25 @@ export default function DashboardView() {
   } = useGameContext();
 
   const [isAddingGame, setIsAddingGame] = useState(false);
-  const [newGameTitle, setNewGameTitle] = useState('');
 
-  const submitGame = async () => {
-    if (!newGameTitle.trim()) return;
-    await handleAddGame(newGameTitle);
-    setNewGameTitle('');
+  const handleSelectGame = async (game: any) => {
+    const coverUrl = game.cover?.image_id 
+      ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${game.cover.image_id}.jpg`
+      : undefined;
+      
+    await handleAddGame(game.name, coverUrl);
     setIsAddingGame(false);
   };
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <GameSearchModal 
+        isOpen={isAddingGame}
+        onClose={() => setIsAddingGame(false)}
+        onSelectGame={handleSelectGame}
+        slotNumber={null}
+      />
+
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Your Library</h2>
         <div className="flex gap-3">
@@ -48,34 +57,6 @@ export default function DashboardView() {
           </button>
         </div>
       </div>
-
-      {isAddingGame && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 flex flex-col sm:flex-row gap-4">
-          <input 
-            type="text" 
-            placeholder="Game Title (e.g. Elden Ring)"
-            value={newGameTitle}
-            onChange={(e) => setNewGameTitle(e.target.value)}
-            className="flex-1 bg-zinc-950 border border-zinc-800 rounded-2xl px-6 py-3 focus:outline-none focus:border-zinc-100 transition-colors"
-            autoFocus
-            onKeyDown={(e) => e.key === 'Enter' && submitGame()}
-          />
-          <div className="flex gap-2">
-            <button 
-              onClick={submitGame}
-              className="flex-1 sm:flex-none bg-zinc-100 text-zinc-950 px-8 py-3 rounded-2xl font-bold"
-            >
-              Add
-            </button>
-            <button 
-              onClick={() => setIsAddingGame(false)}
-              className="p-3 text-zinc-500 hover:text-zinc-100"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {games.map(game => (

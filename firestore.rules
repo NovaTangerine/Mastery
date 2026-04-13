@@ -99,7 +99,7 @@ service cloud.firestore {
     }
 
     function isValidSession(data) {
-      return hasOnlyAllowedFields(['gameId', 'uid', 'startTime', 'endTime', 'progressMarker', 'name', 'chapter', 'hoursPlayed', 'groupId']) &&
+      return hasOnlyAllowedFields(['gameId', 'uid', 'startTime', 'endTime', 'progressMarker', 'name', 'chapter', 'hoursPlayed', 'groupId', 'trackers']) &&
              data.gameId is string &&
              data.uid is string &&
              data.startTime is number &&
@@ -108,7 +108,8 @@ service cloud.firestore {
              (!('name' in data) || data.name == null || (data.name is string && data.name.size() < 100)) &&
              (!('chapter' in data) || data.chapter == null || (data.chapter is string && data.chapter.size() < 100)) &&
              (!('hoursPlayed' in data) || data.hoursPlayed == null || (data.hoursPlayed is number && data.hoursPlayed >= 0)) &&
-             (!('groupId' in data) || data.groupId == null || (data.groupId is string && data.groupId.size() < 100));
+             (!('groupId' in data) || data.groupId == null || (data.groupId is string && data.groupId.size() < 100)) &&
+             (!('trackers' in data) || data.trackers == null || (data.trackers is list && data.trackers.size() <= 50));
     }
 
     function isValidSessionGroup(data) {

@@ -3,6 +3,12 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
+if (import.meta.env.DEV) {
+  import('cssstudio').then(({ startStudio }) => {
+    startStudio();
+  });
+}
+
 // Suppress benign ResizeObserver errors caused by virtualization
 const originalError = console.error;
 console.error = (...args) => {

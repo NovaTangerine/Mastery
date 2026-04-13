@@ -10,10 +10,29 @@ export interface Game {
   updatedAt: number;
 }
 
+export type QuantifierType = 'none' | 'checkbox' | 'progress' | 'stepper';
+
+export interface TrackerItem {
+  id: string;
+  title: string;
+  description?: string;
+  quantifierType: QuantifierType;
+  
+  // For 'progress' and 'stepper'
+  currentValue?: number;
+  maxValue?: number;
+  
+  // For 'checkbox'
+  completed?: boolean;
+  
+  // For 'stepper' (optional labels)
+  steps?: string[]; 
+}
+
 export interface SessionTracker {
   id: string;
   title: string;
-  items: string[];
+  items: (string | TrackerItem)[];
   order: string;
 }
 
@@ -60,4 +79,4 @@ export interface Draft {
   updatedAt: number;
 }
 
-export type ViewMode = 'dashboard' | 'game-detail' | 'session-view' | 'all-insights' | 'all-notes' | 'quick-note' | 'note-editor' | 'profile';
+export type ViewMode = 'home' | 'dashboard' | 'game-detail' | 'session-view' | 'all-insights' | 'all-notes' | 'quick-note' | 'note-editor' | 'profile' | 'igdb-game';

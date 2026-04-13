@@ -12,7 +12,8 @@ import {
   EyeOff,
   ChevronUp,
   ChevronDown,
-  WifiOff
+  WifiOff,
+  Home
 } from 'lucide-react';
 import { Toaster } from 'sonner';
 
@@ -25,6 +26,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { UIProvider, useUI } from './contexts/UIContext';
 import { useNetworkStatus } from './hooks/useNetworkStatus';
 
+import HomeView from './views/HomeView';
 import DashboardView from './views/DashboardView';
 import GameDetailView from './views/GameDetailView';
 import SessionView from './views/SessionView';
@@ -33,6 +35,9 @@ import QuickNoteView from './views/QuickNoteView';
 import AllInsightsView from './views/AllInsightsView';
 import AllNotesView from './views/AllNotesView';
 import ProfileView from './views/ProfileView';
+import IGDBGameView from './views/IGDBGameView';
+
+import PrototypeLandingView from './views/PrototypeLandingView';
 
 // --- Components ---
 
@@ -59,26 +64,7 @@ function MainApp() {
   }
 
   if (!user) {
-    return (
-      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-6">
-        <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-3xl p-10 text-center shadow-2xl">
-          <div className="w-20 h-20 bg-zinc-100 rounded-2xl flex items-center justify-center mx-auto mb-8 rotate-3">
-            <Gamepad2 className="w-10 h-10 text-zinc-950" />
-          </div>
-          <h1 className="text-4xl font-bold text-zinc-100 mb-4 tracking-tight">QuestLog</h1>
-          <p className="text-zinc-400 mb-10 leading-relaxed">
-            A dead-simple journal for your gaming adventures. Log your progress, take notes, and let AI organize your thoughts.
-          </p>
-          <button 
-            onClick={signInWithGoogle}
-            className="w-full py-4 bg-zinc-100 text-zinc-950 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-white transition-all active:scale-95"
-          >
-            <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />
-            Continue with Google
-          </button>
-        </div>
-      </div>
-    );
+    return <PrototypeLandingView onCompleteSignUp={() => {}} />;
   }
 
   return (
@@ -109,6 +95,17 @@ function MainApp() {
                       <Gamepad2 className="w-5 h-5 text-zinc-950" />
                     </div>
                     <span className="font-bold text-xl tracking-tight hidden sm:block">QuestLog</span>
+                  </button>
+
+                  <div className="h-6 w-px bg-zinc-800 mx-1 hidden sm:block"></div>
+
+                  <button 
+                    onClick={() => { clearHistory(); navigateTo('home', null, null); }}
+                    className={`flex items-center gap-2 transition-colors ${view === 'home' ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    title="Home"
+                  >
+                    <Home className="w-5 h-5" />
+                    <span className="hidden sm:block font-medium text-sm">Home</span>
                   </button>
                   
                   {selectedGame && (
@@ -149,10 +146,16 @@ function MainApp() {
                   </button>
                   <button 
                     onClick={() => navigateTo('profile')}
-                    className="rounded-full border border-zinc-800 hover:border-zinc-600 transition-colors overflow-hidden"
+                    className="rounded-full border border-zinc-800 hover:border-zinc-600 transition-colors overflow-hidden bg-zinc-900 flex items-center justify-center w-8 h-8"
                     title="View Profile"
                   >
-                    <img src={user.photoURL || ''} className="w-8 h-8 object-cover" alt="Profile" />
+                    {user.photoURL ? (
+                      <img src={user.photoURL} className="w-full h-full object-cover" alt="Profile" />
+                    ) : (
+                      <span className="text-xs font-bold text-zinc-500">
+                        {user.isAnonymous ? 'D' : (user.email?.[0]?.toUpperCase() || 'U')}
+                      </span>
+                    )}
                   </button>
                 </div>
               </div>
@@ -200,6 +203,7 @@ function MainApp() {
 
         <main className={`flex-1 min-h-0 w-full ${['session-view', 'quick-note', 'note-editor'].includes(view) ? 'flex flex-col' : 'overflow-y-auto'}`}>
           <div className={`mx-auto w-full ${['session-view', 'quick-note', 'note-editor'].includes(view) ? (view === 'note-editor' ? 'p-0 flex-1 min-h-0 flex flex-col' : 'p-2 sm:p-6 flex-1 min-h-0 flex flex-col max-w-[1440px]') : 'p-4 sm:p-6 max-w-6xl'}`}>
+            {view === 'home' && <HomeView />}
             {view === 'dashboard' && <DashboardView />}
             {view === 'quick-note' && <QuickNoteView />}
             {view === 'game-detail' && <GameDetailView />}
@@ -208,6 +212,7 @@ function MainApp() {
             {view === 'session-view' && <SessionView />}
             {view === 'note-editor' && <NoteEditorView />}
             {view === 'profile' && <ProfileView />}
+            {view === 'igdb-game' && <IGDBGameView />}
           </div>
         </main>
 

@@ -92,6 +92,8 @@ export function useNotes(gameId: string | null, sessionId?: string | null) {
 
       setIsSubmittingNote(false);
 
+      // AI tagging disabled for now
+      /*
       if (tags.length === 0) {
         setTaggingStatus(prev => ({ ...prev, [docRef.id]: 'loading' }));
         suggestTags(content).then(async (suggestion) => {
@@ -123,6 +125,7 @@ export function useNotes(gameId: string | null, sessionId?: string | null) {
           }
         });
       }
+      */
     } catch (error) {
       setIsSubmittingNote(false);
       handleFirestoreError(error, OperationType.CREATE, 'notes');

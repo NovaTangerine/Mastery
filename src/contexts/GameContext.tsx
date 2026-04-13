@@ -14,7 +14,7 @@ import {
   limit
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType, logAppEvent } from '../firebase';
-import { Game, GameSession, Note, ViewMode, Draft, SessionGroup } from '../types';
+import { Game, GameSession, Note, ViewMode, Draft, SessionGroup, TrackerItem } from '../types';
 import { toast } from 'sonner';
 import { deadSpace2MockData } from '../mockData/deadSpace2';
 import { safeGenerateKeyBetween } from '../lib/fractionalIndexing';
@@ -40,7 +40,7 @@ interface GameContextType {
   loadMoreDrafts: () => void;
 
   handleImportDeadSpace2Logs: () => Promise<void>;
-  handleAddGame: (title: string) => Promise<void>;
+  handleAddGame: (title: string, coverUrl?: string) => Promise<void>;
   handleStartSession: () => Promise<void>;
   handleResumeSession: (session: GameSession) => void;
   handleUpdateSessionDetails: (name: string, chapter: string, hoursPlayed: string, groupId?: string) => Promise<void>;
@@ -52,8 +52,9 @@ interface GameContextType {
   handleDeleteSessionGroup: (groupId: string) => Promise<void>;
   handleUpdateSessionGroupMembership: (groupId: string, sessionIds: string[]) => Promise<void>;
   handleAddTracker: (title: string) => Promise<void>;
-  handleAddTrackerItem: (trackerId: string, item: string) => Promise<void>;
-  handleRemoveTrackerItem: (trackerId: string, itemIndex: number) => Promise<void>;
+  handleAddTrackerItem: (trackerId: string, item: TrackerItem | string) => Promise<void>;
+  handleUpdateTrackerItem: (trackerId: string, itemId: string, updates: Partial<TrackerItem>) => Promise<void>;
+  handleRemoveTrackerItem: (trackerId: string, itemId: string | number) => Promise<void>;
   handleDeleteTracker: (trackerId: string) => Promise<void>;
   handleSaveDraft: (content: string, tags: string[]) => Promise<void>;
   handleDeleteDraft: (draftId: string) => Promise<void>;
@@ -187,10 +188,10 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const handleAddGame = async (title: string) => {
+  const handleAddGame = async (title: string, coverUrl?: string) => {
     if (!user || !title.trim()) return;
     try {
-      await addDoc(collection(db, 'games'), {
+      const gameData: any = {
         title: title,
         status: 'playing',
         uid: user.uid,
@@ -198,7 +199,12 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
         storySynopsis: '',
         createdAt: Date.now(),
         updatedAt: Date.now()
-      });
+      };
+      if (coverUrl) {
+        gameData.coverUrl = coverUrl;
+      }
+      
+      await addDoc(collection(db, 'games'), gameData);
       toast.success('Game added to your library');
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'games');
@@ -415,12 +421,37 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const handleAddTrackerItem = async (trackerId: string, item: string) => {
+  const handleAddTrackerItem = async (trackerId: string, item: TrackerItem | string) => {
     if (!user || !activeSession) return;
     try {
       const updatedTrackers = (activeSession.trackers || []).map(t => {
         if (t.id === trackerId) {
-          return { ...t, items: [...t.items, item] };
+          return { ...t, items: [...(t.items || []), item] };
+        }
+        return t;
+      });
+      
+      await updateDoc(doc(db, 'sessions', activeSession.id), {
+        trackers: updatedTrackers
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to add tracker item');
+      handleFirestoreError(error, OperationType.UPDATE, 'sessions');
+    }
+  };
+
+  const handleUpdateTrackerItem = async (trackerId: string, itemId: string, updates: Partial<TrackerItem>) => {
+    if (!user || !activeSession) return;
+    try {
+      const updatedTrackers = (activeSession.trackers || []).map(t => {
+        if (t.id === trackerId) {
+          const newItems = t.items.map(item => {
+            if (typeof item === 'object' && item.id === itemId) {
+              return { ...item, ...updates };
+            }
+            return item;
+          });
+          return { ...t, items: newItems };
         }
         return t;
       });
@@ -433,13 +464,16 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const handleRemoveTrackerItem = async (trackerId: string, itemIndex: number) => {
+  const handleRemoveTrackerItem = async (trackerId: string, itemId: string | number) => {
     if (!user || !activeSession) return;
     try {
       const updatedTrackers = (activeSession.trackers || []).map(t => {
         if (t.id === trackerId) {
-          const newItems = [...t.items];
-          newItems.splice(itemIndex, 1);
+          const newItems = t.items.filter((item, i) => {
+            if (typeof itemId === 'number') return i !== itemId;
+            if (typeof item === 'object') return item.id !== itemId;
+            return true;
+          });
           return { ...t, items: newItems };
         }
         return t;
@@ -521,6 +555,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     handleUpdateSessionGroupMembership,
     handleAddTracker,
     handleAddTrackerItem,
+    handleUpdateTrackerItem,
     handleRemoveTrackerItem,
     handleDeleteTracker,
     handleSaveDraft,

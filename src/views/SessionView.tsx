@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Plus, BookOpen, Clock, PenLine, X, Send, ChevronRight, Trash2, List, LayoutDashboard, ChevronUp, ChevronDown } from 'lucide-react';
+import { Plus, BookOpen, Clock, PenLine, X, Send, ChevronRight, Trash2, List, LayoutDashboard, ChevronUp, ChevronDown, Tag as TagIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion } from 'motion/react';
 import {
@@ -35,6 +35,7 @@ export default function SessionView() {
     handleUpdateSessionDetails,
     handleAddTracker,
     handleAddTrackerItem,
+    handleUpdateTrackerItem,
     handleRemoveTrackerItem,
     handleDeleteTracker,
     sessionGroups,
@@ -74,6 +75,44 @@ export default function SessionView() {
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [activeMobileTab, setActiveMobileTab] = useState<'sessions' | 'notes' | 'trackers'>('notes');
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
+  const [groupToDelete, setGroupToDelete] = useState<{id: string, title: string} | null>(null);
+
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const [noteTags, setNoteTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const scrollToTab = (tab: 'sessions' | 'notes' | 'trackers') => {
+    setActiveMobileTab(tab);
+    if (window.innerWidth >= 1024) return;
+    const index = ['sessions', 'notes', 'trackers'].indexOf(tab);
+    if (scrollContainerRef.current) {
+      const width = scrollContainerRef.current.clientWidth;
+      scrollContainerRef.current.scrollTo({ left: index * width, behavior: 'smooth' });
+    }
+  };
+
+  const handleHorizontalScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (window.innerWidth >= 1024) return;
+    const container = e.currentTarget;
+    const scrollLeft = container.scrollLeft;
+    const width = container.clientWidth;
+    if (width === 0) return;
+    const index = Math.round(scrollLeft / width);
+    const tabs = ['sessions', 'notes', 'trackers'] as const;
+    if (tabs[index] && activeMobileTab !== tabs[index]) {
+      setActiveMobileTab(tabs[index]);
+    }
+  };
+
+  useEffect(() => {
+    if (window.innerWidth < 1024 && scrollContainerRef.current) {
+      const index = ['sessions', 'notes', 'trackers'].indexOf(activeMobileTab);
+      const width = scrollContainerRef.current.clientWidth;
+      scrollContainerRef.current.scrollLeft = index * width;
+    }
+  }, []);
 
   const toggleGroupCollapse = (groupId: string) => {
     setCollapsedGroups(prev => {
@@ -134,8 +173,15 @@ export default function SessionView() {
     if (!noteInput.trim() || isSubmittingNote) return;
     
     const content = noteInput;
+    const tagsToSubmit = [...noteTags];
+    if (tagInput.trim() && !tagsToSubmit.includes(tagInput.trim())) {
+      tagsToSubmit.push(tagInput.trim());
+    }
+    
     setNoteInput('');
-    await handleAddNote(content);
+    setNoteTags([]);
+    setTagInput('');
+    await handleAddNote(content, tagsToSubmit);
   };
 
   const saveSessionDetails = async () => {
@@ -162,9 +208,42 @@ export default function SessionView() {
   const ungroupedSessions = sessions.filter(s => !s.groupId);
 
   return (
-    <div className="flex-1 min-h-0 pb-[58px] sm:pb-[58px] lg:pb-0 flex flex-col lg:flex-row justify-start lg:justify-center gap-4 sm:gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
+    <div 
+      ref={scrollContainerRef}
+      onScroll={handleHorizontalScroll}
+      className="flex-1 min-h-0 pb-[58px] sm:pb-[58px] lg:pb-0 flex flex-row overflow-x-auto snap-x snap-mandatory lg:overflow-x-visible lg:snap-none justify-start lg:justify-center gap-0 lg:gap-4 sm:lg:gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500 relative scrollbar-hide"
+      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+    >
+      {groupToDelete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-2xl font-bold mb-4">Delete "{groupToDelete.title}"?</h3>
+            <p className="text-zinc-400 mb-8 leading-relaxed">
+              Are you sure you want to delete this group? Sessions will be ungrouped.
+            </p>
+            <div className="flex gap-4">
+              <button 
+                onClick={() => {
+                  handleDeleteSessionGroup(groupToDelete.id);
+                  setGroupToDelete(null);
+                }}
+                className="flex-1 bg-red-600 text-white py-3 rounded-2xl font-bold hover:bg-red-500 transition-colors"
+              >
+                Delete
+              </button>
+              <button 
+                onClick={() => setGroupToDelete(null)}
+                className="flex-1 bg-zinc-800 text-zinc-100 py-3 rounded-2xl font-bold hover:bg-zinc-700 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sidebar for Sessions */}
-      <div className={`w-full lg:w-72 shrink-0 flex-col lg:border-r border-zinc-800/50 lg:pr-6 min-h-0 ${activeMobileTab === 'sessions' ? 'flex' : 'hidden lg:flex'}`}>
+      <div className="w-full shrink-0 snap-center lg:w-72 flex-col lg:border-r border-zinc-800/50 lg:pr-6 min-h-0 flex">
         <div className="flex items-center justify-between mb-6">
           <h3 className="font-bold uppercase tracking-widest text-xs text-zinc-400">Sessions</h3>
           <div className="flex items-center gap-2">
@@ -178,7 +257,7 @@ export default function SessionView() {
             <button 
               onClick={() => {
                 handleStartSession();
-                setActiveMobileTab('notes');
+                scrollToTab('notes');
               }}
               className="p-1.5 bg-zinc-900 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-zinc-100 transition-colors"
               title="New Session"
@@ -293,9 +372,7 @@ export default function SessionView() {
                       </button>
                       <button
                         onClick={() => {
-                          if (window.confirm('Are you sure you want to delete this group? Sessions will be ungrouped.')) {
-                            handleDeleteSessionGroup(group.id);
-                          }
+                          setGroupToDelete({ id: group.id, title: group.title });
                         }}
                         className="p-1 text-red-400 hover:text-red-300 hover:bg-zinc-800 rounded"
                       >
@@ -329,7 +406,7 @@ export default function SessionView() {
                       <button
                         onClick={() => {
                           handleResumeSession(session);
-                          setActiveMobileTab('notes');
+                          scrollToTab('notes');
                         }}
                         className={`flex-1 text-left p-3 rounded-xl transition-all ${activeSession.id === session.id ? 'bg-zinc-800 border border-zinc-700' : 'bg-transparent hover:bg-zinc-900 border border-transparent'}`}
                       >
@@ -386,7 +463,7 @@ export default function SessionView() {
                       <button
                         onClick={() => {
                           handleResumeSession(session);
-                          setActiveMobileTab('notes');
+                          scrollToTab('notes');
                         }}
                         className={`flex-1 text-left p-3 rounded-xl transition-all ${activeSession.id === session.id ? 'bg-zinc-800 border border-zinc-700' : 'bg-transparent hover:bg-zinc-900 border border-transparent'}`}
                       >
@@ -403,7 +480,7 @@ export default function SessionView() {
       </div>
 
       {/* Main Session View */}
-      <div className={`flex-1 w-full lg:max-w-2xl flex-col min-w-0 min-h-0 ${activeMobileTab === 'notes' ? 'flex' : 'hidden lg:flex'}`}>
+      <div className="w-full shrink-0 snap-center lg:flex-1 lg:max-w-2xl flex-col min-w-0 min-h-0 flex">
         {/* Compact Session Header */}
         <div 
           className="mb-3 sm:mb-6 bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-3 sm:p-4 shrink-0 flex flex-col transition-all duration-300"
@@ -525,7 +602,7 @@ export default function SessionView() {
                           setIsCreatingNewGroup(true);
                           setSessionGroupIdInput(undefined);
                         } else {
-                          setSessionGroupIdInput(e.target.value || undefined);
+                          setSessionGroupIdInput(e.target.value);
                         }
                       }}
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-zinc-600 transition-colors"
@@ -666,42 +743,88 @@ export default function SessionView() {
 
         {/* Input Area */}
         <div className="shrink-0 bg-zinc-950 pt-2 hidden lg:block">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-2 shadow-2xl transition-all duration-300 focus-within:border-zinc-700 hover:border-zinc-700">
-            <form onSubmit={submitNote} className="flex gap-2 items-end">
-              <textarea 
-                value={noteInput}
-                onChange={(e) => setNoteInput(e.target.value)}
-                placeholder="Type a note about your experience..."
-                rows={1}
-                className="flex-1 bg-transparent border-none focus:ring-0 text-zinc-100 px-4 py-3 placeholder:text-zinc-600 outline-none transition-all duration-300 resize-none h-[48px] hover:h-[120px] focus:h-[120px] custom-scrollbar"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    submitNote();
-                  }
-                }}
-              />
-              <button 
-                type="submit"
-                disabled={!noteInput.trim() || isSubmittingNote}
-                className="bg-zinc-100 text-zinc-950 px-6 h-[48px] rounded-2xl font-bold hover:bg-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shrink-0"
-              >
-                {isSubmittingNote ? (
-                  <div className="w-5 h-5 border-2 border-zinc-950 border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <Plus className="w-5 h-5" />
-                    <span className="hidden sm:inline">Save</span>
-                  </>
-                )}
-              </button>
+          <div 
+            className="bg-zinc-900 border border-zinc-800 rounded-3xl p-2 shadow-2xl transition-all duration-300 focus-within:border-zinc-700 hover:border-zinc-700"
+            onFocus={() => setIsInputFocused(true)}
+            onBlur={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget)) {
+                setIsInputFocused(false);
+              }
+            }}
+          >
+            <form onSubmit={submitNote} className="flex flex-col gap-2">
+              <div className="flex gap-2 items-end">
+                <textarea 
+                  value={noteInput}
+                  onChange={(e) => setNoteInput(e.target.value)}
+                  placeholder="Type a note about your experience..."
+                  rows={1}
+                  className="flex-1 bg-transparent border-none focus:ring-0 text-zinc-100 px-4 py-3 placeholder:text-zinc-600 outline-none transition-all duration-300 resize-none h-[48px] hover:h-[120px] focus:h-[120px] custom-scrollbar"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      submitNote();
+                    }
+                  }}
+                />
+                <button 
+                  type="submit"
+                  disabled={!noteInput.trim() || isSubmittingNote}
+                  className="bg-zinc-100 text-zinc-950 px-6 h-[48px] rounded-2xl font-bold hover:bg-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shrink-0"
+                >
+                  {isSubmittingNote ? (
+                    <div className="w-5 h-5 border-2 border-zinc-950 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <Plus className="w-5 h-5" />
+                      <span className="hidden sm:inline">Save</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              
+              {isInputFocused && (
+                <div className="px-4 pb-2 flex flex-wrap items-center gap-2 border-t border-zinc-800/50 pt-2 mt-1">
+                  <TagIcon className="w-4 h-4 text-zinc-500" />
+                  {noteTags.map(tag => (
+                    <span key={tag} className="px-2 py-1 bg-zinc-800 text-zinc-300 text-xs rounded-md flex items-center gap-1">
+                      {tag}
+                      <button 
+                        type="button"
+                        onClick={() => setNoteTags(prev => prev.filter(t => t !== tag))}
+                        className="hover:text-white"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ',') {
+                        e.preventDefault();
+                        if (tagInput.trim() && !noteTags.includes(tagInput.trim())) {
+                          setNoteTags(prev => [...prev, tagInput.trim()]);
+                          setTagInput('');
+                        }
+                      } else if (e.key === 'Backspace' && !tagInput && noteTags.length > 0) {
+                        setNoteTags(prev => prev.slice(0, -1));
+                      }
+                    }}
+                    placeholder="Add tags (press Enter)..."
+                    className="bg-transparent border-none focus:ring-0 text-sm text-zinc-300 placeholder:text-zinc-600 outline-none w-48"
+                  />
+                </div>
+              )}
             </form>
           </div>
         </div>
       </div>
 
       {/* Right Column: Trackers */}
-      <div className={`w-full lg:w-80 shrink-0 flex-col lg:border-l border-zinc-800/50 lg:pl-6 min-h-0 ${activeMobileTab === 'trackers' ? 'flex' : 'hidden lg:flex'}`}>
+      <div className="w-full shrink-0 snap-center lg:w-80 flex-col lg:border-l border-zinc-800/50 lg:pl-6 min-h-0 flex">
         <div className="flex items-center justify-between mb-6">
           <h3 className="font-bold uppercase tracking-widest text-xs text-zinc-400">Trackers</h3>
         </div>
@@ -711,6 +834,7 @@ export default function SessionView() {
               key={tracker.id}
               tracker={tracker}
               onAddItem={handleAddTrackerItem}
+              onUpdateItem={handleUpdateTrackerItem}
               onRemoveItem={handleRemoveTrackerItem}
               onDeleteTracker={handleDeleteTracker}
             />
@@ -727,7 +851,7 @@ export default function SessionView() {
             return (
               <button
                 key={tab}
-                onClick={() => setActiveMobileTab(tab)}
+                onClick={() => scrollToTab(tab)}
                 className={`relative px-3 py-1.5 rounded-full flex items-center gap-1.5 transition-colors ${isActive ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
               >
                 {isActive && (
@@ -756,6 +880,12 @@ export default function SessionView() {
       >
         <Plus className="w-8 h-8" />
       </button>
+
+      <style>{`
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </div>
   );
 }
