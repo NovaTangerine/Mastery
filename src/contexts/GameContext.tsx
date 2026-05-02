@@ -67,7 +67,7 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const GameProvider = ({ children }: { children: React.ReactNode }) => {
   const { user, isAuthReady } = useAuth();
-  const { selectedGameId, activeSessionId, navigateTo, clearHistory } = useUI();
+  const { selectedGameId, activeSessionId, navigateTo, goBack, clearHistory } = useUI();
 
   const [games, setGames] = useState<Game[]>([]);
   const [sessions, setSessions] = useState<GameSession[]>([]);

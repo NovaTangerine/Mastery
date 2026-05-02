@@ -13,8 +13,10 @@ import {
   ChevronUp,
   ChevronDown,
   WifiOff,
-  Home
+  Home,
+  Archive
 } from 'lucide-react';
+
 import { Toaster } from 'sonner';
 
 import { signInWithGoogle, signOut } from './firebase';
@@ -42,6 +44,8 @@ import PrototypeLandingView from './views/PrototypeLandingView';
 
 function MainApp() {
   const [isBackBarVisible, setIsBackBarVisible] = useState(true);
+  const [cartridgeClickCount, setCartridgeClickCount] = useState(0);
+  const [cartridgeUnlocked, setCartridgeUnlocked] = useState(false);
   const isOnline = useNetworkStatus();
   const { user, isAuthReady } = useAuth();
   const {
@@ -99,13 +103,24 @@ function MainApp() {
                   <div className="h-6 w-px bg-zinc-800 mx-1 hidden sm:block"></div>
 
                   <button 
-                    onClick={() => { clearHistory(); navigateTo('home', null, null); }}
-                    className={`flex items-center gap-2 transition-colors ${view === 'home' ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    onClick={() => { clearHistory(); navigateTo('dashboard', null, null); }}
+                    className={`flex items-center gap-2 transition-colors ${view === 'dashboard' ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
                     title="Home"
                   >
                     <Home className="w-5 h-5" />
                     <span className="hidden sm:block font-medium text-sm">Home</span>
                   </button>
+
+                  {cartridgeUnlocked && (
+                    <button 
+                      onClick={() => { clearHistory(); navigateTo('home', null, null); }}
+                      className={`flex items-center gap-2 transition-colors ${view === 'home' ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                      title="Cartridge"
+                    >
+                      <Archive className="w-5 h-5" />
+                      <span className="hidden sm:block font-medium text-sm">Cartridge</span>
+                    </button>
+                  )}
                   
                   {selectedGame && (
                     <button 
@@ -119,6 +134,15 @@ function MainApp() {
                     </button>
                   )}
                 </div>
+
+                <div 
+                  className="flex-1 self-stretch cursor-default"
+                  onClick={() => {
+                    const newCount = cartridgeClickCount + 1;
+                    if (newCount >= 4) setCartridgeUnlocked(true);
+                    setCartridgeClickCount(newCount);
+                  }}
+                />
 
                 <div className="flex items-center gap-3">
                   {!isOnline && (

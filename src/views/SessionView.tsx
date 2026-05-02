@@ -99,7 +99,8 @@ export default function SessionView() {
     const index = ['sessions', 'notes', 'trackers'].indexOf(tab);
     if (scrollContainerRef.current) {
       const width = scrollContainerRef.current.clientWidth;
-      scrollContainerRef.current.scrollTo({ left: index * width, behavior: 'smooth' });
+      const gap = 48; // gap-12 is 48px
+      scrollContainerRef.current.scrollTo({ left: index * (width + gap), behavior: 'smooth' });
     }
   };
 
@@ -109,7 +110,8 @@ export default function SessionView() {
     const scrollLeft = container.scrollLeft;
     const width = container.clientWidth;
     if (width === 0) return;
-    const index = Math.round(scrollLeft / width);
+    const gap = 48; // gap-12 is 48px
+    const index = Math.round(scrollLeft / (width + gap));
     const tabs = ['sessions', 'notes', 'trackers'] as const;
     if (tabs[index] && activeMobileTab !== tabs[index]) {
       setActiveMobileTab(tabs[index]);
@@ -232,7 +234,7 @@ export default function SessionView() {
     <div 
       ref={scrollContainerRef}
       onScroll={handleHorizontalScroll}
-      className="flex-1 min-h-0 pb-[58px] sm:pb-[58px] lg:pb-0 flex flex-row overflow-x-auto snap-x snap-mandatory lg:overflow-x-visible lg:snap-none justify-start lg:justify-center gap-0 lg:gap-4 sm:lg:gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500 relative scrollbar-hide"
+      className="flex-1 min-h-0 pb-[58px] sm:pb-[58px] lg:pb-0 flex flex-row overflow-x-auto snap-x snap-mandatory lg:overflow-x-visible lg:snap-none justify-start lg:justify-center gap-12 lg:gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500 relative scrollbar-hide"
       style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
     >
       {groupToDelete && (
@@ -296,7 +298,7 @@ export default function SessionView() {
       )}
 
       {/* Sidebar for Sessions */}
-      <div className="w-full shrink-0 snap-center lg:w-72 flex-col lg:border-r border-zinc-800/50 lg:pr-6 min-h-0 flex">
+      <div className="w-full shrink-0 snap-center snap-always lg:w-72 flex-col lg:border-r border-zinc-800/50 lg:pr-6 min-h-0 flex">
         <div className="flex items-center justify-between mb-6">
           <h3 className="font-bold uppercase tracking-widest text-xs text-zinc-400">Sessions</h3>
           <div className="flex items-center gap-2">
@@ -803,7 +805,7 @@ export default function SessionView() {
       </div>
 
       {/* Main Session View */}
-      <div className="w-full shrink-0 snap-center lg:flex-1 lg:max-w-2xl flex-col min-w-0 min-h-0 flex">
+      <div className="w-full shrink-0 snap-center snap-always lg:flex-1 lg:max-w-2xl flex-col min-w-0 min-h-0 flex">
         {/* Compact Session Header */}
         <div 
           className="mb-3 sm:mb-6 bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-3 sm:p-4 shrink-0 flex flex-col transition-all duration-300"
@@ -1188,7 +1190,7 @@ export default function SessionView() {
       </div>
 
       {/* Right Column: Trackers */}
-      <div className="w-full shrink-0 snap-center lg:w-80 flex-col lg:border-l border-zinc-800/50 lg:pl-6 min-h-0 flex">
+      <div className="w-full shrink-0 snap-center snap-always lg:w-80 flex-col lg:border-l border-zinc-800/50 lg:pl-6 min-h-0 flex">
         <div className="flex items-center justify-between mb-6">
           <h3 className="font-bold uppercase tracking-widest text-xs text-zinc-400">Trackers</h3>
         </div>

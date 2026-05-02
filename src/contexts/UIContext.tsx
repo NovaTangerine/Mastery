@@ -15,7 +15,7 @@ interface UIContextType {
 const UIContext = createContext<UIContextType | undefined>(undefined);
 
 export const UIProvider = ({ children }: { children: React.ReactNode }) => {
-  const [view, setView] = useState<ViewMode>('home');
+  const [view, setView] = useState<ViewMode>('dashboard');
   const [history, setHistory] = useState<{ view: ViewMode, gameId: string | null, sessionId: string | null, igdbId: number | null }[]>([]);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -37,7 +37,7 @@ export const UIProvider = ({ children }: { children: React.ReactNode }) => {
 
   const goBack = () => {
     if (history.length === 0) {
-      setView('home');
+      setView('dashboard');
       setSelectedGameId(null);
       setActiveSessionId(null);
       setSelectedIgdbId(null);
