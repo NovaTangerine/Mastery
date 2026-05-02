@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { format } from 'date-fns';
 import { 
   collection, 
   onSnapshot, 
@@ -41,12 +42,14 @@ interface GameContextType {
 
   handleImportDeadSpace2Logs: () => Promise<void>;
   handleAddGame: (title: string, coverUrl?: string) => Promise<void>;
-  handleStartSession: () => Promise<void>;
+  handleStartSession: (groupId?: string) => Promise<void>;
   handleResumeSession: (session: GameSession) => void;
-  handleUpdateSessionDetails: (name: string, chapter: string, hoursPlayed: string, groupId?: string) => Promise<void>;
+  handleUpdateSessionDetails: (name: string, chapter: string, hoursPlayed: string, groupId?: string, targetSessionId?: string) => Promise<void>;
   handleUpdateGameField: (field: 'overallNotes' | 'storySynopsis', value: string) => Promise<void>;
   handleDeleteGame: () => Promise<void>;
   handleDeleteSession: (sessionId: string) => Promise<void>;
+  handleDeleteSessionAndShiftFocus: (sessionId: string) => Promise<void>;
+  checkSessionHasNotes: (sessionId: string) => Promise<boolean>;
   handleCreateSessionGroup: (title: string) => Promise<{ id: string; title: string } | null>;
   handleUpdateSessionGroup: (groupId: string, title: string) => Promise<void>;
   handleDeleteSessionGroup: (groupId: string) => Promise<void>;
@@ -211,16 +214,30 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const handleStartSession = async () => {
+  const handleStartSession = async (groupId?: string) => {
     if (!user || !selectedGame) return;
     try {
-      const docRef = await addDoc(collection(db, 'sessions'), {
+      const now = new Date();
+      const hour = now.getHours();
+      let timeOfDay = 'Morning';
+      if (hour >= 12 && hour < 17) timeOfDay = 'Afternoon';
+      else if (hour >= 17 && hour < 21) timeOfDay = 'Evening';
+      else if (hour >= 21 || hour < 4) timeOfDay = 'Night';
+
+      const sessionName = `${format(now, 'MMM d')}, ${timeOfDay} Session`;
+
+      const sessionData: any = {
+        name: sessionName,
         gameId: selectedGame.id,
         uid: user.uid,
-        startTime: Date.now(),
+        startTime: now.getTime(),
         progressMarker: 'Starting session'
-      });
-      const newSession = { id: docRef.id, gameId: selectedGame.id, uid: user.uid, startTime: Date.now(), progressMarker: 'Starting session' };
+      };
+      if (groupId) {
+        sessionData.groupId = groupId;
+      }
+      const docRef = await addDoc(collection(db, 'sessions'), sessionData);
+      const newSession = { id: docRef.id, ...sessionData };
       navigateTo('session-view', selectedGame, newSession);
       toast.info('Session started');
     } catch (error) {
@@ -233,8 +250,11 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     toast.info(`Resumed session: ${session.name || session.progressMarker}`);
   };
 
-  const handleUpdateSessionDetails = async (name: string, chapter: string, hoursPlayed: string, groupId?: string) => {
-    if (!user || !activeSession) return;
+  const handleUpdateSessionDetails = async (name: string, chapter: string, hoursPlayed: string, groupId?: string, targetSessionId?: string) => {
+    if (!user || (!activeSession && !targetSessionId)) return;
+    const sessionIdToUpdate = targetSessionId || activeSession?.id;
+    if (!sessionIdToUpdate) return;
+    
     try {
       const updateData: any = {
         name: name,
@@ -244,10 +264,10 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       if (groupId !== undefined) {
         updateData.groupId = groupId === '' ? null : groupId;
       }
-      await updateDoc(doc(db, 'sessions', activeSession.id), updateData);
+      await updateDoc(doc(db, 'sessions', sessionIdToUpdate), updateData);
       toast.success('Session details updated');
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `sessions/${activeSession.id}`);
+      handleFirestoreError(error, OperationType.UPDATE, `sessions/${sessionIdToUpdate}`);
     }
   };
 
@@ -375,6 +395,70 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error) {
       toast.dismiss(loadingToast);
       handleFirestoreError(error, OperationType.DELETE, 'games');
+    }
+  };
+
+  const checkSessionHasNotes = async (sessionId: string) => {
+    if (!user) return false;
+    try {
+      const q = query(
+        collection(db, 'notes'),
+        where('sessionId', '==', sessionId),
+        where('uid', '==', user.uid),
+        limit(1)
+      );
+      const snapshot = await getDocs(q);
+      return !snapshot.empty;
+    } catch (error) {
+      console.error(error);
+      return false;
+    }
+  };
+
+  const handleDeleteSessionAndShiftFocus = async (sessionId: string) => {
+    if (!user || !selectedGame) return;
+    
+    // Find the next session before we delete, to shift focus seamlessly if it's the active session
+    let nextSession = null;
+    try {
+        const notesQ = query(
+            collection(db, 'notes'),
+            where('gameId', '==', selectedGame.id),
+            where('uid', '==', user.uid),
+            orderBy('createdAt', 'desc')
+        );
+        const notesSnapshot = await getDocs(notesQ);
+        let foundSessionId = null;
+        for (const doc of notesSnapshot.docs) {
+             const data = doc.data();
+             if (data.sessionId && data.sessionId !== sessionId) {
+                 foundSessionId = data.sessionId;
+                 break;
+             }
+        }
+        const availableSessions = sessions.filter(s => s.id !== sessionId);
+        if (foundSessionId) {
+             nextSession = availableSessions.find(s => s.id === foundSessionId) || null;
+        }
+        if (!nextSession && availableSessions.length > 0) {
+            nextSession = availableSessions.sort((a, b) => b.startTime - a.startTime)[0];
+        }
+    } catch(e) {
+        console.error("Error finding next session", e);
+        const availableSessions = sessions.filter(s => s.id !== sessionId);
+        if (availableSessions.length > 0) {
+            nextSession = availableSessions.sort((a, b) => b.startTime - a.startTime)[0];
+        }
+    }
+    
+    await handleDeleteSession(sessionId);
+    
+    if (activeSessionId === sessionId) {
+        if (nextSession) {
+            navigateTo('session-view', selectedGame, nextSession);
+        } else {
+            goBack();
+        }
     }
   };
 
@@ -549,6 +633,8 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     handleUpdateGameField,
     handleDeleteGame,
     handleDeleteSession,
+    handleDeleteSessionAndShiftFocus,
+    checkSessionHasNotes,
     handleCreateSessionGroup,
     handleUpdateSessionGroup,
     handleDeleteSessionGroup,

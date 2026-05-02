@@ -79,4 +79,4 @@ export interface Draft {
   updatedAt: number;
 }
 
-export type ViewMode = 'home' | 'dashboard' | 'game-detail' | 'session-view' | 'all-insights' | 'all-notes' | 'quick-note' | 'note-editor' | 'profile' | 'igdb-game';
+export type ViewMode = 'home' | 'dashboard' | 'game-detail' | 'session-view' | 'all-insights' | 'all-notes' | 'note-editor' | 'profile' | 'igdb-game';

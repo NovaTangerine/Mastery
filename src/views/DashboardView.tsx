@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
-import { Plus, Gamepad2, Clock, Feather, X } from 'lucide-react';
+import { Plus, Gamepad2, Clock, Play, X } from 'lucide-react';
 import { format } from 'date-fns';
+import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
+import { Game, GameSession } from '../types';
 import { useGameContext } from '../contexts/GameContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useUI } from '../contexts/UIContext';
@@ -18,6 +21,29 @@ export default function DashboardView() {
   } = useGameContext();
 
   const [isAddingGame, setIsAddingGame] = useState(false);
+
+  const handleQuickResume = async (e: React.MouseEvent, game: Game) => {
+    e.stopPropagation();
+    try {
+      const q = query(
+        collection(db, 'sessions'),
+        where('gameId', '==', game.id),
+        orderBy('startTime', 'desc'),
+        limit(1)
+      );
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        const sessionDoc = snapshot.docs[0];
+        const sessionData = { id: sessionDoc.id, ...sessionDoc.data() } as GameSession;
+        navigateTo('session-view', game, sessionData);
+      } else {
+        navigateTo('game-detail', game, null);
+      }
+    } catch (error) {
+      console.error("Error fetching latest session", error);
+      navigateTo('game-detail', game, null);
+    }
+  };
 
   const handleSelectGame = async (game: any) => {
     const coverUrl = game.cover?.image_id 
@@ -79,16 +105,13 @@ export default function DashboardView() {
               <span className="truncate">Last played {format(game.updatedAt, 'MMM d, yyyy')}</span>
             </p>
             
-            {/* Quick Note Button */}
+            {/* Quick Resume Button */}
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                navigateTo('quick-note', game, null);
-              }}
+              onClick={(e) => handleQuickResume(e, game)}
               className="absolute bottom-5 right-5 w-10 h-10 bg-zinc-100 text-zinc-950 rounded-xl flex items-center justify-center opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-300 hover:bg-white shadow-lg hover:scale-105"
-              title="Quick Note"
+              title="Resume Last Session"
             >
-              <Feather className="w-5 h-5" />
+              <Play className="w-5 h-5 ml-1" />
             </button>
           </div>
         ))}

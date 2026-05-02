@@ -31,7 +31,6 @@ import DashboardView from './views/DashboardView';
 import GameDetailView from './views/GameDetailView';
 import SessionView from './views/SessionView';
 import { NoteEditorView } from './views/NoteEditorView';
-import QuickNoteView from './views/QuickNoteView';
 import AllInsightsView from './views/AllInsightsView';
 import AllNotesView from './views/AllNotesView';
 import ProfileView from './views/ProfileView';
@@ -201,11 +200,10 @@ function MainApp() {
         </div>
       )}
 
-        <main className={`flex-1 min-h-0 w-full ${['session-view', 'quick-note', 'note-editor'].includes(view) ? 'flex flex-col' : 'overflow-y-auto'}`}>
-          <div className={`mx-auto w-full ${['session-view', 'quick-note', 'note-editor'].includes(view) ? (view === 'note-editor' ? 'p-0 flex-1 min-h-0 flex flex-col' : 'p-2 sm:p-6 flex-1 min-h-0 flex flex-col max-w-[1440px]') : 'p-4 sm:p-6 max-w-6xl'}`}>
+        <main className={`flex-1 min-h-0 w-full ${['session-view', 'note-editor'].includes(view) ? 'flex flex-col' : 'overflow-y-auto'}`}>
+          <div className={`mx-auto w-full ${['session-view', 'note-editor'].includes(view) ? (view === 'note-editor' ? 'p-0 flex-1 min-h-0 flex flex-col' : 'p-2 sm:p-6 flex-1 min-h-0 flex flex-col max-w-[1440px]') : 'p-4 sm:p-6 max-w-6xl'}`}>
             {view === 'home' && <HomeView />}
             {view === 'dashboard' && <DashboardView />}
-            {view === 'quick-note' && <QuickNoteView />}
             {view === 'game-detail' && <GameDetailView />}
             {view === 'all-insights' && <AllInsightsView />}
             {view === 'all-notes' && <AllNotesView />}

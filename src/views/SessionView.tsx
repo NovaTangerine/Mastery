@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Plus, BookOpen, Clock, PenLine, X, Send, ChevronRight, Trash2, List, LayoutDashboard, ChevronUp, ChevronDown, Tag as TagIcon } from 'lucide-react';
+import { Plus, BookOpen, Clock, PenLine, X, Send, ChevronRight, Trash2, List, LayoutDashboard, ChevronUp, ChevronDown, Tag as TagIcon, MoreVertical } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion } from 'motion/react';
 import {
@@ -43,6 +43,9 @@ export default function SessionView() {
     handleUpdateSessionGroup,
     handleDeleteSessionGroup,
     handleUpdateSessionGroupMembership,
+    handleDeleteSession,
+    handleDeleteSessionAndShiftFocus,
+    checkSessionHasNotes,
   } = useGameContext();
 
   const {
@@ -80,6 +83,13 @@ export default function SessionView() {
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [noteTags, setNoteTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
+  const [isEditingTitleInline, setIsEditingTitleInline] = useState(false);
+  const [inlineTitleInput, setInlineTitleInput] = useState('');
+  const [sessionToDelete, setSessionToDelete] = useState<{ id: string, name: string, hasNotes: boolean } | null>(null);
+  const [editingSidebarSessionId, setEditingSidebarSessionId] = useState<string | null>(null);
+  const [editingSidebarSessionName, setEditingSidebarSessionName] = useState('');
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [activeMenuType, setActiveMenuType] = useState<'group' | 'session' | null>(null);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -113,6 +123,17 @@ export default function SessionView() {
       scrollContainerRef.current.scrollLeft = index * width;
     }
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (activeMenuId) {
+        setActiveMenuId(null);
+        setActiveMenuType(null);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [activeMenuId]);
 
   const toggleGroupCollapse = (groupId: string) => {
     setCollapsedGroups(prev => {
@@ -194,7 +215,7 @@ export default function SessionView() {
       }
     }
 
-    await handleUpdateSessionDetails(sessionNameInput, sessionChapterInput, sessionHoursInput, finalGroupId);
+    await handleUpdateSessionDetails(sessionNameInput, sessionChapterInput, sessionHoursInput, finalGroupId === undefined ? '' : finalGroupId);
     setIsEditingSessionDetails(false);
     setIsCreatingNewGroup(false);
     setNewGroupNameInput('');
@@ -233,6 +254,38 @@ export default function SessionView() {
               </button>
               <button 
                 onClick={() => setGroupToDelete(null)}
+                className="flex-1 bg-zinc-800 text-zinc-100 py-3 rounded-2xl font-bold hover:bg-zinc-700 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sessionToDelete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-2xl font-bold mb-4">Delete Session?</h3>
+            <p className="text-zinc-400 mb-8 leading-relaxed">
+              Are you sure you want to delete the session "{sessionToDelete.name}"?
+              <br/><br/>
+              <span className="text-red-400 font-bold">Warning:</span> Because this session has notes, deleting it will also permanently delete all its notes.
+            </p>
+            <div className="flex gap-4">
+              <button 
+                onClick={async () => {
+                  if (sessionToDelete) {
+                    setSessionToDelete(null); // Close modal first for better UX
+                    await handleDeleteSessionAndShiftFocus(sessionToDelete.id);
+                  }
+                }}
+                className="flex-1 bg-red-600 text-white py-3 rounded-2xl font-bold hover:bg-red-500 transition-colors"
+              >
+                Delete Session
+              </button>
+              <button 
+                onClick={() => setSessionToDelete(null)}
                 className="flex-1 bg-zinc-800 text-zinc-100 py-3 rounded-2xl font-bold hover:bg-zinc-700 transition-colors"
               >
                 Cancel
@@ -303,13 +356,13 @@ export default function SessionView() {
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-2">
+        <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-2 pb-24">
           {groupedSessions.map(group => {
             const isCollapsed = collapsedGroups.has(group.id);
             return (
-            <div key={group.id} className="space-y-2">
+            <div key={group.id} className={`space-y-2 group relative ${(activeMenuId === group.id && activeMenuType === 'group') || (activeMenuType === 'session' && group.sessions.some(s => s.id === activeMenuId)) ? 'z-50' : 'z-10'}`}>
               <div 
-                className="flex items-center justify-between px-2 group/header cursor-pointer hover:bg-zinc-900/50 rounded py-1 -mx-2"
+                className="flex items-center justify-between px-2 cursor-pointer hover:bg-zinc-900/50 rounded py-1 -mx-2"
                 onClick={(e) => {
                   // Don't toggle if clicking on buttons or inputs
                   const target = e.target as HTMLElement;
@@ -317,26 +370,35 @@ export default function SessionView() {
                   toggleGroupCollapse(group.id);
                 }}
               >
-                <div className="flex items-center gap-2 flex-1">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
                   {isCollapsed ? (
-                    <ChevronRight className="w-3.5 h-3.5 text-zinc-500" />
+                    <ChevronRight className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
                   ) : (
-                    <ChevronDown className="w-3.5 h-3.5 text-zinc-500" />
+                    <ChevronDown className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
                   )}
                   {editingGroupId === group.id ? (
                     <input
                       type="text"
                       value={editingGroupTitle}
                       onChange={(e) => setEditingGroupTitle(e.target.value)}
-                      className="flex-1 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-xs font-bold text-zinc-100 focus:outline-none focus:border-zinc-600"
+                      onKeyDown={async (e) => {
+                        if (e.key === 'Enter') {
+                           if (editingGroupTitle.trim() && editingGroupTitle !== group.title) {
+                             await handleUpdateSessionGroup(group.id, editingGroupTitle.trim());
+                           }
+                           await handleUpdateSessionGroupMembership(group.id, Array.from(selectedSessionIdsForGroup));
+                           setEditingGroupId(null);
+                        }
+                      }}
+                      className="flex-1 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-xs font-bold text-zinc-100 focus:outline-none focus:border-zinc-600 min-w-0"
                       autoFocus
                     />
                   ) : (
-                    <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">{group.title}</h4>
+                    <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-wider truncate">{group.title}</h4>
                   )}
                 </div>
                 
-                <div className="flex items-center gap-1 opacity-0 group-hover/header:opacity-100 transition-opacity">
+                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 bg-zinc-950/80 rounded-md px-1">
                   {editingGroupId === group.id ? (
                     <>
                       <button
@@ -348,45 +410,89 @@ export default function SessionView() {
                           setEditingGroupId(null);
                         }}
                         className="p-1 text-green-500 hover:bg-zinc-800 rounded"
+                        title="Save Changes"
                       >
                         <PenLine className="w-3 h-3" />
                       </button>
                       <button
                         onClick={() => setEditingGroupId(null)}
                         className="p-1 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded"
+                        title="Cancel Editing"
                       >
                         <X className="w-3 h-3" />
                       </button>
                     </>
                   ) : (
                     <>
-                      <button
-                        onClick={() => {
-                          setEditingGroupId(group.id);
-                          setEditingGroupTitle(group.title);
-                          setSelectedSessionIdsForGroup(new Set(group.sessions.map(s => s.id)));
-                        }}
-                        className="p-1 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded"
-                      >
-                        <PenLine className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setGroupToDelete({ id: group.id, title: group.title });
-                        }}
-                        className="p-1 text-red-400 hover:text-red-300 hover:bg-zinc-800 rounded"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
+                      <div className="relative">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (activeMenuId === group.id && activeMenuType === 'group') {
+                              setActiveMenuId(null);
+                              setActiveMenuType(null);
+                            } else {
+                              setActiveMenuId(group.id);
+                              setActiveMenuType('group');
+                            }
+                          }}
+                          className={`p-1 rounded ${activeMenuId === group.id && activeMenuType === 'group' ? 'text-zinc-100 bg-zinc-800' : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'}`}
+                          title="More Options"
+                        >
+                          <MoreVertical className="w-3.5 h-3.5" />
+                        </button>
+                        {activeMenuId === group.id && activeMenuType === 'group' && (
+                          <div className="absolute right-0 top-full mt-1 w-36 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl overflow-hidden z-50 py-1" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStartSession(group.id);
+                                setActiveMenuId(null);
+                                setActiveMenuType(null);
+                              }}
+                              className="w-full text-left px-3 py-1.5 text-xs text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 flex items-center gap-2"
+                            >
+                              <Plus className="w-3.5 h-3.5" /> Add Session
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingGroupId(group.id);
+                                setEditingGroupTitle(group.title);
+                                setSelectedSessionIdsForGroup(new Set(group.sessions.map(s => s.id)));
+                                setActiveMenuId(null);
+                                setActiveMenuType(null);
+                              }}
+                              className="w-full text-left px-3 py-1.5 text-xs text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 flex items-center gap-2"
+                            >
+                              <PenLine className="w-3.5 h-3.5" /> Edit Group
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setGroupToDelete({ id: group.id, title: group.title });
+                                setActiveMenuId(null);
+                                setActiveMenuType(null);
+                              }}
+                              className="w-full text-left px-3 py-1.5 text-xs text-red-500 hover:text-red-400 hover:bg-zinc-800 flex items-center gap-2 border-t border-zinc-800/50 mt-1 pt-1.5"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" /> Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </>
                   )}
                 </div>
               </div>
               
-              {!isCollapsed && (
-                <div className="space-y-2">
-                  {group.sessions.map(session => (
-                    <div key={session.id} className="flex items-center gap-2">
+              <div 
+                className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${isCollapsed ? 'grid-rows-[0fr] opacity-0 pointer-events-none' : 'grid-rows-[1fr] opacity-100'}`}
+              >
+                <div className={(activeMenuType === 'session' && group.sessions.some(s => s.id === activeMenuId)) ? "overflow-visible" : "overflow-hidden"}>
+                  <div className="space-y-2 pt-1">
+                    {group.sessions.map(session => (
+                    <div key={session.id} className={`flex items-center gap-2 relative group/session ${activeMenuId === session.id && activeMenuType === 'session' ? 'z-50' : 'z-10'}`}>
                       {editingGroupId !== null && (
                         <input
                           type="checkbox"
@@ -400,31 +506,138 @@ export default function SessionView() {
                             }
                             setSelectedSessionIdsForGroup(newSet);
                           }}
-                          className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-zinc-100 focus:ring-zinc-600 focus:ring-offset-zinc-950"
+                          className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-zinc-100 focus:ring-zinc-600 focus:ring-offset-zinc-950 shrink-0"
                         />
                       )}
-                      <button
-                        onClick={() => {
-                          handleResumeSession(session);
-                          scrollToTab('notes');
-                        }}
-                        className={`flex-1 text-left p-3 rounded-xl transition-all ${activeSession.id === session.id ? 'bg-zinc-800 border border-zinc-700' : 'bg-transparent hover:bg-zinc-900 border border-transparent'}`}
-                      >
-                        <p className={`font-bold text-sm truncate ${activeSession.id === session.id ? 'text-zinc-100' : 'text-zinc-400'}`}>{session.name || session.progressMarker}</p>
-                        <p className="text-zinc-500 text-[10px] mt-1">{format(session.startTime, 'MMM d, yyyy')}</p>
-                      </button>
+                      {editingSidebarSessionId === session.id ? (
+                        <input
+                          type="text"
+                          value={editingSidebarSessionName}
+                          onChange={(e) => setEditingSidebarSessionName(e.target.value)}
+                          onKeyDown={async (e) => {
+                            if (e.key === 'Enter') {
+                              if (editingSidebarSessionName.trim() && editingSidebarSessionName !== (session.name || session.progressMarker)) {
+                                await handleUpdateSessionDetails(
+                                  editingSidebarSessionName.trim(), 
+                                  session.chapter || '', 
+                                  session.hoursPlayed ? session.hoursPlayed.toString() : '', 
+                                  session.groupId,
+                                  session.id
+                                );
+                              }
+                              setEditingSidebarSessionId(null);
+                            } else if (e.key === 'Escape') {
+                              setEditingSidebarSessionId(null);
+                            }
+                          }}
+                          autoFocus
+                          onBlur={async () => {
+                             if (editingSidebarSessionName.trim() && editingSidebarSessionName !== (session.name || session.progressMarker)) {
+                               await handleUpdateSessionDetails(
+                                 editingSidebarSessionName.trim(), 
+                                 session.chapter || '', 
+                                 session.hoursPlayed ? session.hoursPlayed.toString() : '', 
+                                 session.groupId,
+                                 session.id
+                               );
+                             }
+                             setEditingSidebarSessionId(null);
+                          }}
+                          className={`flex-1 bg-zinc-950 border border-zinc-800 rounded px-2 py-2 text-sm font-bold focus:outline-none focus:border-zinc-600 min-w-0 ${activeSession.id === session.id ? 'text-zinc-100' : 'text-zinc-400'}`}
+                        />
+                      ) : (
+                        <button
+                          onClick={() => {
+                            handleResumeSession(session);
+                            scrollToTab('notes');
+                          }}
+                          className={`flex-1 text-left p-3 rounded-xl transition-all min-w-0 ${activeSession.id === session.id ? 'bg-zinc-800 border border-zinc-700' : 'bg-transparent hover:bg-zinc-900 border border-transparent'}`}
+                        >
+                          <p className={`font-bold text-sm truncate pr-14 ${activeSession.id === session.id ? 'text-zinc-100' : 'text-zinc-400'}`}>{session.name || session.progressMarker}</p>
+                          <p className="text-zinc-500 text-[10px] mt-1">{format(session.startTime, 'MMM d, yyyy')}</p>
+                        </button>
+                      )}
+                      
+                      {editingSidebarSessionId !== session.id && editingGroupId === null && (
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover/session:opacity-100 transition-opacity bg-zinc-900/90 rounded px-1 group-hover/session:visible invisible">
+                          <div className="relative">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (activeMenuId === session.id && activeMenuType === 'session') {
+                                  setActiveMenuId(null);
+                                  setActiveMenuType(null);
+                                } else {
+                                  setActiveMenuId(session.id);
+                                  setActiveMenuType('session');
+                                }
+                              }}
+                              className={`p-1 rounded ${activeMenuId === session.id && activeMenuType === 'session' ? 'text-zinc-100 bg-zinc-800' : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'}`}
+                              title="More Options"
+                            >
+                              <MoreVertical className="w-3.5 h-3.5" />
+                            </button>
+                            {activeMenuId === session.id && activeMenuType === 'session' && (
+                              <div className="absolute right-0 top-full mt-1 w-32 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl overflow-hidden z-50 py-1" onClick={(e) => e.stopPropagation()}>
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    setEditingSidebarSessionId(session.id);
+                                    setEditingSidebarSessionName(session.name || session.progressMarker);
+                                    setActiveMenuId(null);
+                                    setActiveMenuType(null);
+                                  }}
+                                  className="w-full text-left px-3 py-1.5 text-xs text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 flex items-center gap-2"
+                                >
+                                  <PenLine className="w-3.5 h-3.5" /> Rename
+                                </button>
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    const hasNotes = await checkSessionHasNotes(session.id);
+                                    if (hasNotes) {
+                                      setSessionToDelete({ id: session.id, name: session.name || session.progressMarker, hasNotes: true });
+                                    } else {
+                                      await handleDeleteSessionAndShiftFocus(session.id);
+                                    }
+                                    setActiveMenuId(null);
+                                    setActiveMenuType(null);
+                                  }}
+                                  className="w-full text-left px-3 py-1.5 text-xs text-red-500 hover:text-red-400 hover:bg-zinc-800 flex items-center gap-2 border-t border-zinc-800/50 mt-1 pt-1.5"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" /> Delete
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
+                  {group.sessions.length > 0 && (
+                    <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-all duration-200 ease-in-out">
+                      <div className="overflow-hidden">
+                        <button
+                          onClick={() => handleStartSession(group.id)}
+                          className="w-full text-left p-2 rounded-xl text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 h-10"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span className="text-xs font-bold uppercase tracking-wider">New Session</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {group.sessions.length === 0 && (
                     <p className="text-xs text-zinc-600 italic px-2">No sessions in this group</p>
                   )}
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
           )})}
 
           {ungroupedSessions.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-2 group">
               {groupedSessions.length > 0 && (
                 <div 
                   className="flex items-center justify-between px-2 mt-4 cursor-pointer hover:bg-zinc-900/50 rounded py-1 -mx-2"
@@ -440,10 +653,13 @@ export default function SessionView() {
                   </div>
                 </div>
               )}
-              {!collapsedGroups.has('ungrouped') && (
-                <div className="space-y-2">
-                  {ungroupedSessions.map(session => (
-                    <div key={session.id} className="flex items-center gap-2">
+              <div 
+                className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${collapsedGroups.has('ungrouped') ? 'grid-rows-[0fr] opacity-0 pointer-events-none' : 'grid-rows-[1fr] opacity-100'}`}
+              >
+                <div className={(activeMenuType === 'session' && ungroupedSessions.some(s => s.id === activeMenuId)) ? "overflow-visible" : "overflow-hidden"}>
+                  <div className="space-y-2 pt-1">
+                    {ungroupedSessions.map(session => (
+                    <div key={session.id} className={`flex items-center gap-2 relative group/session ${activeMenuId === session.id && activeMenuType === 'session' ? 'z-50' : 'z-10'}`}>
                       {editingGroupId !== null && (
                         <input
                           type="checkbox"
@@ -457,23 +673,130 @@ export default function SessionView() {
                             }
                             setSelectedSessionIdsForGroup(newSet);
                           }}
-                          className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-zinc-100 focus:ring-zinc-600 focus:ring-offset-zinc-950"
+                          className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-zinc-100 focus:ring-zinc-600 focus:ring-offset-zinc-950 shrink-0"
                         />
                       )}
-                      <button
-                        onClick={() => {
-                          handleResumeSession(session);
-                          scrollToTab('notes');
-                        }}
-                        className={`flex-1 text-left p-3 rounded-xl transition-all ${activeSession.id === session.id ? 'bg-zinc-800 border border-zinc-700' : 'bg-transparent hover:bg-zinc-900 border border-transparent'}`}
-                      >
-                        <p className={`font-bold text-sm truncate ${activeSession.id === session.id ? 'text-zinc-100' : 'text-zinc-400'}`}>{session.name || session.progressMarker}</p>
-                        <p className="text-zinc-500 text-[10px] mt-1">{format(session.startTime, 'MMM d, yyyy')}</p>
-                      </button>
+                      {editingSidebarSessionId === session.id ? (
+                        <input
+                          type="text"
+                          value={editingSidebarSessionName}
+                          onChange={(e) => setEditingSidebarSessionName(e.target.value)}
+                          onKeyDown={async (e) => {
+                            if (e.key === 'Enter') {
+                              if (editingSidebarSessionName.trim() && editingSidebarSessionName !== (session.name || session.progressMarker)) {
+                                await handleUpdateSessionDetails(
+                                  editingSidebarSessionName.trim(), 
+                                  session.chapter || '', 
+                                  session.hoursPlayed ? session.hoursPlayed.toString() : '', 
+                                  session.groupId,
+                                  session.id
+                                );
+                              }
+                              setEditingSidebarSessionId(null);
+                            } else if (e.key === 'Escape') {
+                              setEditingSidebarSessionId(null);
+                            }
+                          }}
+                          autoFocus
+                          onBlur={async () => {
+                             if (editingSidebarSessionName.trim() && editingSidebarSessionName !== (session.name || session.progressMarker)) {
+                               await handleUpdateSessionDetails(
+                                 editingSidebarSessionName.trim(), 
+                                 session.chapter || '', 
+                                 session.hoursPlayed ? session.hoursPlayed.toString() : '', 
+                                 session.groupId,
+                                 session.id
+                               );
+                             }
+                             setEditingSidebarSessionId(null);
+                          }}
+                          className={`flex-1 bg-zinc-950 border border-zinc-800 rounded px-2 py-2 text-sm font-bold focus:outline-none focus:border-zinc-600 min-w-0 ${activeSession.id === session.id ? 'text-zinc-100' : 'text-zinc-400'}`}
+                        />
+                      ) : (
+                        <button
+                          onClick={() => {
+                            handleResumeSession(session);
+                            scrollToTab('notes');
+                          }}
+                          className={`flex-1 text-left p-3 rounded-xl transition-all min-w-0 ${activeSession.id === session.id ? 'bg-zinc-800 border border-zinc-700' : 'bg-transparent hover:bg-zinc-900 border border-transparent'}`}
+                        >
+                          <p className={`font-bold text-sm truncate pr-14 ${activeSession.id === session.id ? 'text-zinc-100' : 'text-zinc-400'}`}>{session.name || session.progressMarker}</p>
+                          <p className="text-zinc-500 text-[10px] mt-1">{format(session.startTime, 'MMM d, yyyy')}</p>
+                        </button>
+                      )}
+
+                      {editingSidebarSessionId !== session.id && editingGroupId === null && (
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover/session:opacity-100 transition-opacity bg-zinc-900/90 rounded px-1 group-hover/session:visible invisible">
+                          <div className="relative">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (activeMenuId === session.id && activeMenuType === 'session') {
+                                  setActiveMenuId(null);
+                                  setActiveMenuType(null);
+                                } else {
+                                  setActiveMenuId(session.id);
+                                  setActiveMenuType('session');
+                                }
+                              }}
+                              className={`p-1 rounded ${activeMenuId === session.id && activeMenuType === 'session' ? 'text-zinc-100 bg-zinc-800' : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'}`}
+                              title="More Options"
+                            >
+                              <MoreVertical className="w-3.5 h-3.5" />
+                            </button>
+                            {activeMenuId === session.id && activeMenuType === 'session' && (
+                              <div className="absolute right-0 top-full mt-1 w-32 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl overflow-hidden z-50 py-1" onClick={(e) => e.stopPropagation()}>
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    setEditingSidebarSessionId(session.id);
+                                    setEditingSidebarSessionName(session.name || session.progressMarker);
+                                    setActiveMenuId(null);
+                                    setActiveMenuType(null);
+                                  }}
+                                  className="w-full text-left px-3 py-1.5 text-xs text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 flex items-center gap-2"
+                                >
+                                  <PenLine className="w-3.5 h-3.5" /> Rename
+                                </button>
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    const hasNotes = await checkSessionHasNotes(session.id);
+                                    if (hasNotes) {
+                                      setSessionToDelete({ id: session.id, name: session.name || session.progressMarker, hasNotes: true });
+                                    } else {
+                                      await handleDeleteSessionAndShiftFocus(session.id);
+                                    }
+                                    setActiveMenuId(null);
+                                    setActiveMenuType(null);
+                                  }}
+                                  className="w-full text-left px-3 py-1.5 text-xs text-red-500 hover:text-red-400 hover:bg-zinc-800 flex items-center gap-2 border-t border-zinc-800/50 mt-1 pt-1.5"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" /> Delete
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
+                  {ungroupedSessions.length > 0 && groupedSessions.length > 0 && (
+                     <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-all duration-200 ease-in-out">
+                       <div className="overflow-hidden">
+                         <button
+                           onClick={() => handleStartSession()}
+                           className="w-full text-left p-2 rounded-xl text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 h-10"
+                         >
+                           <Plus className="w-3.5 h-3.5" />
+                           <span className="text-xs font-bold uppercase tracking-wider">New Session</span>
+                         </button>
+                       </div>
+                     </div>
+                   )}
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
           )}
         </div>
@@ -487,11 +810,52 @@ export default function SessionView() {
           onMouseEnter={() => setIsHeaderCollapsed(false)}
         >
           <div className="flex items-center justify-between gap-4">
-            <h2 className="text-xl font-bold truncate">
-              {activeSession.name || activeSession.progressMarker}
-            </h2>
+            <div className="flex items-center gap-2 min-w-0 group/title flex-1">
+              {isEditingTitleInline ? (
+                <input
+                  type="text"
+                  value={inlineTitleInput}
+                  onChange={(e) => setInlineTitleInput(e.target.value)}
+                  onKeyDown={async (e) => {
+                    if (e.key === 'Enter') {
+                       if (inlineTitleInput.trim() && inlineTitleInput !== (activeSession.name || activeSession.progressMarker)) {
+                         await handleUpdateSessionDetails(inlineTitleInput.trim(), activeSession.chapter || '', activeSession.hoursPlayed ? activeSession.hoursPlayed.toString() : '', activeSession.groupId);
+                       }
+                       setIsEditingTitleInline(false);
+                    } else if (e.key === 'Escape') {
+                       setIsEditingTitleInline(false);
+                    }
+                  }}
+                  autoFocus
+                  onBlur={async () => {
+                     if (inlineTitleInput.trim() && inlineTitleInput !== (activeSession.name || activeSession.progressMarker)) {
+                       await handleUpdateSessionDetails(inlineTitleInput.trim(), activeSession.chapter || '', activeSession.hoursPlayed ? activeSession.hoursPlayed.toString() : '', activeSession.groupId);
+                     }
+                     setIsEditingTitleInline(false);
+                  }}
+                  className="text-xl font-bold bg-zinc-950 border border-zinc-800 rounded px-2 py-0.5 focus:outline-none focus:border-zinc-600 w-full"
+                />
+              ) : (
+                <>
+                  <h2 className="text-xl font-bold truncate">
+                    {activeSession.name || activeSession.progressMarker}
+                  </h2>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setInlineTitleInput(activeSession.name || activeSession.progressMarker);
+                      setIsEditingTitleInline(true);
+                    }}
+                    className="p-1 text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 rounded opacity-0 group-hover/title:opacity-100 transition-opacity hidden sm:block shrink-0"
+                    title="Edit Title"
+                  >
+                    <PenLine className="w-4 h-4" />
+                  </button>
+                </>
+              )}
+            </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <button 
                 onClick={goBack}
                 className="hidden sm:block px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs font-bold hover:bg-zinc-800 transition-colors shrink-0 text-center"
