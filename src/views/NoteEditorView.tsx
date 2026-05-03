@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { TagAutocompleteInput } from '../components/TagAutocompleteInput';
 
 export const NoteEditorView: React.FC = () => {
   const { goBack } = useUI();
@@ -226,13 +227,25 @@ export const NoteEditorView: React.FC = () => {
                   </span>
                 ))}
                 <div className="relative flex-1 min-w-[120px]">
-                  <input 
-                    type="text"
+                  <TagAutocompleteInput
+                    gameId={selectedGame.id}
                     value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
+                    onChange={setTagInput}
+                    onAddTag={(tag) => {
+                      const trimmed = tag.trim().toLowerCase();
+                      if (trimmed && !tags.includes(trimmed)) {
+                        setTags([...tags, trimmed]);
+                        setTagInput('');
+                      }
+                    }}
+                    onRemoveLastTag={() => {
+                      if (tags.length > 0) {
+                        setTags(tags.slice(0, -1));
+                      }
+                    }}
+                    existingTags={tags}
                     placeholder="Add tag..."
-                    className="w-full bg-transparent text-sm focus:outline-none text-zinc-300"
+                    className="w-full bg-transparent text-sm focus:outline-none text-zinc-300 py-1"
                   />
                   {tagInput && (
                     <button 

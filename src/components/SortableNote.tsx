@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { GripVertical, X, Edit3, Trash2, Sparkles, AlertCircle, RefreshCw } from 'lucide-react';
 import { Note } from '../types';
 import { cn } from '../lib/utils';
+import { TagAutocompleteInput } from './TagAutocompleteInput';
 
 export const SortableNote = memo(({ 
   note, 
@@ -13,7 +14,8 @@ export const SortableNote = memo(({
   onAddTag, 
   onRemoveTag,
   taggingStatus,
-  onRetryTagging
+  onRetryTagging,
+  onTagClick
 }: { 
   note: Note; 
   onUpdate: (id: string, content: string) => void;
@@ -22,6 +24,7 @@ export const SortableNote = memo(({
   onRemoveTag: (id: string, tag: string) => void;
   taggingStatus?: 'loading' | 'error';
   onRetryTagging?: (id: string, content: string) => void;
+  onTagClick?: (tag: string) => void;
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingContent, setEditingContent] = useState(note.content);
@@ -79,15 +82,22 @@ export const SortableNote = memo(({
             <GripVertical className="w-4 h-4" />
           </button>
           
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 -mb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="flex flex-wrap items-center gap-2 pb-1 -mb-1">
             {note.tags.map(tag => (
               <span 
                 key={tag} 
-                className="group/tag px-2 py-0.5 bg-zinc-800 rounded text-[10px] font-bold text-zinc-400 uppercase tracking-tighter flex items-center gap-1 shrink-0"
+                className={cn(
+                  "group/tag px-2 py-0.5 bg-zinc-800 rounded text-[10px] font-bold text-zinc-400 uppercase tracking-tighter flex items-center gap-1 shrink-0 transition-colors",
+                  onTagClick && "cursor-pointer hover:bg-zinc-700 hover:text-zinc-300"
+                )}
+                onClick={() => onTagClick?.(tag)}
               >
                 {tag}
                 <button 
-                  onClick={() => onRemoveTag(note.id, tag)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemoveTag(note.id, tag);
+                  }}
                   className="hover:text-red-400 opacity-0 group-hover/tag:opacity-100 transition-opacity"
                 >
                   <X className="w-3 h-3" />
@@ -120,30 +130,31 @@ export const SortableNote = memo(({
 
             {!taggingStatus && isManagingTags ? (
               <div className="flex items-center gap-1 shrink-0">
-                <input 
-                  autoFocus
-                  type="text"
+                <TagAutocompleteInput
+                  gameId={note.gameId}
                   value={newTagInput}
-                  onChange={(e) => setNewTagInput(e.target.value)}
+                  onChange={setNewTagInput}
+                  onAddTag={(tag) => {
+                    const trimmed = tag.trim().toLowerCase();
+                    if (trimmed) onAddTag(note.id, trimmed);
+                    setIsManagingTags(false);
+                    setNewTagInput('');
+                  }}
                   onBlur={() => {
                     if (newTagInput.trim()) {
-                      onAddTag(note.id, newTagInput);
+                      onAddTag(note.id, newTagInput.trim().toLowerCase());
                     }
                     setIsManagingTags(false);
                     setNewTagInput('');
                   }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      onAddTag(note.id, newTagInput);
-                      setIsManagingTags(false);
-                      setNewTagInput('');
-                    } else if (e.key === 'Escape') {
-                      setIsManagingTags(false);
-                      setNewTagInput('');
-                    }
+                  onEscape={() => {
+                    setIsManagingTags(false);
+                    setNewTagInput('');
                   }}
+                  existingTags={note.tags}
                   placeholder="New tag..."
-                  className="bg-zinc-800 border-none rounded px-2 py-0.5 text-[10px] text-zinc-100 focus:ring-1 focus:ring-zinc-500 w-20"
+                  autoFocus
+                  className="bg-zinc-800 border-none rounded px-2 py-0.5 text-[10px] text-zinc-100 focus:ring-1 focus:ring-zinc-500 w-24"
                 />
                 <button 
                   onMouseDown={(e) => {

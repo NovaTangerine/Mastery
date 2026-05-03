@@ -8,7 +8,7 @@ import { safeGenerateKeyBetween } from '../lib/fractionalIndexing';
 import { arrayMove } from '@dnd-kit/sortable';
 import { DragEndEvent } from '@dnd-kit/core';
 
-export function useNotes(gameId: string | null, sessionId?: string | null) {
+export function useNotes(gameId: string | null, sessionId?: string | null, tagFilter?: string | null) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [notesLimit, setNotesLimit] = useState(50);
   const [isSubmittingNote, setIsSubmittingNote] = useState(false);
@@ -26,11 +26,15 @@ export function useNotes(gameId: string | null, sessionId?: string | null) {
       where('uid', '==', auth.currentUser.uid)
     );
 
-    if (sessionId !== undefined) {
+    if (tagFilter) {
+      q = query(q, where('tags', 'array-contains', tagFilter));
+      q = query(q, limit(200)); // Limit to 200 to be safe and avoid orderBy index
+    } else if (sessionId !== undefined) {
       q = query(q, where('sessionId', '==', sessionId));
+      q = query(q, orderBy('timestamp', 'desc'), limit(notesLimit));
+    } else {
+      q = query(q, orderBy('timestamp', 'desc'), limit(notesLimit));
     }
-
-    q = query(q, orderBy('timestamp', 'desc'), limit(notesLimit));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const notesData = snapshot.docs.map(doc => ({
@@ -52,7 +56,7 @@ export function useNotes(gameId: string | null, sessionId?: string | null) {
     });
 
     return () => unsubscribe();
-  }, [gameId, sessionId, notesLimit]);
+  }, [gameId, sessionId, tagFilter, notesLimit]);
 
   const loadMoreNotes = useCallback(() => {
     setNotesLimit(prev => prev + 50);

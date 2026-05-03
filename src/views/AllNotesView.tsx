@@ -10,11 +10,13 @@ export default function AllNotesView() {
   const { goBack } = useUI();
   const { selectedGame } = useGameContext();
 
+  const [filteredTag, setFilteredTag] = React.useState<string | null>(null);
+
   const {
     notes,
     notesLimit,
     loadMoreNotes
-  } = useNotes(selectedGame?.id || null);
+  } = useNotes(selectedGame?.id || null, undefined, filteredTag);
 
   const reversedNotes = [...notes].reverse();
 
@@ -37,10 +39,20 @@ export default function AllNotesView() {
             <X className="w-6 h-6" />
           </button>
           <div>
-            <h2 className="text-2xl font-bold">All Notes</h2>
+            <h2 className="text-2xl font-bold">
+              {filteredTag ? `Notes tagged "${filteredTag}"` : 'All Notes'}
+            </h2>
             <p className="text-zinc-500 text-sm">{selectedGame.title}</p>
           </div>
         </div>
+        {filteredTag && (
+          <button 
+            onClick={() => setFilteredTag(null)}
+            className="px-4 py-2 bg-zinc-800 text-zinc-300 rounded-xl text-sm font-bold hover:bg-zinc-700 transition-colors"
+          >
+            Clear Filter
+          </button>
+        )}
       </div>
 
       {reversedNotes.length === 0 ? (
@@ -48,8 +60,10 @@ export default function AllNotesView() {
           <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mb-2">
             <BookOpen className="w-8 h-8 text-zinc-600" />
           </div>
-          <h3 className="text-xl font-bold text-zinc-300">No notes yet</h3>
-          <p className="text-zinc-500 max-w-sm">You haven't added any notes for this game. Start a session to begin tracking your thoughts.</p>
+          <h3 className="text-xl font-bold text-zinc-300">No notes found</h3>
+          <p className="text-zinc-500 max-w-sm">
+            {filteredTag ? `No notes are tagged with "${filteredTag}".` : "You haven't added any notes for this game. Start a session to begin tracking your thoughts."}
+          </p>
         </div>
       ) : (
         <div 
@@ -73,7 +87,11 @@ export default function AllNotesView() {
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex flex-wrap gap-2">
                       {note.tags.map(tag => (
-                        <span key={tag} className="px-2 py-0.5 bg-zinc-800 rounded text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">
+                        <span 
+                          key={tag} 
+                          onClick={() => setFilteredTag(tag)}
+                          className="cursor-pointer hover:bg-zinc-700 hover:text-zinc-300 transition-colors px-2 py-0.5 bg-zinc-800 rounded text-[10px] font-bold text-zinc-400 uppercase tracking-tighter"
+                        >
                           {tag}
                         </span>
                       ))}

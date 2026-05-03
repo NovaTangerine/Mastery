@@ -22,6 +22,7 @@ import { useNotes } from '../hooks/useNotes';
 import { SortableNote } from '../components/SortableNote';
 import { TrackerCard } from '../components/TrackerCard';
 import { AddTrackerMenu } from '../components/AddTrackerMenu';
+import { TagAutocompleteInput } from '../components/TagAutocompleteInput';
 import { useVirtualizer } from '@tanstack/react-virtual';
 
 export default function SessionView() {
@@ -48,6 +49,8 @@ export default function SessionView() {
     checkSessionHasNotes,
   } = useGameContext();
 
+  const [filteredTag, setFilteredTag] = useState<string | null>(null);
+
   const {
     notes,
     notesLimit,
@@ -61,7 +64,7 @@ export default function SessionView() {
     isSubmittingNote,
     taggingStatus,
     handleRetryTagging
-  } = useNotes(selectedGame?.id || null, activeSession?.id || null);
+  } = useNotes(selectedGame?.id || null, activeSession?.id || null, filteredTag);
 
   const [noteInput, setNoteInput] = useState('');
   const [isEditingSessionDetails, setIsEditingSessionDetails] = useState(false);
@@ -171,6 +174,23 @@ export default function SessionView() {
     estimateSize: () => 120,
     overscan: 5,
   });
+
+  const getSessionName = (sessionId: string | null) => {
+    if (!sessionId) return 'Global Notes';
+    const found = sessions.find(s => s.id === sessionId);
+    return found ? (found.name || found.progressMarker) : 'Unknown Session';
+  };
+
+  const filteredNotesBySession = React.useMemo(() => {
+    if (!filteredTag) return {};
+    const grouped: Record<string, typeof notes> = {};
+    for (const note of notes) {
+      const sid = note.sessionId || 'global';
+      if (!grouped[sid]) grouped[sid] = [];
+      grouped[sid].push(note);
+    }
+    return grouped;
+  }, [notes, filteredTag]);
 
   useEffect(() => {
     if (parentRef.current) {
@@ -804,10 +824,70 @@ export default function SessionView() {
         </div>
       </div>
 
-      {/* Main Session View */}
+      {/* Main Session View or Filtered View */}
       <div className="w-full shrink-0 snap-center snap-always lg:flex-1 lg:max-w-2xl flex-col min-w-0 min-h-0 flex">
-        {/* Compact Session Header */}
-        <div 
+        {filteredTag ? (
+          <>
+            <div className="mb-3 sm:mb-6 bg-zinc-900 border border-zinc-700/50 rounded-2xl p-4 shrink-0 flex items-center justify-between shadow-lg">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center shrink-0">
+                  <TagIcon className="w-5 h-5 text-zinc-400" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-lg font-bold text-zinc-100 truncate">Notes tagged with "{filteredTag}"</h2>
+                  <p className="text-xs text-zinc-400">{notes.length} found across {Object.keys(filteredNotesBySession).length} session(s)</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setFilteredTag(null)}
+                className="w-10 h-10 rounded-xl bg-zinc-800 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700 flex items-center justify-center transition-colors"
+                title="Clear Filter"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-8">
+              {Object.entries(filteredNotesBySession).map(([sessionId, groupNotes]) => (
+                <div key={sessionId} className="space-y-4">
+                  <div className="sticky top-0 z-10 bg-zinc-950/90 backdrop-blur pb-2 pt-1 border-b border-zinc-800/50 mb-2">
+                    <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">{getSessionName(sessionId)}</h3>
+                  </div>
+                  <div className="space-y-4">
+                    {groupNotes.map(note => (
+                      <div key={note.id} className="relative pb-4">
+                        <SortableNote 
+                          note={note}
+                          onUpdate={handleUpdateNote}
+                          onDelete={handleDeleteNote}
+                          onAddTag={handleAddTag}
+                          onRemoveTag={handleRemoveTag}
+                          taggingStatus={taggingStatus[note.id]}
+                          onRetryTagging={handleRetryTagging}
+                          onTagClick={setFilteredTag}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {notes.length === 0 && (
+                <div className="h-full flex flex-col items-center justify-center text-center p-8">
+                  <div className="w-16 h-16 bg-zinc-900/50 rounded-full flex items-center justify-center mb-4">
+                    <TagIcon className="w-8 h-8 text-zinc-700" />
+                  </div>
+                  <h3 className="text-xl font-bold text-zinc-400 mb-2">No notes found</h3>
+                  <p className="text-zinc-600 max-w-sm">
+                    No notes are currently tagged with "{filteredTag}".
+                  </p>
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Compact Session Header */}
+            <div 
           className="mb-3 sm:mb-6 bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-3 sm:p-4 shrink-0 flex flex-col transition-all duration-300"
           onMouseEnter={() => setIsHeaderCollapsed(false)}
         >
@@ -1096,6 +1176,7 @@ export default function SessionView() {
                           onRemoveTag={handleRemoveTag}
                           taggingStatus={taggingStatus[note.id]}
                           onRetryTagging={handleRetryTagging}
+                          onTagClick={setFilteredTag}
                         />
                       </div>
                     );
@@ -1164,21 +1245,21 @@ export default function SessionView() {
                       </button>
                     </span>
                   ))}
-                  <input
-                    type="text"
+                  <TagAutocompleteInput
+                    gameId={selectedGame.id}
                     value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ',') {
-                        e.preventDefault();
-                        if (tagInput.trim() && !noteTags.includes(tagInput.trim())) {
-                          setNoteTags(prev => [...prev, tagInput.trim()]);
-                          setTagInput('');
-                        }
-                      } else if (e.key === 'Backspace' && !tagInput && noteTags.length > 0) {
-                        setNoteTags(prev => prev.slice(0, -1));
+                    onChange={setTagInput}
+                    onAddTag={(tag) => {
+                      const trimmed = tag.trim().toLowerCase();
+                      if (trimmed && !noteTags.includes(trimmed)) {
+                        setNoteTags(prev => [...prev, trimmed]);
+                        setTagInput('');
                       }
                     }}
+                    onRemoveLastTag={() => {
+                      setNoteTags(prev => prev.slice(0, -1));
+                    }}
+                    existingTags={noteTags}
                     placeholder="Add tags (press Enter)..."
                     className="bg-transparent border-none focus:ring-0 text-sm text-zinc-300 placeholder:text-zinc-600 outline-none w-48"
                   />
@@ -1187,6 +1268,8 @@ export default function SessionView() {
             </form>
           </div>
         </div>
+        </>
+        )}
       </div>
 
       {/* Right Column: Trackers */}
