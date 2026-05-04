@@ -1,4 +1,5 @@
 import React, { useState, memo } from 'react';
+import { createPortal } from 'react-dom';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { format } from 'date-fns';
@@ -32,6 +33,77 @@ export const SortableNote = memo(({
   const [newTagInput, setNewTagInput] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
 
+  const [deleteProgress, setDeleteProgress] = useState(0);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const holdStartTimeRef = React.useRef<number | null>(null);
+  const progressTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const isDeletedRef = React.useRef(false);
+
+  const HOLD_DURATION = 500;
+  const UPDATE_INTERVAL = 30;
+
+  const startDeleteHold = (e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
+    isDeletedRef.current = false;
+    holdStartTimeRef.current = Date.now();
+    
+    progressTimerRef.current = setInterval(() => {
+      if (!holdStartTimeRef.current) return;
+      
+      const elapsed = Date.now() - holdStartTimeRef.current;
+      const progress = Math.min((elapsed / HOLD_DURATION) * 100, 100);
+      setDeleteProgress(progress);
+      
+      if (progress >= 100) {
+        isDeletedRef.current = true;
+        clearProgress();
+        onDelete(note.id);
+      }
+    }, UPDATE_INTERVAL);
+  };
+
+  const clearProgress = () => {
+    setDeleteProgress(0);
+    if (progressTimerRef.current) {
+      clearInterval(progressTimerRef.current);
+      progressTimerRef.current = null;
+    }
+    holdStartTimeRef.current = null;
+  };
+
+  const endDeleteHold = (e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
+    if (isDeletedRef.current) return;
+    if (!holdStartTimeRef.current) return; // Prevent modal if we cancelled the hold
+
+    const heldDuration = Date.now() - holdStartTimeRef.current;
+    clearProgress();
+
+    // Trigger modal limit: a normal click is very short usually. If they let go before full hold, show modal
+    if (heldDuration < HOLD_DURATION) {
+      setShowDeleteConfirm(true);
+    }
+  };
+
+  const cancelDeleteHold = (e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
+    if (isDeletedRef.current) return;
+    clearProgress();
+  };
+
+  React.useEffect(() => {
+    const handleNoteExpanding = (e: CustomEvent) => {
+      if (e.detail.id !== note.id && isExpanded) {
+        e.detail.handled = true;
+        setIsExpanded(false);
+      }
+    };
+    window.addEventListener('note-expanding', handleNoteExpanding as EventListener);
+    return () => {
+      window.removeEventListener('note-expanding', handleNoteExpanding as EventListener);
+    };
+  }, [isExpanded, note.id]);
+
   const {
     attributes,
     listeners,
@@ -58,7 +130,20 @@ export const SortableNote = memo(({
           if (target.closest('button') || target.closest('input')) {
             return;
           }
-          setIsExpanded(!isExpanded);
+          const newExpanded = !isExpanded;
+          if (newExpanded) {
+            const event = new CustomEvent('note-expanding', { detail: { id: note.id, handled: false } });
+            window.dispatchEvent(event);
+            if (event.detail.handled) {
+              setTimeout(() => {
+                setIsExpanded(true);
+              }, 150); // Wait for the other note to collapse
+            } else {
+              setIsExpanded(true);
+            }
+          } else {
+            setIsExpanded(false);
+          }
         }
       }}
       className={cn(
@@ -67,8 +152,8 @@ export const SortableNote = memo(({
       )}
     >
       <div className={cn(
-        "flex justify-between items-center gap-4 overflow-hidden transition-all duration-300 ease-in-out",
-        isExpanded ? "max-h-12 opacity-100 mb-2" : "max-h-0 opacity-0 mb-0"
+        "flex justify-between items-center gap-4 overflow-hidden transition-all ease-in-out",
+        isExpanded ? "duration-300 max-h-12 opacity-100 mb-2" : "duration-150 max-h-0 opacity-0 mb-0"
       )}>
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <button 
@@ -202,10 +287,26 @@ export const SortableNote = memo(({
               <Edit3 className="w-3.5 h-3.5" />
             </button>
             <button 
-              onClick={() => onDelete(note.id)}
-              className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={startDeleteHold}
+              onMouseUp={endDeleteHold}
+              onMouseLeave={cancelDeleteHold}
+              onTouchStart={startDeleteHold}
+              onTouchEnd={endDeleteHold}
+              className="relative p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all overflow-hidden"
+              style={{
+                WebkitUserSelect: 'none',
+                userSelect: 'none'
+              }}
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <div 
+                className="absolute inset-0 bg-red-500/20 origin-left" 
+                style={{ 
+                  transform: `scaleX(${deleteProgress / 100})`,
+                  transition: deleteProgress === 0 ? 'none' : 'transform 30ms linear' 
+                }} 
+              />
+              <Trash2 className="relative z-10 w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -239,6 +340,33 @@ export const SortableNote = memo(({
         </div>
       ) : (
         <p className="text-zinc-200 leading-relaxed text-sm">{note.content}</p>
+      )}
+
+      {showDeleteConfirm && createPortal(
+        <div className="fixed inset-0 bg-zinc-950/80 backdrop-blur z-[9999] flex items-center justify-center p-4 cursor-default">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <h3 className="text-xl font-bold mb-2 text-white">Delete Note?</h3>
+            <p className="text-zinc-400 text-sm mb-6">
+              This action cannot be undone. <br/><br/>
+              <span className="opacity-70 italic text-xs">Tip: You can skip this by clicking and holding the delete button for 0.5 seconds.</span>
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(false); }}
+                className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-bold py-3 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(false); onDelete(note.id); }}
+                className="flex-1 bg-red-600/10 hover:bg-red-600/20 text-red-500 font-bold py-3 rounded-xl transition-colors"
+              >
+                Delete Note
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

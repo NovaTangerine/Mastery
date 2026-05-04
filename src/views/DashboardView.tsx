@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Gamepad2, Clock, Play, X } from 'lucide-react';
+import { Plus, Gamepad2, Clock, Play, X, Trophy, MoreVertical, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -17,10 +17,62 @@ export default function DashboardView() {
     gamesLimit,
     loadMoreGames,
     handleAddGame,
-    handleImportDeadSpace2Logs
+    handleImportDeadSpace2Logs,
+    handleDeleteGame
   } = useGameContext();
 
   const [isAddingGame, setIsAddingGame] = useState(false);
+  const [gameToDelete, setGameToDelete] = useState<Game | null>(null);
+  const [deleteInfo, setDeleteInfo] = useState<{ sessions: number, notes: number } | null>(null);
+  const [isCheckingDelete, setIsCheckingDelete] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  const toggleMenu = (e: React.MouseEvent, gameId: string) => {
+    e.stopPropagation();
+    setOpenMenuId(prev => prev === gameId ? null : gameId);
+  };
+
+  const handleDeleteClick = async (e: React.MouseEvent, game: Game) => {
+    e.stopPropagation();
+    setGameToDelete(game);
+    setIsCheckingDelete(true);
+    setDeleteInfo(null);
+    try {
+      const sessionsQuery = query(collection(db, 'sessions'), where('gameId', '==', game.id));
+      const sessionsSnap = await getDocs(sessionsQuery);
+      
+      const notesQuery = query(collection(db, 'notes'), where('gameId', '==', game.id));
+      const notesSnap = await getDocs(notesQuery);
+      
+      const sCount = sessionsSnap.size;
+      const nCount = notesSnap.size;
+      
+      if (sCount === 0 && nCount === 0) {
+         await handleDeleteGame(game.id);
+         setGameToDelete(null);
+      } else {
+         setDeleteInfo({ sessions: sCount, notes: nCount });
+      }
+    } catch (err) {
+      console.error(err);
+      setGameToDelete(null);
+    } finally {
+      setIsCheckingDelete(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+     if (gameToDelete) {
+        await handleDeleteGame(gameToDelete.id);
+        setGameToDelete(null);
+        setDeleteInfo(null);
+     }
+  };
+
+  const cancelDelete = () => {
+     setGameToDelete(null);
+     setDeleteInfo(null);
+  };
 
   const handleQuickResume = async (e: React.MouseEvent, game: Game) => {
     e.stopPropagation();
@@ -95,9 +147,49 @@ export default function DashboardView() {
               <div className="w-12 h-12 bg-zinc-800 rounded-2xl flex items-center justify-center group-hover:bg-zinc-100 transition-colors">
                 <Gamepad2 className="w-6 h-6 text-zinc-500 group-hover:text-zinc-950" />
               </div>
-              <span className="text-[10px] uppercase tracking-widest font-bold text-zinc-500 bg-zinc-950 px-2 py-1 rounded">
-                {game.status}
-              </span>
+              
+              <div className="flex items-center absolute right-6 top-6">
+                <div className={`transition-all duration-300 transform ${openMenuId === game.id ? '-translate-x-10' : 'group-hover:-translate-x-10'}`}>
+                  {game.status === 'completed' ? (
+                    <span className="flex items-center gap-1 text-[10px] uppercase tracking-widest font-bold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-1 rounded shadow-[0_0_10px_rgba(251,191,36,0.1)] whitespace-nowrap">
+                      <Trophy className="w-3 h-3" />
+                      Completed
+                    </span>
+                  ) : (
+                    <span className="text-[10px] uppercase tracking-widest font-bold text-zinc-500 bg-zinc-950 px-2 py-1 rounded whitespace-nowrap">
+                      {game.status}
+                    </span>
+                  )}
+                </div>
+                
+                <div className={`absolute right-0 flex items-center justify-center transition-opacity duration-300 ${openMenuId === game.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                  <button
+                    onClick={(e) => toggleMenu(e, game.id)}
+                    className="w-8 h-8 rounded-full hover:bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-zinc-100 transition-colors"
+                  >
+                    <MoreVertical className="w-5 h-5" />
+                  </button>
+                  
+                  {openMenuId === game.id && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); }} />
+                      <div className="absolute right-0 top-full mt-2 w-48 bg-zinc-800 rounded-xl shadow-xl z-50 border border-zinc-700 overflow-hidden">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMenuId(null);
+                            handleDeleteClick(e, game);
+                          }}
+                          className="w-full text-left px-4 py-3 text-red-400 hover:bg-zinc-700/50 flex items-center gap-2 transition-colors font-bold text-sm"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Delete Game
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
             <h3 className="text-xl font-bold mb-1 truncate pr-8">{game.title}</h3>
             <p className="text-zinc-500 text-xs flex items-center gap-1 mt-auto pr-12">
@@ -142,6 +234,40 @@ export default function DashboardView() {
           >
             Load More Games
           </button>
+        </div>
+      )}
+
+      {deleteInfo && gameToDelete && (
+        <div className="fixed inset-0 bg-zinc-950/80 backdrop-blur z-[100] flex items-center justify-center p-4">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-xl font-bold mb-2 text-white">Delete Library Game?</h3>
+            <p className="text-zinc-400 text-sm mb-6">
+              You are about to delete <span className="font-bold text-white">{gameToDelete.title}</span>.
+              <br/><br/>
+              This game contains:
+            </p>
+            <ul className="list-disc ml-5 mt-[-16px] mb-6 text-zinc-300 text-sm">
+              <li>{deleteInfo.sessions} session{deleteInfo.sessions !== 1 && 's'}</li>
+              <li>{deleteInfo.notes} note{deleteInfo.notes !== 1 && 's'}</li>
+            </ul>
+            <p className="text-zinc-400 text-sm mb-6 font-bold text-red-400">
+              This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={cancelDelete}
+                className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-bold py-3 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDelete}
+                className="flex-1 bg-red-600/10 hover:bg-red-600/20 text-red-500 font-bold py-3 rounded-xl transition-colors"
+              >
+                Delete Game
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

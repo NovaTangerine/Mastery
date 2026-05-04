@@ -96,14 +96,12 @@ export default function SessionView() {
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  const scrollToTab = (tab: 'sessions' | 'notes' | 'trackers') => {
+  const scrollToTab = (tab: 'sessions' | 'notes' | 'trackers', behavior: ScrollBehavior = 'smooth') => {
     setActiveMobileTab(tab);
     if (window.innerWidth >= 1024) return;
-    const index = ['sessions', 'notes', 'trackers'].indexOf(tab);
-    if (scrollContainerRef.current) {
-      const width = scrollContainerRef.current.clientWidth;
-      const gap = 48; // gap-12 is 48px
-      scrollContainerRef.current.scrollTo({ left: index * (width + gap), behavior: 'smooth' });
+    const element = document.getElementById(`mobile-tab-${tab}`);
+    if (element) {
+      element.scrollIntoView({ behavior, inline: 'center', block: 'nearest' });
     }
   };
 
@@ -122,10 +120,12 @@ export default function SessionView() {
   };
 
   useEffect(() => {
-    if (window.innerWidth < 1024 && scrollContainerRef.current) {
-      const index = ['sessions', 'notes', 'trackers'].indexOf(activeMobileTab);
-      const width = scrollContainerRef.current.clientWidth;
-      scrollContainerRef.current.scrollLeft = index * width;
+    if (window.innerWidth < 1024) {
+      // Small timeout allows initial render and layout to settle
+      const timer = setTimeout(() => {
+        scrollToTab(activeMobileTab, 'instant');
+      }, 50);
+      return () => clearTimeout(timer);
     }
   }, []);
 
@@ -318,7 +318,7 @@ export default function SessionView() {
       )}
 
       {/* Sidebar for Sessions */}
-      <div className="w-full shrink-0 snap-center snap-always lg:w-72 flex-col lg:border-r border-zinc-800/50 lg:pr-6 min-h-0 flex">
+      <div id="mobile-tab-sessions" className="w-full shrink-0 snap-center snap-always lg:w-72 flex-col lg:border-r border-zinc-800/50 lg:pr-6 min-h-0 flex">
         <div className="flex items-center justify-between mb-6">
           <h3 className="font-bold uppercase tracking-widest text-xs text-zinc-400">Sessions</h3>
           <div className="flex items-center gap-2">
@@ -825,7 +825,7 @@ export default function SessionView() {
       </div>
 
       {/* Main Session View or Filtered View */}
-      <div className="w-full shrink-0 snap-center snap-always lg:flex-1 lg:max-w-2xl flex-col min-w-0 min-h-0 flex">
+      <div id="mobile-tab-notes" className="w-full shrink-0 snap-center snap-always lg:flex-1 lg:max-w-2xl flex-col min-w-0 min-h-0 flex">
         {filteredTag ? (
           <>
             <div className="mb-3 sm:mb-6 bg-zinc-900 border border-zinc-700/50 rounded-2xl p-4 shrink-0 flex items-center justify-between shadow-lg">
@@ -1273,7 +1273,7 @@ export default function SessionView() {
       </div>
 
       {/* Right Column: Trackers */}
-      <div className="w-full shrink-0 snap-center snap-always lg:w-80 flex-col lg:border-l border-zinc-800/50 lg:pl-6 min-h-0 flex">
+      <div id="mobile-tab-trackers" className="w-full shrink-0 snap-center snap-always lg:w-80 flex-col lg:border-l border-zinc-800/50 lg:pl-6 min-h-0 flex">
         <div className="flex items-center justify-between mb-6">
           <h3 className="font-bold uppercase tracking-widest text-xs text-zinc-400">Trackers</h3>
         </div>

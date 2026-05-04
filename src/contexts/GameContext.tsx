@@ -46,7 +46,8 @@ interface GameContextType {
   handleResumeSession: (session: GameSession) => void;
   handleUpdateSessionDetails: (name: string, chapter: string, hoursPlayed: string, groupId?: string, targetSessionId?: string) => Promise<void>;
   handleUpdateGameField: (field: 'overallNotes' | 'storySynopsis', value: string) => Promise<void>;
-  handleDeleteGame: () => Promise<void>;
+  handleUpdateGameStatus: (status: Game['status']) => Promise<void>;
+  handleDeleteGame: (targetGameId?: string) => Promise<void>;
   handleDeleteSession: (sessionId: string) => Promise<void>;
   handleDeleteSessionAndShiftFocus: (sessionId: string) => Promise<void>;
   checkSessionHasNotes: (sessionId: string) => Promise<boolean>;
@@ -365,9 +366,22 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const handleDeleteGame = async () => {
-    if (!selectedGame || !user) return;
-    const gameId = selectedGame.id;
+  const handleUpdateGameStatus = async (status: Game['status']) => {
+    if (!selectedGame) return;
+    try {
+      await updateDoc(doc(db, 'games', selectedGame.id), {
+        status,
+        updatedAt: Date.now()
+      });
+      toast.success('Game status updated');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'games');
+    }
+  };
+
+  const handleDeleteGame = async (targetGameId?: string) => {
+    const gameId = targetGameId || selectedGame?.id;
+    if (!gameId || !user) return;
     const loadingToast = toast.loading('Deleting game and all associated data...');
     
     try {
@@ -389,9 +403,11 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       toast.dismiss(loadingToast);
       toast.success('Game deleted successfully');
       
-      // Reset state
-      clearHistory();
-      navigateTo('dashboard', null, null);
+      // Reset state if it was the selected game
+      if (selectedGameId === gameId) {
+        clearHistory();
+        navigateTo('dashboard', null, null);
+      }
     } catch (error) {
       toast.dismiss(loadingToast);
       handleFirestoreError(error, OperationType.DELETE, 'games');
@@ -631,6 +647,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     handleResumeSession,
     handleUpdateSessionDetails,
     handleUpdateGameField,
+    handleUpdateGameStatus,
     handleDeleteGame,
     handleDeleteSession,
     handleDeleteSessionAndShiftFocus,
