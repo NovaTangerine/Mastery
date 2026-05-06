@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, PenLine, Star, ChevronRight, History, Tag as TagIcon } from 'lucide-react';
+import { Plus, Trash2, PenLine, Star, ChevronRight, History, Tag as TagIcon, Target } from 'lucide-react';
 import { format } from 'date-fns';
 import { useGameContext } from '../contexts/GameContext';
 import { useUI } from '../contexts/UIContext';
@@ -148,146 +148,190 @@ export default function GameDetailView() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        {/* Left Column: Notes & Sessions */}
-        <div className="lg:col-span-2 space-y-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            {/* Tags Section */}
-            <section className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-zinc-400">
-                  <TagIcon className="w-5 h-5" />
-                  <h3 className="font-bold uppercase tracking-widest text-xs">Tags</h3>
-                </div>
+      {notes.length === 0 && sessions.length === 0 ? (
+        <div className="mt-16 sm:mt-24 max-w-4xl animate-in fade-in slide-in-from-bottom-8 duration-700">
+          <h3 className="text-xl sm:text-2xl font-black text-zinc-100 mb-8 sm:mb-12 tracking-tight">You'll be able to:</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
+            <div className="flex flex-col gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-lg shadow-indigo-500/5">
+                <PenLine className="w-6 h-6 text-indigo-400" />
               </div>
-              <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5">
-                {tagCounts.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {tagCounts.map(([tag, count]) => (
-                      <button 
-                        key={tag}
-                        onClick={() => navigateTo('all-notes', selectedGame, null, null, { filteredTag: tag })}
-                        className="px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg flex items-center gap-2 group hover:border-zinc-700 hover:bg-zinc-800 transition-colors animate-in fade-in"
-                      >
-                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter group-hover:text-zinc-300">{tag}</span>
-                        <span className="text-[10px] font-mono text-zinc-600 bg-zinc-900 px-1.5 py-0.5 rounded group-hover:bg-zinc-950">{count}</span>
-                      </button>
-                    ))}
+              <div>
+                <h4 className="font-bold text-zinc-100 mb-2">Take Notes</h4>
+                <p className="text-sm text-zinc-500 leading-relaxed">
+                  Take notes on your thoughts and feelings as you progress throughout a game.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 shadow-lg shadow-amber-500/5">
+                <TagIcon className="w-6 h-6 text-amber-400" />
+              </div>
+              <div>
+                <h4 className="font-bold text-zinc-100 mb-2">Tag Notes</h4>
+                <p className="text-sm text-zinc-500 leading-relaxed">
+                  Tag notes with various topics to make them easy to sort and organize based on topic.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shadow-lg shadow-emerald-500/5">
+                <Target className="w-6 h-6 text-emerald-400" />
+              </div>
+              <div>
+                <h4 className="font-bold text-zinc-100 mb-2">Track Objectives</h4>
+                <p className="text-sm text-zinc-500 leading-relaxed">
+                  Track side-quests, collectibles, or create your own objectives to keep track of your goals.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          {/* Left Column: Notes & Sessions */}
+          <div className="lg:col-span-2 space-y-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              {/* Tags Section */}
+              <section className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-zinc-400">
+                    <TagIcon className="w-5 h-5" />
+                    <h3 className="font-bold uppercase tracking-widest text-xs">Tags</h3>
+                  </div>
+                </div>
+                <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5">
+                  {tagCounts.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {tagCounts.map(([tag, count]) => (
+                        <button 
+                          key={tag}
+                          onClick={() => navigateTo('all-notes', selectedGame, null, null, { filteredTag: tag })}
+                          className="px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg flex items-center gap-2 group hover:border-zinc-700 hover:bg-zinc-800 transition-colors animate-in fade-in"
+                        >
+                          <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter group-hover:text-zinc-300">{tag}</span>
+                          <span className="text-[10px] font-mono text-zinc-600 bg-zinc-900 px-1.5 py-0.5 rounded group-hover:bg-zinc-950">{count}</span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="py-6 text-center">
+                      <p className="text-zinc-500 text-xs italic">No tags used yet.</p>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* Recent Activity / Notes Feed */}
+              <section className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-zinc-400">
+                    <History className="w-5 h-5" />
+                    <h3 className="font-bold uppercase tracking-widest text-xs">Recent Notes</h3>
+                  </div>
+                  {notes.length > 3 && (
+                    <button 
+                      onClick={() => navigateTo('all-notes', selectedGame, null)}
+                      className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest hover:text-zinc-100 transition-colors flex items-center gap-1"
+                    >
+                      View All <ChevronRight className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+                
+                <div className="space-y-4">
+                  {notes.slice().reverse().slice(0, 3).map(note => (
+                    <div key={note.id} className="bg-zinc-900/50 border border-zinc-900 rounded-2xl p-5 hover:border-zinc-800 transition-colors">
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex flex-wrap gap-2">
+                          {note.tags.map(tag => (
+                            <span key={tag} className="px-2 py-0.5 bg-zinc-800 rounded text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">
+                              {tag}
+                            </span>
+                          ))}
+                          {note.isGlobal && (
+                            <span className="px-2 py-0.5 bg-zinc-100 text-zinc-950 rounded text-[10px] font-bold uppercase tracking-tighter">
+                              Global
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] font-mono text-zinc-600">
+                          {format(note.timestamp, 'HH:mm')}
+                        </span>
+                      </div>
+                      <p className="text-zinc-300 text-sm leading-relaxed">{note.content}</p>
+                    </div>
+                  ))}
+                  {notes.length === 0 && (
+                    <div className="bg-zinc-900/30 border border-dashed border-zinc-800 rounded-2xl p-8 text-center">
+                      <p className="text-zinc-500 text-xs italic">No notes yet. Start a session to begin logging.</p>
+                    </div>
+                  )}
+                </div>
+              </section>
+            </div>
+          </div>
+
+          {/* Right Column: Story & Sessions List */}
+          <div className="space-y-10">
+            <section className="space-y-4">
+              <h3 className="font-bold uppercase tracking-widest text-xs text-zinc-400">Past Sessions</h3>
+              <div className="space-y-2">
+                {sessions.length === 0 ? (
+                  <div className="bg-zinc-900/50 border border-zinc-800 border-dashed rounded-2xl p-8 text-center flex flex-col items-center justify-center">
+                    <History className="w-8 h-8 text-zinc-600 mb-3" />
+                    <p className="text-zinc-400 font-medium">No sessions yet</p>
+                    <p className="text-zinc-500 text-sm mt-1">Start a new session to begin tracking your progress.</p>
                   </div>
                 ) : (
-                  <div className="py-6 text-center">
-                    <p className="text-zinc-500 text-xs italic">No tags used yet.</p>
-                  </div>
-                )}
-              </div>
-            </section>
-
-            {/* Recent Activity / Notes Feed */}
-            <section className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-zinc-400">
-                  <History className="w-5 h-5" />
-                  <h3 className="font-bold uppercase tracking-widest text-xs">Recent Notes</h3>
-                </div>
-                {notes.length > 3 && (
-                  <button 
-                    onClick={() => navigateTo('all-notes', selectedGame, null)}
-                    className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest hover:text-zinc-100 transition-colors flex items-center gap-1"
-                  >
-                    View All <ChevronRight className="w-3 h-3" />
-                  </button>
-                )}
-              </div>
-              
-              <div className="space-y-4">
-                {notes.slice().reverse().slice(0, 3).map(note => (
-                  <div key={note.id} className="bg-zinc-900/50 border border-zinc-900 rounded-2xl p-5 hover:border-zinc-800 transition-colors">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex flex-wrap gap-2">
-                        {note.tags.map(tag => (
-                          <span key={tag} className="px-2 py-0.5 bg-zinc-800 rounded text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">
-                            {tag}
-                          </span>
-                        ))}
-                        {note.isGlobal && (
-                          <span className="px-2 py-0.5 bg-zinc-100 text-zinc-950 rounded text-[10px] font-bold uppercase tracking-tighter">
-                            Global
-                          </span>
-                        )}
+                  sessions.map(session => (
+                    <div 
+                      key={session.id} 
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleResumeSession(session)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleResumeSession(session)}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex items-center justify-between hover:border-zinc-700 hover:bg-zinc-800/50 transition-all group cursor-pointer"
+                    >
+                      <div className="text-left">
+                        <p className="font-bold text-sm group-hover:text-zinc-100 transition-colors">{session.name || session.progressMarker}</p>
+                        <p className="text-zinc-500 text-[10px]">{format(session.startTime, 'MMM d, yyyy')}</p>
                       </div>
-                      <span className="text-[10px] font-mono text-zinc-600">
-                        {format(note.timestamp, 'HH:mm')}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSessionToDelete(session);
+                          }}
+                          className="hidden md:flex opacity-0 group-hover:opacity-100 p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-full transition-all shrink-0 items-center justify-center mr-2"
+                          title="Delete Session"
+                        >
+                          <Trash2 className="w-4 h-4 transition-colors hover:fill-red-400/20" />
+                        </button>
+                        <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Resume</span>
+                        <ChevronRight className="w-4 h-4 text-zinc-700 group-hover:text-zinc-100 transition-colors" />
+                      </div>
                     </div>
-                    <p className="text-zinc-300 text-sm leading-relaxed">{note.content}</p>
-                  </div>
-                ))}
-                {notes.length === 0 && (
-                  <div className="bg-zinc-900/30 border border-dashed border-zinc-800 rounded-2xl p-8 text-center">
-                    <p className="text-zinc-500 text-xs italic">No notes yet. Start a session to begin logging.</p>
+                  ))
+                )}
+                {sessions.length >= sessionsLimit && (
+                  <div className="flex justify-center mt-6">
+                    <button 
+                      onClick={loadMoreSessions}
+                      className="bg-zinc-900 border border-zinc-800 text-zinc-400 px-6 py-3 rounded-full font-bold text-sm hover:text-zinc-100 hover:bg-zinc-800 transition-all"
+                    >
+                      Load More Sessions
+                    </button>
                   </div>
                 )}
               </div>
             </section>
           </div>
         </div>
-
-        {/* Right Column: Story & Sessions List */}
-        <div className="space-y-10">
-          <section className="space-y-4">
-            <h3 className="font-bold uppercase tracking-widest text-xs text-zinc-400">Past Sessions</h3>
-            <div className="space-y-2">
-              {sessions.length === 0 ? (
-                <div className="bg-zinc-900/50 border border-zinc-800 border-dashed rounded-2xl p-8 text-center flex flex-col items-center justify-center">
-                  <History className="w-8 h-8 text-zinc-600 mb-3" />
-                  <p className="text-zinc-400 font-medium">No sessions yet</p>
-                  <p className="text-zinc-500 text-sm mt-1">Start a new session to begin tracking your progress.</p>
-                </div>
-              ) : (
-                sessions.map(session => (
-                  <div 
-                    key={session.id} 
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => handleResumeSession(session)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleResumeSession(session)}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex items-center justify-between hover:border-zinc-700 hover:bg-zinc-800/50 transition-all group cursor-pointer"
-                  >
-                    <div className="text-left">
-                      <p className="font-bold text-sm group-hover:text-zinc-100 transition-colors">{session.name || session.progressMarker}</p>
-                      <p className="text-zinc-500 text-[10px]">{format(session.startTime, 'MMM d, yyyy')}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSessionToDelete(session);
-                        }}
-                        className="hidden md:flex opacity-0 group-hover:opacity-100 p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-full transition-all shrink-0 items-center justify-center mr-2"
-                        title="Delete Session"
-                      >
-                        <Trash2 className="w-4 h-4 transition-colors hover:fill-red-400/20" />
-                      </button>
-                      <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Resume</span>
-                      <ChevronRight className="w-4 h-4 text-zinc-700 group-hover:text-zinc-100 transition-colors" />
-                    </div>
-                  </div>
-                ))
-              )}
-              {sessions.length >= sessionsLimit && (
-                <div className="flex justify-center mt-6">
-                  <button 
-                    onClick={loadMoreSessions}
-                    className="bg-zinc-900 border border-zinc-800 text-zinc-400 px-6 py-3 rounded-full font-bold text-sm hover:text-zinc-100 hover:bg-zinc-800 transition-all"
-                  >
-                    Load More Sessions
-                  </button>
-                </div>
-              )}
-            </div>
-          </section>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
