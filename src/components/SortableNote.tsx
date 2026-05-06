@@ -7,6 +7,7 @@ import { GripVertical, X, Edit3, Trash2, Sparkles, AlertCircle, RefreshCw } from
 import { Note } from '../types';
 import { cn } from '../lib/utils';
 import { TagAutocompleteInput } from './TagAutocompleteInput';
+import { motion, AnimatePresence } from 'motion/react';
 
 export const SortableNote = memo(({ 
   note, 
@@ -32,6 +33,8 @@ export const SortableNote = memo(({
   const [isManagingTags, setIsManagingTags] = useState(false);
   const [newTagInput, setNewTagInput] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [showDropFeedback, setShowDropFeedback] = useState(false);
 
   const [deleteProgress, setDeleteProgress] = useState(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -121,7 +124,7 @@ export const SortableNote = memo(({
   };
 
   return (
-    <div 
+    <motion.div 
       ref={setNodeRef} 
       style={style} 
       onClick={(e) => {
@@ -146,11 +149,74 @@ export const SortableNote = memo(({
           }
         }
       }}
+      onDragOver={(e) => {
+        if (e.dataTransfer.types.includes('application/x-game-log-tag')) {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsDragOver(true);
+        }
+      }}
+      onDragLeave={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragOver(false);
+      }}
+      onDrop={(e) => {
+        const tag = e.dataTransfer.getData('application/x-game-log-tag');
+        if (tag) {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsDragOver(false);
+          setShowDropFeedback(true);
+          setTimeout(() => setShowDropFeedback(false), 800);
+          onAddTag(note.id, tag);
+        }
+      }}
+      initial={false}
+      animate={{
+        scale: isDragOver ? 1.02 : showDropFeedback ? [1, 1.05, 0.98, 1] : 1,
+        borderColor: isDragOver ? "#6366f1" : "rgb(39 39 42)"
+      }}
+      transition={{ 
+        scale: showDropFeedback 
+          ? { type: "keyframes", duration: 0.5, ease: "easeOut" }
+          : { type: "spring", stiffness: 400, damping: 25 },
+        borderColor: { type: "spring", stiffness: 400, damping: 25 },
+        duration: showDropFeedback ? 0.4 : 0.2
+      }}
       className={cn(
-        "group relative bg-zinc-900 border border-zinc-800 rounded-2xl transition-all hover:border-zinc-700 cursor-pointer p-5",
-        isDragging && "shadow-2xl border-zinc-500"
+        "group relative bg-zinc-900 border border-zinc-800 rounded-2xl transition-all cursor-pointer p-5",
+        isDragging && "shadow-2xl opacity-50 border-zinc-500",
+        isDragOver && "bg-indigo-500/5 ring-4 ring-indigo-500/10"
       )}
     >
+      {/* Drop Feedback Particles */}
+      <AnimatePresence>
+        {showDropFeedback && (
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <motion.div
+                key={i}
+                initial={{ scale: 0, x: 0, y: 0, opacity: 1 }}
+                animate={{ 
+                  scale: [0, 1.5, 0],
+                  x: Math.cos((i * 30) * Math.PI / 180) * 80,
+                  y: Math.sin((i * 30) * Math.PI / 180) * 80,
+                  opacity: [1, 1, 0]
+                }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className="absolute w-1.5 h-1.5 bg-indigo-400 rounded-full"
+              />
+            ))}
+            <motion.div 
+              initial={{ scale: 0, opacity: 1 }}
+              animate={{ scale: 2.5, opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              className="absolute w-20 h-20 rounded-full border-2 border-indigo-500"
+            />
+          </div>
+        )}
+      </AnimatePresence>
       <div className={cn(
         "flex justify-between items-center gap-4 overflow-hidden transition-all ease-in-out",
         isExpanded ? "duration-300 max-h-12 opacity-100 mb-2" : "duration-150 max-h-0 opacity-0 mb-0"
@@ -368,7 +434,7 @@ export const SortableNote = memo(({
         </div>,
         document.body
       )}
-    </div>
+    </motion.div>
   );
 });
 

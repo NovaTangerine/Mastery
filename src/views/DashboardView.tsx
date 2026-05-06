@@ -17,7 +17,6 @@ export default function DashboardView() {
     gamesLimit,
     loadMoreGames,
     handleAddGame,
-    handleImportDeadSpace2Logs,
     handleDeleteGame
   } = useGameContext();
 
@@ -132,14 +131,6 @@ export default function DashboardView() {
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Your Library</h2>
         <div className="flex gap-3">
-          {user?.email === 'kyledk05@gmail.com' && (
-            <button 
-              onClick={handleImportDeadSpace2Logs}
-              className="bg-zinc-900 border border-zinc-800 text-zinc-400 px-5 py-2 rounded-full font-bold text-sm hover:text-zinc-100 transition-all"
-            >
-              Import Dead Space 2 Logs
-            </button>
-          )}
           <button 
             onClick={() => setIsAddingGame(true)}
             className="bg-zinc-100 text-zinc-950 px-5 py-2 rounded-full font-bold flex items-center gap-2 hover:bg-white transition-all active:scale-95"

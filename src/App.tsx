@@ -54,7 +54,7 @@ function MainApp() {
     goBack,
     clearHistory
   } = useUI();
-  const { selectedGame } = useGameContext();
+  const { selectedGame, activeSession } = useGameContext();
 
   // --- Render Helpers ---
 
@@ -185,20 +185,29 @@ function MainApp() {
 
               {/* Mobile/Tablet Session View Navbar */}
               {view === 'session-view' && (
-                <div className="flex lg:hidden items-center justify-between w-full">
+                <div className="flex lg:hidden items-center justify-between w-full gap-2">
                   <button 
                     onClick={goBack}
-                    className="p-2 -ml-2 text-zinc-500 hover:text-zinc-100 transition-colors"
+                    className="p-2 -ml-2 text-zinc-500 hover:text-zinc-100 transition-colors shrink-0"
                   >
                     <ChevronRight className="w-6 h-6 rotate-180" />
                   </button>
                   <button 
-                    onClick={() => navigateTo('game-detail')}
-                    className="absolute left-1/2 -translate-x-1/2 font-bold text-zinc-100 truncate max-w-[200px]"
+                    onClick={() => {
+                      // Trigger an event that SessionView listens for
+                      window.dispatchEvent(new CustomEvent('open-session-details'));
+                    }}
+                    className="flex-1 min-w-0 flex flex-col items-center justify-center p-1 hover:bg-zinc-900/50 rounded-xl transition-colors group"
                   >
-                    {selectedGame?.title}
+                    <div className="flex items-center gap-1.5 w-full justify-center">
+                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest truncate max-w-[120px]">{selectedGame?.title}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 w-full justify-center text-zinc-100">
+                      <span className="font-bold text-sm truncate">{activeSession?.name || activeSession?.chapter || activeSession?.progressMarker || 'Current Session'}</span>
+                      <ChevronDown className="w-3.5 h-3.5 text-zinc-500 group-hover:text-zinc-300 transition-colors shrink-0" />
+                    </div>
                   </button>
-                  <div className="w-10" /> {/* Spacer to balance the back button */}
+                  <div className="w-10 shrink-0" /> {/* Spacer to balance the back button */}
                 </div>
               )}
             </header>

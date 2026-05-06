@@ -175,6 +175,23 @@ export default function SessionView() {
   }, []);
 
   useEffect(() => {
+    const handleOpenSessionDetails = () => {
+      if (activeSession) {
+        setSessionNameInput(activeSession.name || '');
+        setSessionChapterInput(activeSession.chapter || '');
+        setSessionHoursInput(activeSession.hoursPlayed ? activeSession.hoursPlayed.toString() : '');
+        setSessionGroupIdInput(activeSession.groupId);
+        setIsEditingSessionDetails(true);
+        // Switch to the notes tab so the details form is visible on mobile
+        scrollToTab('notes');
+      }
+    };
+
+    window.addEventListener('open-session-details', handleOpenSessionDetails);
+    return () => window.removeEventListener('open-session-details', handleOpenSessionDetails);
+  }, [activeSession]);
+
+  useEffect(() => {
     const handleClickOutside = () => {
       if (activeMenuId) {
         setActiveMenuId(null);
@@ -986,10 +1003,10 @@ export default function SessionView() {
           <>
             {/* Compact Session Header */}
             <div 
-          className="mb-3 sm:mb-6 bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-3 sm:p-4 shrink-0 flex flex-col transition-all duration-300"
+          className={`mb-3 sm:mb-6 bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-3 sm:p-4 shrink-0 flex-col transition-all duration-300 ${isEditingSessionDetails ? 'flex' : 'hidden lg:flex'}`}
           onMouseEnter={() => setIsHeaderCollapsed(false)}
         >
-          <div className="flex items-center justify-between gap-4">
+          <div className="hidden lg:flex items-center justify-between gap-4">
             <div className="flex items-center gap-2 min-w-0 group/title flex-1">
               {isEditingTitleInline ? (
                 <input
@@ -1051,7 +1068,7 @@ export default function SessionView() {
             </div>
           </div>
 
-          <div className={`flex flex-col overflow-hidden transition-all duration-300 ${isHeaderCollapsed ? 'max-h-0 opacity-0' : 'max-h-[500px] opacity-100 mt-1 sm:mt-2'}`}>
+          <div className={`hidden lg:flex flex-col overflow-hidden transition-all duration-300 ${isHeaderCollapsed ? 'max-h-0 opacity-0' : 'max-h-[500px] opacity-100 mt-1 sm:mt-2'}`}>
             <div className="flex flex-col gap-2 sm:gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="flex flex-row items-center justify-start gap-4 w-full">
                 <div className="flex items-center gap-3 text-zinc-400 text-xs flex-wrap">
@@ -1103,7 +1120,10 @@ export default function SessionView() {
           </div>
 
           {isEditingSessionDetails && (
-            <div className={`mt-4 pt-4 border-t border-zinc-800/50 animate-in fade-in slide-in-from-top-2 duration-200 ${isHeaderCollapsed ? 'hidden' : ''}`}>
+            <div className={`mt-0 pt-0 lg:mt-4 lg:pt-4 border-t-0 lg:border-t border-zinc-800/50 animate-in fade-in slide-in-from-top-2 duration-200 ${isHeaderCollapsed ? 'hidden' : ''}`}>
+              <div className="flex items-center justify-between mb-4 lg:hidden">
+                <h3 className="font-bold">Edit Session Details</h3>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Session Name</label>
@@ -1480,11 +1500,26 @@ export default function SessionView() {
                   {tagCounts.map(([tag, count]) => (
                     <button 
                       key={tag}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('application/x-game-log-tag', tag);
+                        e.dataTransfer.effectAllowed = 'copy';
+                        
+                        // Create a custom drag image that looks like the tag
+                        const dragPreview = e.currentTarget.cloneNode(true) as HTMLElement;
+                        dragPreview.style.position = 'absolute';
+                        dragPreview.style.top = '-1000px';
+                        dragPreview.style.opacity = '0.7';
+                        dragPreview.style.pointerEvents = 'none';
+                        document.body.appendChild(dragPreview);
+                        e.dataTransfer.setDragImage(dragPreview, 0, 0);
+                        setTimeout(() => document.body.removeChild(dragPreview), 0);
+                      }}
                       onClick={() => {
                         setFilteredTag(tag);
                         scrollToTab('notes');
                       }}
-                      className="px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg flex items-center gap-2 group hover:border-zinc-700 hover:bg-zinc-800 transition-colors animate-in fade-in"
+                      className="px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg flex items-center gap-2 group hover:border-zinc-700 hover:bg-zinc-800 transition-colors animate-in fade-in cursor-grab active:cursor-grabbing"
                     >
                       <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter group-hover:text-zinc-300">{tag}</span>
                       <span className="text-[10px] font-mono text-zinc-600 bg-zinc-900 px-1.5 py-0.5 rounded group-hover:bg-zinc-950">{count}</span>

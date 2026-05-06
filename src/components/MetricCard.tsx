@@ -10,6 +10,53 @@ interface MetricCardProps {
 }
 
 export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDelete, onEdit }) => {
+  if (metric.measurementType === 'checkbox') {
+    return (
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3 flex items-center justify-between gap-4 group/metric relative transition-colors hover:border-zinc-700">
+        <div className="flex-1 min-w-0">
+          <h4 className={`font-bold text-sm transition-colors ${metric.completed ? 'text-zinc-500 line-through decoration-zinc-700' : 'text-zinc-100'}`}>
+            {metric.title}
+          </h4>
+          {metric.description && !metric.completed && (
+            <p className="text-[10px] text-zinc-600 truncate mt-0.5">{metric.description}</p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="opacity-0 group-hover/metric:opacity-100 flex items-center gap-0.5 transition-opacity mr-2">
+            <button 
+              onClick={() => onEdit(metric.id)}
+              className="p-1 px-1.5 rounded-lg text-zinc-600 hover:text-indigo-400 hover:bg-zinc-800 transition-all"
+            >
+              <Edit2 className="w-3.5 h-3.5" />
+            </button>
+            <button 
+              onClick={() => onDelete(metric.id)}
+              className="p-1 px-1.5 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-zinc-800 transition-all"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          
+          <button
+            onClick={() => onUpdate(metric.id, { completed: !metric.completed })}
+            className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all border shrink-0 ${
+              metric.completed 
+                ? 'bg-indigo-500 border-indigo-400 text-white shadow-[0_0_10px_rgba(99,102,241,0.3)]' 
+                : 'bg-zinc-950 border-zinc-800 text-zinc-700 hover:border-zinc-600'
+            }`}
+          >
+            {metric.completed ? (
+              <Check className="w-3.5 h-3.5 stroke-[4px]" />
+            ) : (
+              <div className="w-3.5 h-3.5 rounded-md" />
+            )}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex flex-col gap-3 group/metric relative overflow-hidden transition-colors hover:border-zinc-700">
       <div className="flex items-start justify-between gap-3">
@@ -78,16 +125,6 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
                 ))}
               </div>
             </div>
-          )}
-
-          {metric.measurementType === 'checkbox' && (
-            <button
-              onClick={() => onUpdate(metric.id, { completed: !metric.completed })}
-              className={`flex-1 flex items-center justify-center gap-2 p-2 rounded-xl transition-all border ${metric.completed ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400' : 'bg-zinc-950 border-zinc-800 text-zinc-500 hover:bg-zinc-900'}`}
-            >
-              {metric.completed ? <Check className="w-4 h-4" /> : <div className="w-4 h-4 rounded-sm border-2 border-zinc-600" />}
-              <span className="text-xs font-bold uppercase tracking-wider">{metric.completed ? 'Completed' : 'Mark Complete'}</span>
-            </button>
           )}
 
           {metric.measurementType === 'progress' && (

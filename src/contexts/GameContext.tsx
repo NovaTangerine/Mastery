@@ -18,7 +18,6 @@ import {
 import { db, handleFirestoreError, OperationType, logAppEvent } from '../firebase';
 import { Game, GameSession, Note, ViewMode, Draft, SessionGroup, TrackerItem, SessionMetric } from '../types';
 import { toast } from 'sonner';
-import { deadSpace2MockData } from '../mockData/deadSpace2';
 import { safeGenerateKeyBetween } from '../lib/fractionalIndexing';
 import { writeBatch } from 'firebase/firestore';
 import { useAuth } from './AuthContext';
@@ -41,7 +40,6 @@ interface GameContextType {
   draftsLimit: number;
   loadMoreDrafts: () => void;
 
-  handleImportDeadSpace2Logs: () => Promise<void>;
   handleAddGame: (title: string, coverUrl?: string) => Promise<void>;
   handleStartSession: (groupId?: string) => Promise<void>;
   handleResumeSession: (session: GameSession) => void;
@@ -143,60 +141,6 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
   }, [user, isAuthReady, draftsLimit]);
 
   // --- Handlers ---
-  const handleImportDeadSpace2Logs = async () => {
-    if (!user) return;
-    
-    // Check if already imported to avoid duplicates
-    if (games.some(g => g.title === "Dead Space 2 (2011)")) {
-      toast.error('Dead Space 2 (2011) is already in your library.');
-      return;
-    }
-
-    const loadingToast = toast.loading('Importing Dead Space 2 logs (this may take a minute)...');
-    
-    try {
-      const gameData = deadSpace2MockData;
-      const gameDoc = await addDoc(collection(db, 'games'), {
-        title: gameData.title,
-        status: gameData.status,
-        uid: user.uid,
-        overallNotes: gameData.overallNotes,
-        storySynopsis: gameData.storySynopsis,
-        createdAt: Date.now(),
-        updatedAt: Date.now()
-      });
-
-      for (const sessionData of gameData.sessions) {
-        const sessionDoc = await addDoc(collection(db, 'sessions'), {
-          gameId: gameDoc.id,
-          uid: user.uid,
-          startTime: Date.now(),
-          progressMarker: sessionData.marker
-        });
-
-        let lastOrder: string | null = null;
-        for (const noteData of sessionData.notes) {
-          lastOrder = safeGenerateKeyBetween(lastOrder, null);
-          await addDoc(collection(db, 'notes'), {
-            gameId: gameDoc.id,
-            sessionId: sessionDoc.id,
-            uid: user.uid,
-            content: noteData.content,
-            tags: noteData.tags,
-            isGlobal: noteData.isGlobal,
-            timestamp: Date.now(),
-            order: lastOrder
-          });
-        }
-      }
-      toast.dismiss(loadingToast);
-      toast.success('Dead Space 2 logs imported successfully!');
-    } catch (error) {
-      toast.dismiss(loadingToast);
-      handleFirestoreError(error, OperationType.CREATE, 'import');
-    }
-  };
-
   const handleAddGame = async (title: string, coverUrl?: string) => {
     if (!user || !title.trim()) return;
     try {
@@ -765,7 +709,6 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     loadMoreSessionGroups,
     draftsLimit,
     loadMoreDrafts,
-    handleImportDeadSpace2Logs,
     handleAddGame,
     handleStartSession,
     handleResumeSession,
