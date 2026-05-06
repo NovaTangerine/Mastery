@@ -7,10 +7,10 @@ import { useNotes } from '../hooks/useNotes';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
 
 export default function AllNotesView() {
-  const { goBack } = useUI();
+  const { goBack, viewState } = useUI();
   const { selectedGame } = useGameContext();
 
-  const [filteredTag, setFilteredTag] = React.useState<string | null>(null);
+  const [filteredTag, setFilteredTag] = React.useState<string | null>(viewState?.filteredTag || null);
 
   const {
     notes,

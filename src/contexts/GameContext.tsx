@@ -12,10 +12,11 @@ import {
   deleteDoc,
   getDocs,
   getDoc,
-  limit
+  limit,
+  deleteField
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType, logAppEvent } from '../firebase';
-import { Game, GameSession, Note, ViewMode, Draft, SessionGroup, TrackerItem } from '../types';
+import { Game, GameSession, Note, ViewMode, Draft, SessionGroup, TrackerItem, SessionMetric } from '../types';
 import { toast } from 'sonner';
 import { deadSpace2MockData } from '../mockData/deadSpace2';
 import { safeGenerateKeyBetween } from '../lib/fractionalIndexing';
@@ -60,6 +61,10 @@ interface GameContextType {
   handleUpdateTrackerItem: (trackerId: string, itemId: string, updates: Partial<TrackerItem>) => Promise<void>;
   handleRemoveTrackerItem: (trackerId: string, itemId: string | number) => Promise<void>;
   handleDeleteTracker: (trackerId: string) => Promise<void>;
+  handleMigrateLegacyTrackers: () => Promise<void>;
+  handleAddMetric: (metric: Omit<SessionMetric, 'id'>) => Promise<string | undefined>;
+  handleUpdateMetric: (metricId: string, updates: Partial<SessionMetric>) => Promise<void>;
+  handleDeleteMetric: (metricId: string) => Promise<void>;
   handleSaveDraft: (content: string, tags: string[]) => Promise<void>;
   handleDeleteDraft: (draftId: string) => Promise<void>;
 }
@@ -600,6 +605,125 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const handleAddMetric = async (metric: Omit<SessionMetric, 'id'>) => {
+    if (!user || !activeSession) return undefined;
+    try {
+      const newId = crypto.randomUUID();
+      const updatedMetrics = [...(activeSession.metrics || []), { ...metric, id: newId }];
+      const cleanedMetrics = JSON.parse(JSON.stringify(updatedMetrics));
+      await updateDoc(doc(db, 'sessions', activeSession.id), {
+        metrics: cleanedMetrics
+      });
+      return newId;
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'sessions');
+      return undefined;
+    }
+  };
+
+  const handleUpdateMetric = async (metricId: string, updates: Partial<SessionMetric>) => {
+    if (!user || !activeSession) return;
+    try {
+      const updatedMetrics = (activeSession.metrics || []).map(m => {
+        if (m.id === metricId) {
+          const newMetric = { ...m, ...updates };
+          // If measurement type changed to none, cleanup old fields
+          if (updates.measurementType === 'none') {
+            delete newMetric.currentCount;
+            delete newMetric.targetCount;
+            delete newMetric.currentValue;
+            delete newMetric.completed;
+          } else if (updates.measurementType) {
+             if (updates.measurementType !== m.measurementType) {
+               delete newMetric.currentCount;
+               delete newMetric.targetCount;
+               delete newMetric.currentValue;
+               delete newMetric.completed;
+               if (updates.measurementType === 'counter') newMetric.currentCount = 0;
+               if (updates.measurementType === 'progress') newMetric.currentValue = 0;
+               if (updates.measurementType === 'checkbox') newMetric.completed = false;
+             }
+          }
+          return newMetric;
+        }
+        return m;
+      });
+      const cleanedMetrics = JSON.parse(JSON.stringify(updatedMetrics));
+      await updateDoc(doc(db, 'sessions', activeSession.id), {
+        metrics: cleanedMetrics
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'sessions');
+    }
+  };
+
+  const handleDeleteMetric = async (metricId: string) => {
+    if (!user || !activeSession) return;
+    try {
+      const updatedMetrics = (activeSession.metrics || []).filter(m => m.id !== metricId);
+      const cleanedMetrics = JSON.parse(JSON.stringify(updatedMetrics));
+      await updateDoc(doc(db, 'sessions', activeSession.id), {
+        metrics: cleanedMetrics
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'sessions');
+    }
+  };
+
+  const handleMigrateLegacyTrackers = async () => {
+    if (!user || !activeSession || !activeSession.trackers?.length) return;
+    try {
+      const newMetrics: SessionMetric[] = [];
+      for (const t of activeSession.trackers) {
+        if (t.items && t.items.length > 0) {
+          for (const item of t.items) {
+            const isString = typeof item === 'string';
+            const title = isString ? item : item.title;
+            const description = isString ? undefined : item.description;
+            const completed = isString ? false : item.completed;
+            const oldType = isString ? 'checkbox' : item.quantifierType;
+            let measurementType: 'none' | 'counter' | 'checkbox' | 'progress' = 'checkbox';
+            
+            if (oldType === 'none') measurementType = 'none';
+            if (oldType === 'stepper') measurementType = 'counter';
+            if (oldType === 'progress') measurementType = 'progress';
+            if (oldType === 'checkbox') measurementType = 'checkbox';
+            
+            newMetrics.push({
+              id: crypto.randomUUID(),
+              title: `[${t.title}] ${title}`,
+              description,
+              measurementType,
+              completed,
+              currentCount: (!isString && measurementType === 'counter') ? item.currentValue : undefined,
+              targetCount: (!isString && measurementType === 'counter') ? item.maxValue : undefined,
+              currentValue: (!isString && measurementType === 'progress') ? item.currentValue : undefined
+            });
+          }
+        } else {
+          newMetrics.push({
+            id: crypto.randomUUID(),
+            title: t.title,
+            measurementType: 'none'
+          });
+        }
+      }
+
+      const updatedMetrics = [...(activeSession.metrics || []), ...newMetrics];
+      const cleanedMetrics = JSON.parse(JSON.stringify(updatedMetrics));
+
+      await updateDoc(doc(db, 'sessions', activeSession.id), {
+        metrics: cleanedMetrics,
+        trackers: deleteField()
+      });
+      
+      toast.success('Successfully migrated old trackers.');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'sessions');
+      toast.error('Failed to migrate trackers.');
+    }
+  };
+
   const handleSaveDraft = async (content: string, tags: string[]) => {
     if (!user || !selectedGame) return;
     try {
@@ -661,6 +785,10 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     handleUpdateTrackerItem,
     handleRemoveTrackerItem,
     handleDeleteTracker,
+    handleMigrateLegacyTrackers,
+    handleAddMetric,
+    handleUpdateMetric,
+    handleDeleteMetric,
     handleSaveDraft,
     handleDeleteDraft
   };

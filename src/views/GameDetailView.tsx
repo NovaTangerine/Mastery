@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, PenLine, Star, ChevronRight, History } from 'lucide-react';
+import { Plus, Trash2, PenLine, Star, ChevronRight, History, Tag as TagIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { useGameContext } from '../contexts/GameContext';
 import { useUI } from '../contexts/UIContext';
@@ -26,6 +26,18 @@ export default function GameDetailView() {
   const { notes } = useNotes(selectedGame?.id || null);
   const [isDeletingGame, setIsDeletingGame] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<GameSession | null>(null);
+
+  const tagCounts = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const note of notes) {
+      if (note.tags) {
+        for (const tag of note.tags) {
+          counts[tag] = (counts[tag] || 0) + 1;
+        }
+      }
+    }
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  }, [notes]);
 
   if (!selectedGame) return null;
 
@@ -140,44 +152,31 @@ export default function GameDetailView() {
         {/* Left Column: Notes & Sessions */}
         <div className="lg:col-span-2 space-y-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            {/* Global Insights Section (AI Highlighted) */}
+            {/* Tags Section */}
             <section className="space-y-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-zinc-400">
-                  <Star className="w-5 h-5" />
-                  <h3 className="font-bold uppercase tracking-widest text-xs">Global Insights</h3>
+                  <TagIcon className="w-5 h-5" />
+                  <h3 className="font-bold uppercase tracking-widest text-xs">Tags</h3>
                 </div>
-                {notes.filter(n => n.isGlobal).length > 3 && (
-                  <button 
-                    onClick={() => navigateTo('all-insights', selectedGame, null)}
-                    className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest hover:text-zinc-100 transition-colors flex items-center gap-1"
-                  >
-                    View All <ChevronRight className="w-3 h-3" />
-                  </button>
-                )}
               </div>
-              <div className="grid grid-cols-1 gap-4">
-                {notes.filter(n => n.isGlobal).length > 0 ? (
-                  notes.filter(n => n.isGlobal).slice().reverse().slice(0, 3).map(note => (
-                    <div key={note.id} className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-5 shadow-sm animate-in fade-in slide-in-from-left-4 duration-500">
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex flex-wrap gap-2">
-                          {note.tags.map(tag => (
-                            <span key={tag} className="px-2 py-0.5 bg-zinc-800 rounded text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                        <span className="text-[10px] font-mono text-zinc-500">
-                          {format(note.timestamp, 'MMM d')}
-                        </span>
-                      </div>
-                      <p className="text-zinc-300 text-sm font-medium leading-relaxed">{note.content}</p>
-                    </div>
-                  ))
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5">
+                {tagCounts.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {tagCounts.map(([tag, count]) => (
+                      <button 
+                        key={tag}
+                        onClick={() => navigateTo('all-notes', selectedGame, null, null, { filteredTag: tag })}
+                        className="px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg flex items-center gap-2 group hover:border-zinc-700 hover:bg-zinc-800 transition-colors animate-in fade-in"
+                      >
+                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter group-hover:text-zinc-300">{tag}</span>
+                        <span className="text-[10px] font-mono text-zinc-600 bg-zinc-900 px-1.5 py-0.5 rounded group-hover:bg-zinc-950">{count}</span>
+                      </button>
+                    ))}
+                  </div>
                 ) : (
-                  <div className="bg-zinc-900/30 border border-dashed border-zinc-800 rounded-2xl p-8 text-center">
-                    <p className="text-zinc-500 text-xs italic">No global insights yet. The AI will highlight key observations here.</p>
+                  <div className="py-6 text-center">
+                    <p className="text-zinc-500 text-xs italic">No tags used yet.</p>
                   </div>
                 )}
               </div>

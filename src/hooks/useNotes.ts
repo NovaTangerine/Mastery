@@ -26,12 +26,13 @@ export function useNotes(gameId: string | null, sessionId?: string | null, tagFi
       where('uid', '==', auth.currentUser.uid)
     );
 
+    if (sessionId !== undefined) {
+      q = query(q, where('sessionId', '==', sessionId));
+    }
+
     if (tagFilter) {
       q = query(q, where('tags', 'array-contains', tagFilter));
       q = query(q, limit(200)); // Limit to 200 to be safe and avoid orderBy index
-    } else if (sessionId !== undefined) {
-      q = query(q, where('sessionId', '==', sessionId));
-      q = query(q, orderBy('timestamp', 'desc'), limit(notesLimit));
     } else {
       q = query(q, orderBy('timestamp', 'desc'), limit(notesLimit));
     }

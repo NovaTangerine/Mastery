@@ -22,6 +22,9 @@ import { useNotes } from '../hooks/useNotes';
 import { SortableNote } from '../components/SortableNote';
 import { TrackerCard } from '../components/TrackerCard';
 import { AddTrackerMenu } from '../components/AddTrackerMenu';
+import { MetricCard } from '../components/MetricCard';
+import { AddMetricForm } from '../components/AddMetricForm';
+import { EditMetricModal } from '../components/EditMetricModal';
 import { TagAutocompleteInput } from '../components/TagAutocompleteInput';
 import { useVirtualizer } from '@tanstack/react-virtual';
 
@@ -39,6 +42,10 @@ export default function SessionView() {
     handleUpdateTrackerItem,
     handleRemoveTrackerItem,
     handleDeleteTracker,
+    handleMigrateLegacyTrackers,
+    handleAddMetric,
+    handleUpdateMetric,
+    handleDeleteMetric,
     sessionGroups,
     handleCreateSessionGroup,
     handleUpdateSessionGroup,
@@ -50,6 +57,7 @@ export default function SessionView() {
   } = useGameContext();
 
   const [filteredTag, setFilteredTag] = useState<string | null>(null);
+  const [filterScope, setFilterScope] = useState<'session' | 'global'>('session');
 
   const {
     notes,
@@ -64,7 +72,26 @@ export default function SessionView() {
     isSubmittingNote,
     taggingStatus,
     handleRetryTagging
-  } = useNotes(selectedGame?.id || null, activeSession?.id || null, filteredTag);
+  } = useNotes(
+    selectedGame?.id || null, 
+    (filteredTag && filterScope === 'global') ? undefined : (activeSession?.id || null), 
+    filteredTag
+  );
+
+  const { notes: allSessionNotes } = useNotes(selectedGame?.id || null, activeSession?.id || null, null);
+  const { notes: globalNotesForTag } = useNotes(selectedGame?.id || null, undefined, filteredTag);
+
+  const tagCounts = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const note of allSessionNotes) {
+      if (note.tags) {
+        for (const tag of note.tags) {
+          counts[tag] = (counts[tag] || 0) + 1;
+        }
+      }
+    }
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  }, [allSessionNotes]);
 
   const [noteInput, setNoteInput] = useState('');
   const [isEditingSessionDetails, setIsEditingSessionDetails] = useState(false);
@@ -76,6 +103,9 @@ export default function SessionView() {
   const [newGroupNameInput, setNewGroupNameInput] = useState('');
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [editingGroupTitle, setEditingGroupTitle] = useState('');
+  
+  const [isAddingMetric, setIsAddingMetric] = useState(false);
+  const [editingMetricId, setEditingMetricId] = useState<string | null>(null);
   const [selectedSessionIdsForGroup, setSelectedSessionIdsForGroup] = useState<Set<string>>(new Set());
   const [isCreatingGroupFromList, setIsCreatingGroupFromList] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -105,19 +135,34 @@ export default function SessionView() {
     }
   };
 
-  const handleHorizontalScroll = (e: React.UIEvent<HTMLDivElement>) => {
+  useEffect(() => {
     if (window.innerWidth >= 1024) return;
-    const container = e.currentTarget;
-    const scrollLeft = container.scrollLeft;
-    const width = container.clientWidth;
-    if (width === 0) return;
-    const gap = 48; // gap-12 is 48px
-    const index = Math.round(scrollLeft / (width + gap));
-    const tabs = ['sessions', 'notes', 'trackers'] as const;
-    if (tabs[index] && activeMobileTab !== tabs[index]) {
-      setActiveMobileTab(tabs[index]);
-    }
-  };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const tabId = entry.target.id;
+            if (tabId === 'mobile-tab-sessions') setActiveMobileTab(prev => prev !== 'sessions' ? 'sessions' : prev);
+            if (tabId === 'mobile-tab-notes') setActiveMobileTab(prev => prev !== 'notes' ? 'notes' : prev);
+            if (tabId === 'mobile-tab-trackers') setActiveMobileTab(prev => prev !== 'trackers' ? 'trackers' : prev);
+          }
+        });
+      },
+      {
+        root: scrollContainerRef.current,
+        threshold: 0.5
+      }
+    );
+
+    const tabs = ['sessions', 'notes', 'trackers'];
+    tabs.forEach(tab => {
+      const el = document.getElementById(`mobile-tab-${tab}`);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (window.innerWidth < 1024) {
@@ -184,13 +229,13 @@ export default function SessionView() {
   const filteredNotesBySession = React.useMemo(() => {
     if (!filteredTag) return {};
     const grouped: Record<string, typeof notes> = {};
-    for (const note of notes) {
+    for (const note of globalNotesForTag) {
       const sid = note.sessionId || 'global';
       if (!grouped[sid]) grouped[sid] = [];
       grouped[sid].push(note);
     }
     return grouped;
-  }, [notes, filteredTag]);
+  }, [globalNotesForTag, filteredTag]);
 
   useEffect(() => {
     if (parentRef.current) {
@@ -253,7 +298,6 @@ export default function SessionView() {
   return (
     <div 
       ref={scrollContainerRef}
-      onScroll={handleHorizontalScroll}
       className="flex-1 min-h-0 pb-[58px] sm:pb-[58px] lg:pb-0 flex flex-row overflow-x-auto snap-x snap-mandatory lg:overflow-x-visible lg:snap-none justify-start lg:justify-center gap-12 lg:gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500 relative scrollbar-hide"
       style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
     >
@@ -446,6 +490,16 @@ export default function SessionView() {
                     </>
                   ) : (
                     <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStartSession(group.id);
+                        }}
+                        className="hidden sm:flex p-1 rounded text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
+                        title="Add Session"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
                       <div className="relative">
                         <button
                           onClick={(e) => {
@@ -472,7 +526,7 @@ export default function SessionView() {
                                 setActiveMenuId(null);
                                 setActiveMenuType(null);
                               }}
-                              className="w-full text-left px-3 py-1.5 text-xs text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 flex items-center gap-2"
+                              className="sm:hidden w-full text-left px-3 py-1.5 text-xs text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 flex items-center gap-2"
                             >
                               <Plus className="w-3.5 h-3.5" /> Add Session
                             </button>
@@ -512,9 +566,9 @@ export default function SessionView() {
                 className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${isCollapsed ? 'grid-rows-[0fr] opacity-0 pointer-events-none' : 'grid-rows-[1fr] opacity-100'}`}
               >
                 <div className={(activeMenuType === 'session' && group.sessions.some(s => s.id === activeMenuId)) ? "overflow-visible" : "overflow-hidden"}>
-                  <div className="space-y-2 pt-1">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-2 pt-1">
                     {group.sessions.map(session => (
-                    <div key={session.id} className={`flex items-center gap-2 relative group/session ${activeMenuId === session.id && activeMenuType === 'session' ? 'z-50' : 'z-10'}`}>
+                    <div key={session.id} className={`flex items-stretch gap-2 relative group/session ${activeMenuId === session.id && activeMenuType === 'session' ? 'z-50' : 'z-10'}`}>
                       {editingGroupId !== null && (
                         <input
                           type="checkbox"
@@ -573,16 +627,16 @@ export default function SessionView() {
                             handleResumeSession(session);
                             scrollToTab('notes');
                           }}
-                          className={`flex-1 text-left p-3 rounded-xl transition-all min-w-0 ${activeSession.id === session.id ? 'bg-zinc-800 border border-zinc-700' : 'bg-transparent hover:bg-zinc-900 border border-transparent'}`}
+                          className={`flex-1 text-left p-3 rounded-xl transition-all min-w-0 h-full flex flex-col justify-center border ${activeSession.id === session.id ? 'bg-zinc-800 border-zinc-600 shadow-sm' : 'bg-zinc-900/40 border-zinc-800/50 hover:bg-zinc-900/80 hover:border-zinc-700'}`}
                         >
                           <p className={`font-bold text-sm truncate pr-14 ${activeSession.id === session.id ? 'text-zinc-100' : 'text-zinc-400'}`}>{session.name || session.progressMarker}</p>
-                          <p className="text-zinc-500 text-[10px] mt-1">{format(session.startTime, 'MMM d, yyyy')}</p>
+                          <p className={`text-[10px] mt-1 ${activeSession.id === session.id ? 'text-zinc-400' : 'text-zinc-500'}`}>{format(session.startTime, 'MMM d, yyyy')}</p>
                         </button>
                       )}
                       
                       {editingSidebarSessionId !== session.id && editingGroupId === null && (
                         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover/session:opacity-100 transition-opacity bg-zinc-900/90 rounded px-1 group-hover/session:visible invisible">
-                          <div className="relative">
+                          <div className="relative flex items-center">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -637,7 +691,7 @@ export default function SessionView() {
                     </div>
                   ))}
                   {group.sessions.length > 0 && (
-                    <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-all duration-200 ease-in-out">
+                    <div className="md:col-span-2 lg:col-span-1 grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-all duration-200 ease-in-out">
                       <div className="overflow-hidden">
                         <button
                           onClick={() => handleStartSession(group.id)}
@@ -650,7 +704,7 @@ export default function SessionView() {
                     </div>
                   )}
                   {group.sessions.length === 0 && (
-                    <p className="text-xs text-zinc-600 italic px-2">No sessions in this group</p>
+                    <p className="text-xs text-zinc-600 italic px-2 md:col-span-2 lg:col-span-1">No sessions in this group</p>
                   )}
                   </div>
                 </div>
@@ -662,7 +716,7 @@ export default function SessionView() {
             <div className="space-y-2 group">
               {groupedSessions.length > 0 && (
                 <div 
-                  className="flex items-center justify-between px-2 mt-4 cursor-pointer hover:bg-zinc-900/50 rounded py-1 -mx-2"
+                  className="flex items-center justify-between px-2 mt-4 cursor-pointer hover:bg-zinc-900/50 rounded py-1 -mx-2 group/ungrouped"
                   onClick={() => toggleGroupCollapse('ungrouped')}
                 >
                   <div className="flex items-center gap-2">
@@ -673,15 +727,27 @@ export default function SessionView() {
                     )}
                     <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Ungrouped</h4>
                   </div>
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover/ungrouped:opacity-100 transition-opacity shrink-0 bg-zinc-950/80 rounded-md px-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStartSession();
+                      }}
+                      className="hidden sm:flex p-1 rounded text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
+                      title="Add Session"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               )}
               <div 
                 className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${collapsedGroups.has('ungrouped') ? 'grid-rows-[0fr] opacity-0 pointer-events-none' : 'grid-rows-[1fr] opacity-100'}`}
               >
                 <div className={(activeMenuType === 'session' && ungroupedSessions.some(s => s.id === activeMenuId)) ? "overflow-visible" : "overflow-hidden"}>
-                  <div className="space-y-2 pt-1">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-2 pt-1">
                     {ungroupedSessions.map(session => (
-                    <div key={session.id} className={`flex items-center gap-2 relative group/session ${activeMenuId === session.id && activeMenuType === 'session' ? 'z-50' : 'z-10'}`}>
+                    <div key={session.id} className={`flex items-stretch gap-2 relative group/session ${activeMenuId === session.id && activeMenuType === 'session' ? 'z-50' : 'z-10'}`}>
                       {editingGroupId !== null && (
                         <input
                           type="checkbox"
@@ -740,16 +806,16 @@ export default function SessionView() {
                             handleResumeSession(session);
                             scrollToTab('notes');
                           }}
-                          className={`flex-1 text-left p-3 rounded-xl transition-all min-w-0 ${activeSession.id === session.id ? 'bg-zinc-800 border border-zinc-700' : 'bg-transparent hover:bg-zinc-900 border border-transparent'}`}
+                          className={`flex-1 text-left p-3 rounded-xl transition-all min-w-0 h-full flex flex-col justify-center border ${activeSession.id === session.id ? 'bg-zinc-800 border-zinc-600 shadow-sm' : 'bg-zinc-900/40 border-zinc-800/50 hover:bg-zinc-900/80 hover:border-zinc-700'}`}
                         >
                           <p className={`font-bold text-sm truncate pr-14 ${activeSession.id === session.id ? 'text-zinc-100' : 'text-zinc-400'}`}>{session.name || session.progressMarker}</p>
-                          <p className="text-zinc-500 text-[10px] mt-1">{format(session.startTime, 'MMM d, yyyy')}</p>
+                          <p className={`text-[10px] mt-1 ${activeSession.id === session.id ? 'text-zinc-400' : 'text-zinc-500'}`}>{format(session.startTime, 'MMM d, yyyy')}</p>
                         </button>
                       )}
 
                       {editingSidebarSessionId !== session.id && editingGroupId === null && (
                         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover/session:opacity-100 transition-opacity bg-zinc-900/90 rounded px-1 group-hover/session:visible invisible">
-                          <div className="relative">
+                          <div className="relative flex items-center">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -804,7 +870,7 @@ export default function SessionView() {
                     </div>
                   ))}
                   {ungroupedSessions.length > 0 && groupedSessions.length > 0 && (
-                     <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-all duration-200 ease-in-out">
+                     <div className="md:col-span-2 lg:col-span-1 grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-all duration-200 ease-in-out">
                        <div className="overflow-hidden">
                          <button
                            onClick={() => handleStartSession()}
@@ -826,6 +892,7 @@ export default function SessionView() {
 
       {/* Main Session View or Filtered View */}
       <div id="mobile-tab-notes" className="w-full shrink-0 snap-center snap-always lg:flex-1 lg:max-w-2xl flex-col min-w-0 min-h-0 flex">
+        <div className="w-full md:max-w-2xl lg:max-w-none mx-auto flex flex-col h-full min-h-0 flex-1">
         {filteredTag ? (
           <>
             <div className="mb-3 sm:mb-6 bg-zinc-900 border border-zinc-700/50 rounded-2xl p-4 shrink-0 flex items-center justify-between shadow-lg">
@@ -834,12 +901,41 @@ export default function SessionView() {
                   <TagIcon className="w-5 h-5 text-zinc-400" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h2 className="text-lg font-bold text-zinc-100 truncate">Notes tagged with "{filteredTag}"</h2>
-                  <p className="text-xs text-zinc-400">{notes.length} found across {Object.keys(filteredNotesBySession).length} session(s)</p>
+                  <h2 className="text-lg font-bold text-zinc-100 truncate">
+                    Notes tagged with "{filteredTag}"
+                  </h2>
+                  <p className="text-xs text-zinc-400">
+                    {filterScope === 'session' ? (
+                      <>
+                        {filteredNotesBySession[activeSession?.id || 'global']?.length || 0} found in this session. 
+                        {Object.keys(filteredNotesBySession).length > (filteredNotesBySession[activeSession?.id || 'global'] ? 1 : 0) && (
+                          <button 
+                            onClick={() => setFilterScope('global')}
+                            className="ml-1 text-indigo-400 hover:text-indigo-300 font-medium underline underline-offset-2 transition-colors"
+                          >
+                            Also found in {Object.keys(filteredNotesBySession).length - (filteredNotesBySession[activeSession?.id || 'global'] ? 1 : 0)} other session(s).
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        {globalNotesForTag.length} found across {Object.keys(filteredNotesBySession).length} session(s).{" "}
+                        <button 
+                          onClick={() => setFilterScope('session')}
+                          className="ml-1 text-indigo-400 hover:text-indigo-300 font-medium underline underline-offset-2 transition-colors"
+                        >
+                          Return to current session
+                        </button>
+                      </>
+                    )}
+                  </p>
                 </div>
               </div>
               <button 
-                onClick={() => setFilteredTag(null)}
+                onClick={() => {
+                  setFilteredTag(null);
+                  setFilterScope('session');
+                }}
                 className="w-10 h-10 rounded-xl bg-zinc-800 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700 flex items-center justify-center transition-colors"
                 title="Clear Filter"
               >
@@ -848,10 +944,12 @@ export default function SessionView() {
             </div>
 
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-8">
-              {Object.entries(filteredNotesBySession).map(([sessionId, groupNotes]) => (
+              {Object.entries(filteredNotesBySession)
+                .filter(([sid]) => filterScope === 'global' ? true : sid === (activeSession?.id || 'global'))
+                .map(([sessionId, groupNotes]) => (
                 <div key={sessionId} className="space-y-4">
                   <div className="sticky top-0 z-10 bg-zinc-950/90 backdrop-blur pb-2 pt-1 border-b border-zinc-800/50 mb-2">
-                    <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">{getSessionName(sessionId)}</h3>
+                    <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">{getSessionName(sessionId === 'global' ? null : sessionId)}</h3>
                   </div>
                   <div className="space-y-4">
                     {groupNotes.map(note => (
@@ -871,14 +969,14 @@ export default function SessionView() {
                   </div>
                 </div>
               ))}
-              {notes.length === 0 && (
+              {(filterScope === 'session' ? (filteredNotesBySession[activeSession?.id || 'global']?.length || 0) : globalNotesForTag.length) === 0 && (
                 <div className="h-full flex flex-col items-center justify-center text-center p-8">
                   <div className="w-16 h-16 bg-zinc-900/50 rounded-full flex items-center justify-center mb-4">
                     <TagIcon className="w-8 h-8 text-zinc-700" />
                   </div>
                   <h3 className="text-xl font-bold text-zinc-400 mb-2">No notes found</h3>
                   <p className="text-zinc-600 max-w-sm">
-                    No notes are currently tagged with "{filteredTag}".
+                    No notes are currently tagged with "{filteredTag}" {filterScope === 'session' ? 'in this session' : ''}.
                   </p>
                 </div>
               )}
@@ -1270,6 +1368,7 @@ export default function SessionView() {
         </div>
         </>
         )}
+        </div>
       </div>
 
       {/* Right Column: Trackers */}
@@ -1277,18 +1376,124 @@ export default function SessionView() {
         <div className="flex items-center justify-between mb-6">
           <h3 className="font-bold uppercase tracking-widest text-xs text-zinc-400">Trackers</h3>
         </div>
-        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 grid grid-cols-1 md:grid-cols-2 lg:flex lg:flex-col gap-4 items-start lg:items-stretch content-start">
-          {activeSession.trackers?.map(tracker => (
-            <TrackerCard 
-              key={tracker.id}
-              tracker={tracker}
-              onAddItem={handleAddTrackerItem}
-              onUpdateItem={handleUpdateTrackerItem}
-              onRemoveItem={handleRemoveTrackerItem}
-              onDeleteTracker={handleDeleteTracker}
+        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 grid grid-cols-1 md:grid-cols-2 lg:flex lg:flex-col gap-4 items-start lg:items-stretch content-start pb-20">
+          {(() => {
+            const metrics = activeSession.metrics || [];
+            
+            // Group metrics
+            const groupedMetrics: Record<string, typeof metrics> = {};
+            const ungroupedMetrics: typeof metrics = [];
+            
+            metrics.forEach(m => {
+              if (m.group) {
+                if (!groupedMetrics[m.group]) groupedMetrics[m.group] = [];
+                groupedMetrics[m.group].push(m);
+              } else {
+                ungroupedMetrics.push(m);
+              }
+            });
+
+            return (
+              <>
+                {ungroupedMetrics.map(metric => (
+                  <MetricCard 
+                    key={metric.id}
+                    metric={metric}
+                    onUpdate={handleUpdateMetric}
+                    onDelete={handleDeleteMetric}
+                    onEdit={setEditingMetricId}
+                  />
+                ))}
+                
+                {Object.entries(groupedMetrics).map(([groupName, groupMetrics]) => (
+                  <div key={groupName} className="space-y-3">
+                    <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1 mt-2">{groupName}</h4>
+                    <div className="space-y-3">
+                      {groupMetrics.map(metric => (
+                        <MetricCard 
+                          key={metric.id}
+                          metric={metric}
+                          onUpdate={handleUpdateMetric}
+                          onDelete={handleDeleteMetric}
+                          onEdit={setEditingMetricId}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </>
+            );
+          })()}
+
+          {isAddingMetric ? (
+            <AddMetricForm 
+              onAddMetric={handleAddMetric}
+              onCancel={() => setIsAddingMetric(false)}
+              onSuccess={(id) => {
+                setIsAddingMetric(false);
+                setEditingMetricId(id);
+              }}
             />
-          ))}
-          <AddTrackerMenu onAddTracker={handleAddTracker} />
+          ) : (
+            <button
+              onClick={() => setIsAddingMetric(true)}
+              className="w-full py-3 px-4 rounded-xl border border-dashed border-zinc-700/50 text-zinc-500 hover:text-zinc-300 hover:border-zinc-500 hover:bg-zinc-900/50 transition-all flex items-center justify-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="text-sm font-bold uppercase tracking-wider">New Tracker</span>
+            </button>
+          )}
+
+          {activeSession.trackers?.length ? (
+            <div className="mt-8 border-t border-zinc-800 pt-6 space-y-4">
+              <div className="flex items-center justify-between px-1">
+                <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Legacy Trackers</h4>
+                <button
+                  onClick={handleMigrateLegacyTrackers}
+                  className="px-3 py-1.5 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors"
+                >
+                  Migrate to New Format
+                </button>
+              </div>
+              {activeSession.trackers.map(tracker => (
+                <TrackerCard 
+                  key={tracker.id}
+                  tracker={tracker}
+                  onAddItem={handleAddTrackerItem}
+                  onUpdateItem={handleUpdateTrackerItem}
+                  onRemoveItem={handleRemoveTrackerItem}
+                  onDeleteTracker={handleDeleteTracker}
+                />
+              ))}
+              <AddTrackerMenu onAddTracker={handleAddTracker} />
+            </div>
+          ) : null}
+          
+          {tagCounts.length > 0 && (
+            <div className="mt-4 lg:mt-8 space-y-4 w-full md:col-span-2 lg:col-span-1">
+              <div className="flex items-center gap-2 text-zinc-400">
+                <TagIcon className="w-4 h-4 text-zinc-600" />
+                <h3 className="font-bold uppercase tracking-widest text-xs">Session Tags</h3>
+              </div>
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5">
+                <div className="flex flex-wrap gap-2">
+                  {tagCounts.map(([tag, count]) => (
+                    <button 
+                      key={tag}
+                      onClick={() => {
+                        setFilteredTag(tag);
+                        scrollToTab('notes');
+                      }}
+                      className="px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg flex items-center gap-2 group hover:border-zinc-700 hover:bg-zinc-800 transition-colors animate-in fade-in"
+                    >
+                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter group-hover:text-zinc-300">{tag}</span>
+                      <span className="text-[10px] font-mono text-zinc-600 bg-zinc-900 px-1.5 py-0.5 rounded group-hover:bg-zinc-950">{count}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1329,6 +1534,15 @@ export default function SessionView() {
       >
         <Plus className="w-8 h-8" />
       </button>
+
+      {editingMetricId && activeSession.metrics?.find(m => m.id === editingMetricId) && (
+        <EditMetricModal
+          metric={activeSession.metrics.find(m => m.id === editingMetricId)!}
+          existingGroups={Array.from(new Set((activeSession.metrics || []).map(m => m.group).filter(Boolean) as string[]))}
+          onUpdate={handleUpdateMetric}
+          onClose={() => setEditingMetricId(null)}
+        />
+      )}
 
       <style>{`
         .scrollbar-hide::-webkit-scrollbar {

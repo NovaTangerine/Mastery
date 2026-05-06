@@ -45,6 +45,27 @@ export interface SessionGroup {
   order: string;
 }
 
+export type MeasurementType = 'none' | 'counter' | 'checkbox' | 'progress';
+
+export interface SessionMetric {
+  id: string;
+  title: string;
+  description?: string;
+  group?: string;
+  measurementType: MeasurementType;
+  
+  // For 'counter'
+  currentCount?: number;
+  targetCount?: number;
+  
+  // For 'progress'
+  currentValue?: number;
+  maxValue?: number;
+  
+  // For 'checkbox'
+  completed?: boolean;
+}
+
 export interface GameSession {
   id: string;
   gameId: string;
@@ -57,6 +78,7 @@ export interface GameSession {
   chapter?: string;
   hoursPlayed?: number;
   trackers?: SessionTracker[];
+  metrics?: SessionMetric[];
 }
 
 export interface Note {

@@ -27,6 +27,20 @@ export default function DashboardView() {
   const [isCheckingDelete, setIsCheckingDelete] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
+  React.useEffect(() => {
+    const handleClickOutside = () => {
+      setOpenMenuId(null);
+    };
+    if (openMenuId) {
+      document.addEventListener('click', handleClickOutside);
+      document.addEventListener('touchend', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('touchend', handleClickOutside);
+    };
+  }, [openMenuId]);
+
   const toggleMenu = (e: React.MouseEvent, gameId: string) => {
     e.stopPropagation();
     setOpenMenuId(prev => prev === gameId ? null : gameId);
@@ -144,12 +158,12 @@ export default function DashboardView() {
             className="relative group bg-zinc-900 border border-zinc-800 rounded-3xl p-6 text-left hover:border-zinc-700 transition-all hover:shadow-xl flex flex-col cursor-pointer hover:-translate-y-1 h-full"
           >
             <div className="flex justify-between items-start mb-4">
-              <div className="w-12 h-12 bg-zinc-800 rounded-2xl flex items-center justify-center group-hover:bg-zinc-100 transition-colors">
-                <Gamepad2 className="w-6 h-6 text-zinc-500 group-hover:text-zinc-950" />
+              <div className="w-12 h-12 bg-zinc-800 rounded-2xl flex items-center justify-center group-hover:bg-zinc-700 transition-colors duration-500 group-hover:delay-[150ms]">
+                <Gamepad2 className="w-6 h-6 text-zinc-500 group-hover:text-white transition-colors duration-500 group-hover:delay-[150ms]" />
               </div>
               
               <div className="flex items-center absolute right-6 top-6">
-                <div className={`transition-all duration-300 transform ${openMenuId === game.id ? '-translate-x-10' : 'group-hover:-translate-x-10'}`}>
+                <div className={`transition-all duration-300 group-hover:delay-75 transform ${openMenuId === game.id ? '-translate-x-10' : 'group-hover:-translate-x-10'}`}>
                   {game.status === 'completed' ? (
                     <span className="flex items-center gap-1 text-[10px] uppercase tracking-widest font-bold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-1 rounded shadow-[0_0_10px_rgba(251,191,36,0.1)] whitespace-nowrap">
                       <Trophy className="w-3 h-3" />
@@ -162,7 +176,7 @@ export default function DashboardView() {
                   )}
                 </div>
                 
-                <div className={`absolute right-0 flex items-center justify-center transition-opacity duration-300 ${openMenuId === game.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                <div className={`absolute right-0 flex items-center justify-center transition-opacity duration-300 group-hover:delay-75 ${openMenuId === game.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                   <button
                     onClick={(e) => toggleMenu(e, game.id)}
                     className="w-8 h-8 rounded-full hover:bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-zinc-100 transition-colors"
@@ -171,22 +185,21 @@ export default function DashboardView() {
                   </button>
                   
                   {openMenuId === game.id && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); }} />
-                      <div className="absolute right-0 top-full mt-2 w-48 bg-zinc-800 rounded-xl shadow-xl z-50 border border-zinc-700 overflow-hidden">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenMenuId(null);
-                            handleDeleteClick(e, game);
-                          }}
-                          className="w-full text-left px-4 py-3 text-red-400 hover:bg-zinc-700/50 flex items-center gap-2 transition-colors font-bold text-sm"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          Delete Game
-                        </button>
-                      </div>
-                    </>
+                    <div 
+                      className="absolute right-0 top-full mt-2 w-48 bg-zinc-800 rounded-xl shadow-xl z-[60] border border-zinc-700 overflow-hidden"
+                    >
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuId(null);
+                          handleDeleteClick(e, game);
+                        }}
+                        className="w-full text-left px-4 py-3 text-red-400 hover:bg-zinc-700/50 flex items-center gap-2 transition-colors font-bold text-sm"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete Game
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -200,7 +213,7 @@ export default function DashboardView() {
             {/* Quick Resume Button */}
             <button
               onClick={(e) => handleQuickResume(e, game)}
-              className="absolute bottom-5 right-5 w-10 h-10 bg-zinc-100 text-zinc-950 rounded-xl flex items-center justify-center opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-300 hover:bg-white shadow-lg hover:scale-105"
+              className="absolute bottom-5 right-5 w-10 h-10 bg-zinc-100 text-zinc-950 rounded-xl flex items-center justify-center opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-200 ease-out hover:bg-white shadow-lg hover:scale-105"
               title="Resume Last Session"
             >
               <Play className="w-5 h-5 ml-1" />
