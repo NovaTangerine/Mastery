@@ -440,6 +440,14 @@ export default function SessionView() {
         )}
 
         <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-2 pb-24">
+          {sessions.length === 1 && sessions[0].id === activeSession.id && (
+            <div className="px-2 py-4 mb-2 bg-indigo-500/5 border border-indigo-500/10 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-700">
+              <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Getting Started</p>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                This is your first session! As you play more, your history will build up here.
+              </p>
+            </div>
+          )}
           {groupedSessions.map(group => {
             const isCollapsed = collapsedGroups.has(group.id);
             return (
@@ -1244,14 +1252,20 @@ export default function SessionView() {
             </div>
           )}
           {sessionNotes.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center p-8">
-              <div className="w-16 h-16 bg-zinc-900/50 rounded-full flex items-center justify-center mb-4">
-                <PenLine className="w-8 h-8 text-zinc-700" />
+            <div className="h-full flex flex-col items-center justify-center text-center p-8 animate-in fade-in zoom-in-95 duration-700">
+              <div className="w-16 h-16 bg-zinc-900/50 rounded-2xl flex items-center justify-center mb-6 rotate-3">
+                <PenLine className="w-8 h-8 text-zinc-500" />
               </div>
-              <h3 className="text-xl font-bold text-zinc-400 mb-2">No notes yet</h3>
-              <p className="text-zinc-600 max-w-sm">
-                Start typing below to add your first note for this session. Notes will appear here.
+              <h3 className="text-xl font-bold text-zinc-100 mb-3">Your Journey Begins</h3>
+              <p className="text-zinc-500 max-w-xs text-sm leading-relaxed mb-8">
+                Every great adventure deserves to be remembered. Start typing below to capture your first thought, discovery, or strategy.
               </p>
+              <div className="flex flex-col gap-3 w-full max-w-[240px]">
+                <div className="p-3 bg-zinc-900/30 border border-zinc-800/50 rounded-xl text-left">
+                  <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Pro Tip</p>
+                  <p className="text-[11px] text-zinc-400 italic">"Use tags like #boss or #quest to stay organized!"</p>
+                </div>
+              </div>
             </div>
           ) : (
             <DndContext 
@@ -1412,6 +1426,20 @@ export default function SessionView() {
                 ungroupedMetrics.push(m);
               }
             });
+
+            if (metrics.length === 0 && (!activeSession.trackers || activeSession.trackers.length === 0)) {
+              return (
+                <div className="w-full py-12 px-6 bg-zinc-900/30 border border-dashed border-zinc-800 rounded-3xl text-center animate-in fade-in zoom-in-95 duration-700">
+                  <div className="w-12 h-12 bg-zinc-900/50 rounded-xl flex items-center justify-center mb-4 mx-auto">
+                    <LayoutDashboard className="w-6 h-6 text-zinc-600" />
+                  </div>
+                  <h4 className="text-sm font-bold text-zinc-300 mb-2">Stay Quantified</h4>
+                  <p className="text-xs text-zinc-500 leading-relaxed mb-6">
+                    Track your health, collectibles, deaths, or any other numeric goal in real-time.
+                  </p>
+                </div>
+              );
+            }
 
             return (
               <>

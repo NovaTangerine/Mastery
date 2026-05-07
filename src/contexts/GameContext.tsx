@@ -35,12 +35,13 @@ interface GameContextType {
   loadMoreGames: () => void;
   sessionsLimit: number;
   loadMoreSessions: () => void;
+  isSessionsLoading: boolean;
   sessionGroupsLimit: number;
   loadMoreSessionGroups: () => void;
   draftsLimit: number;
   loadMoreDrafts: () => void;
 
-  handleAddGame: (title: string, coverUrl?: string) => Promise<void>;
+  handleAddGame: (title: string, coverUrl?: string) => Promise<string | undefined>;
   handleStartSession: (groupId?: string) => Promise<void>;
   handleResumeSession: (session: GameSession) => void;
   handleUpdateSessionDetails: (name: string, chapter: string, hoursPlayed: string, groupId?: string, targetSessionId?: string) => Promise<void>;
@@ -83,6 +84,8 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
   const [sessionGroupsLimit, setSessionGroupsLimit] = useState(50);
   const [draftsLimit, setDraftsLimit] = useState(50);
 
+  const [isSessionsLoading, setIsSessionsLoading] = useState(false);
+
   const loadMoreGames = () => setGamesLimit(prev => prev + 50);
   const loadMoreSessions = () => setSessionsLimit(prev => prev + 50);
   const loadMoreSessionGroups = () => setSessionGroupsLimit(prev => prev + 50);
@@ -105,13 +108,22 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
   }, [user, isAuthReady, gamesLimit]);
 
   useEffect(() => {
-    if (!user || !selectedGame) return;
+    if (!user || !selectedGame) {
+      setSessions([]);
+      setIsSessionsLoading(false);
+      return;
+    }
 
+    setIsSessionsLoading(true);
     const q = query(collection(db, 'sessions'), where('gameId', '==', selectedGame.id), orderBy('startTime', 'desc'), limit(sessionsLimit));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const sessionsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GameSession));
       setSessions(sessionsList);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'sessions'));
+      setIsSessionsLoading(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'sessions');
+      setIsSessionsLoading(false);
+    });
 
     return () => unsubscribe();
   }, [user, selectedGame, sessionsLimit]);
@@ -157,10 +169,12 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
         gameData.coverUrl = coverUrl;
       }
       
-      await addDoc(collection(db, 'games'), gameData);
+      const docRef = await addDoc(collection(db, 'games'), gameData);
       toast.success('Game added to your library');
+      return docRef.id;
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'games');
+      return undefined;
     }
   };
 
@@ -705,6 +719,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     loadMoreGames,
     sessionsLimit,
     loadMoreSessions,
+    isSessionsLoading,
     sessionGroupsLimit,
     loadMoreSessionGroups,
     draftsLimit,

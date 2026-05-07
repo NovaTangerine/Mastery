@@ -115,8 +115,14 @@ export default function DashboardView() {
       ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${game.cover.image_id}.jpg`
       : undefined;
       
-    await handleAddGame(game.name, coverUrl);
+    const newGameId = await handleAddGame(game.name, coverUrl);
     setIsAddingGame(false);
+    
+    if (newGameId) {
+      // Create a partial game object that navigation can use
+      // The GameProvider will find the full record in the games array
+      navigateTo('game-detail', { id: newGameId, title: game.name } as Game, null);
+    }
   };
 
   return (
