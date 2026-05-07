@@ -121,73 +121,138 @@ export default function GameDetailView() {
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-2 sm:gap-4">
-          <div className="flex items-center gap-1 bg-zinc-900/50 border border-zinc-800 rounded-2xl p-1">
+        {(notes.length > 0 || sessions.length > 0) && (
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="flex items-center gap-1 bg-zinc-900/50 border border-zinc-800 rounded-2xl p-1">
+              <button 
+                onClick={() => handleStartSession()}
+                className="p-3 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-xl transition-all"
+                title="Start New Session"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+              <button 
+                onClick={() => setIsDeletingGame(true)}
+                className="p-3 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
+                title="Delete Game"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+            </div>
             <button 
-              onClick={() => handleStartSession()}
-              className="p-3 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-xl transition-all"
-              title="Start New Session"
+              onClick={() => sessions.length > 0 ? handleResumeSession(sessions[0]) : handleStartSession()}
+              className="bg-zinc-100 text-zinc-950 px-6 sm:px-8 py-4 rounded-2xl font-black text-base sm:text-lg flex items-center justify-center gap-3 hover:bg-white transition-all active:scale-95 shadow-lg shadow-zinc-100/10"
             >
-              <Plus className="w-5 h-5" />
-            </button>
-            <button 
-              onClick={() => setIsDeletingGame(true)}
-              className="p-3 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
-              title="Delete Game"
-            >
-              <Trash2 className="w-5 h-5" />
+              <PenLine className="w-5 h-5 sm:w-6 sm:h-6" />
+              {sessions.length > 0 ? 'Continue Logging' : 'Start Logging'}
             </button>
           </div>
-          <button 
-            onClick={() => sessions.length > 0 ? handleResumeSession(sessions[0]) : handleStartSession()}
-            className="bg-zinc-100 text-zinc-950 px-6 sm:px-8 py-4 rounded-2xl font-black text-base sm:text-lg flex items-center justify-center gap-3 hover:bg-white transition-all active:scale-95 shadow-lg shadow-zinc-100/10"
-          >
-            <PenLine className="w-5 h-5 sm:w-6 sm:h-6" />
-            {sessions.length > 0 ? 'Continue Logging' : 'Start Logging'}
-          </button>
-        </div>
+        )}
       </div>
 
       {notes.length === 0 && sessions.length === 0 ? (
-        <div className="mt-16 sm:mt-24 max-w-4xl animate-in fade-in slide-in-from-bottom-8 duration-700">
-          <h3 className="text-xl sm:text-2xl font-black text-zinc-100 mb-8 sm:mb-12 tracking-tight">You'll be able to:</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
-            <div className="flex flex-col gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-lg shadow-indigo-500/5">
-                <PenLine className="w-6 h-6 text-indigo-400" />
+        <div className="relative mt-12 mb-12 sm:mt-16 animate-in fade-in slide-in-from-bottom-8 duration-700">
+          {/* Placeholder Background UI */}
+          <div className="absolute inset-x-0 -top-12 bottom-0 z-0 overflow-hidden opacity-30 select-none pointer-events-none filter blur-[3px]">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 opacity-70">
+              <div className="lg:col-span-2 space-y-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-2 text-zinc-600">
+                      <TagIcon className="w-5 h-5" />
+                      <div className="w-16 h-3 bg-zinc-800 rounded-full" />
+                    </div>
+                    <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-2xl p-5">
+                      <div className="flex flex-wrap gap-2">
+                        <div className="w-20 h-8 bg-zinc-800/80 rounded-lg" />
+                        <div className="w-24 h-8 bg-zinc-800/80 rounded-lg" />
+                        <div className="w-16 h-8 bg-zinc-800/80 rounded-lg" />
+                        <div className="w-28 h-8 bg-zinc-800/80 rounded-lg" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-2 text-zinc-600">
+                      <History className="w-5 h-5" />
+                      <div className="w-24 h-3 bg-zinc-800 rounded-full" />
+                    </div>
+                    <div className="space-y-4">
+                      <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-2xl p-5 h-24" />
+                      <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-2xl p-5 h-32" />
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div>
-                <h4 className="font-bold text-zinc-100 mb-2">Take Notes</h4>
-                <p className="text-sm text-zinc-500 leading-relaxed">
-                  Take notes on your thoughts and feelings as you progress throughout a game.
-                </p>
+              <div className="space-y-10">
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2 text-zinc-600">
+                    <Target className="w-5 h-5" />
+                    <div className="w-32 h-3 bg-zinc-800 rounded-full" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="w-full h-16 bg-zinc-900/40 rounded-2xl" />
+                    <div className="w-full h-16 bg-zinc-900/40 rounded-2xl" />
+                    <div className="w-full h-16 bg-zinc-900/40 rounded-2xl" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Gradient Overlay to fade out bottom */}
+            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent" />
+          </div>
+
+          {/* Overlay Content */}
+          <div className="relative z-10 flex flex-col items-center justify-center p-8 sm:p-12 text-center rounded-3xl min-h-[400px]">
+            <h3 className="text-3xl sm:text-4xl font-black text-zinc-100 mb-4 tracking-tight">Your Journey Awaits</h3>
+            <p className="text-zinc-400 max-w-lg mb-16 leading-relaxed">
+              Start tracking your playthrough to capture every moment, organize your thoughts, and never lose track of what to do next.
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12 w-full max-w-4xl text-left">
+              <div className="flex flex-col items-center text-center gap-4 group">
+                <div className="w-16 h-16 rounded-3xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-lg shadow-indigo-500/5 group-hover:scale-110 group-hover:bg-indigo-500/20 transition-all duration-300">
+                  <PenLine className="w-7 h-7 text-indigo-400 group-hover:scale-110 transition-transform duration-300" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-zinc-100 mb-2">Take Notes</h4>
+                  <p className="text-sm text-zinc-500 leading-relaxed max-w-[250px]">
+                    Take notes on your thoughts and feelings as you progress throughout a game.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center text-center gap-4 group">
+                <div className="w-16 h-16 rounded-3xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 shadow-lg shadow-amber-500/5 group-hover:scale-110 group-hover:bg-amber-500/20 transition-all duration-300">
+                  <TagIcon className="w-7 h-7 text-amber-400 group-hover:scale-110 transition-transform duration-300" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-zinc-100 mb-2">Tag Notes</h4>
+                  <p className="text-sm text-zinc-500 leading-relaxed max-w-[250px]">
+                    Tag notes with various topics to make them easy to sort and organize based on topic.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center text-center gap-4 group">
+                <div className="w-16 h-16 rounded-3xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shadow-lg shadow-emerald-500/5 group-hover:scale-110 group-hover:bg-emerald-500/20 transition-all duration-300">
+                  <Target className="w-7 h-7 text-emerald-400 group-hover:scale-110 transition-transform duration-300" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-zinc-100 mb-2">Track Objectives</h4>
+                  <p className="text-sm text-zinc-500 leading-relaxed max-w-[250px]">
+                    Track side-quests, collectibles, or create your own objectives to keep track of your goals.
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="flex flex-col gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 shadow-lg shadow-amber-500/5">
-                <TagIcon className="w-6 h-6 text-amber-400" />
-              </div>
-              <div>
-                <h4 className="font-bold text-zinc-100 mb-2">Tag Notes</h4>
-                <p className="text-sm text-zinc-500 leading-relaxed">
-                  Tag notes with various topics to make them easy to sort and organize based on topic.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shadow-lg shadow-emerald-500/5">
-                <Target className="w-6 h-6 text-emerald-400" />
-              </div>
-              <div>
-                <h4 className="font-bold text-zinc-100 mb-2">Track Objectives</h4>
-                <p className="text-sm text-zinc-500 leading-relaxed">
-                  Track side-quests, collectibles, or create your own objectives to keep track of your goals.
-                </p>
-              </div>
-            </div>
+            <button 
+              onClick={() => handleStartSession()}
+              className="mt-20 bg-zinc-100 text-zinc-950 px-10 py-5 rounded-2xl font-black text-lg flex items-center justify-center gap-3 hover:bg-white hover:scale-105 active:scale-95 transition-all shadow-xl shadow-zinc-100/10"
+            >
+              START FIRST SESSION
+            </button>
           </div>
         </div>
       ) : (
