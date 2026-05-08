@@ -90,8 +90,20 @@ export default function SessionView() {
         }
       }
     }
-    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    return counts;
   }, [allSessionNotes]);
+
+  const [preAddedTags, setPreAddedTags] = useState<string[]>([]);
+  const allSessionTagsList = React.useMemo(() => {
+    const combined = new Set([...Object.keys(tagCounts), ...preAddedTags]);
+    return Array.from(combined).sort((a, b) => {
+      // Sort by count descending, then alphabetical
+      const countA = tagCounts[a] || 0;
+      const countB = tagCounts[b] || 0;
+      if (countB !== countA) return countB - countA;
+      return a.localeCompare(b);
+    });
+  }, [tagCounts, preAddedTags]);
 
   const [noteInput, setNoteInput] = useState('');
   const [isEditingSessionDetails, setIsEditingSessionDetails] = useState(false);
@@ -115,6 +127,7 @@ export default function SessionView() {
 
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [noteTags, setNoteTags] = useState<string[]>([]);
+  const [sessionTagInput, setSessionTagInput] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [isEditingTitleInline, setIsEditingTitleInline] = useState(false);
   const [inlineTitleInput, setInlineTitleInput] = useState('');
@@ -123,6 +136,24 @@ export default function SessionView() {
   const [editingSidebarSessionName, setEditingSidebarSessionName] = useState('');
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [activeMenuType, setActiveMenuType] = useState<'group' | 'session' | null>(null);
+
+  const handleDeleteSessionTag = async (tagToDelete: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    // Remove from pre-added tags
+    setPreAddedTags(prev => prev.filter(t => t !== tagToDelete));
+    
+    // Clear filter if active
+    if (filteredTag === tagToDelete) {
+      setFilteredTag(undefined);
+    }
+    
+    // Find all notes containing this tag across the session
+    const notesWithTag = allSessionNotes.filter(n => n.tags && n.tags.includes(tagToDelete));
+    for (const note of notesWithTag) {
+      await handleRemoveTag(note.id, tagToDelete);
+    }
+  };
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -1260,12 +1291,6 @@ export default function SessionView() {
               <p className="text-zinc-500 max-w-xs text-sm leading-relaxed mb-8">
                 Every great adventure deserves to be remembered. Start typing below to capture your first thought, discovery, or strategy.
               </p>
-              <div className="flex flex-col gap-3 w-full max-w-[240px]">
-                <div className="p-3 bg-zinc-900/30 border border-zinc-800/50 rounded-xl text-left">
-                  <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Pro Tip</p>
-                  <p className="text-[11px] text-zinc-400 italic">"Use tags like #boss or #quest to stay organized!"</p>
-                </div>
-              </div>
             </div>
           ) : (
             <DndContext 
@@ -1517,46 +1542,84 @@ export default function SessionView() {
             </div>
           ) : null}
           
-          {tagCounts.length > 0 && (
-            <div className="mt-4 lg:mt-8 space-y-4 w-full md:col-span-2 lg:col-span-1">
-              <div className="flex items-center gap-2 text-zinc-400">
-                <TagIcon className="w-4 h-4 text-zinc-600" />
-                <h3 className="font-bold uppercase tracking-widest text-xs">Session Tags</h3>
+          {/* Always render tags module */}
+          <div className="hidden lg:block lg:flex-1"></div>
+          <div className="mt-8 lg:mt-0 space-y-4 w-full md:col-span-2 lg:col-span-1">
+            <div className="flex items-center gap-2 text-zinc-400">
+              <TagIcon className="w-4 h-4 text-zinc-600" />
+              <h3 className="font-bold uppercase tracking-widest text-xs">Session Tags</h3>
+            </div>
+            
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl flex flex-col overflow-hidden">
+              <div className="p-5 flex-1">
+                {allSessionTagsList.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {allSessionTagsList.map((tag) => {
+                      const count = tagCounts[tag] || 0;
+                      return (
+                      <div key={tag} className="group relative flex items-center">
+                        <button 
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData('application/x-game-log-tag', tag);
+                            e.dataTransfer.effectAllowed = 'copy';
+                            
+                            // Create a custom drag image that looks like the tag
+                            const dragPreview = e.currentTarget.cloneNode(true) as HTMLElement;
+                            dragPreview.style.position = 'absolute';
+                            dragPreview.style.top = '-1000px';
+                            dragPreview.style.opacity = '0.7';
+                            dragPreview.style.pointerEvents = 'none';
+                            document.body.appendChild(dragPreview);
+                            e.dataTransfer.setDragImage(dragPreview, 0, 0);
+                            setTimeout(() => document.body.removeChild(dragPreview), 0);
+                          }}
+                          onClick={() => {
+                            setFilteredTag(tag);
+                            scrollToTab('notes');
+                          }}
+                          className="px-3 py-1.5 pr-8 bg-zinc-950 border border-zinc-800 rounded-lg flex items-center gap-2 hover:border-zinc-700 hover:bg-zinc-800 transition-colors animate-in fade-in cursor-grab active:cursor-grabbing group-hover:border-zinc-700"
+                        >
+                          <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter group-hover:text-zinc-300">{tag}</span>
+                          {count > 0 && (
+                            <span className="text-[10px] font-mono text-zinc-600 bg-zinc-900 px-1.5 py-0.5 rounded group-hover:bg-zinc-950">{count}</span>
+                          )}
+                        </button>
+                        <button
+                          onClick={(e) => handleDeleteSessionTag(tag, e)}
+                          className="absolute right-1 w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-red-500/10 rounded-md transition-all z-10"
+                        >
+                          <X className="w-3 h-3 text-zinc-500 hover:text-red-400" />
+                        </button>
+                      </div>
+                    )})}
+                  </div>
+                ) : (
+                  <div className="p-3 bg-zinc-900/30 border border-zinc-800/50 rounded-xl text-left">
+                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Pro Tip</p>
+                    <p className="text-[11px] text-zinc-400 italic">"Use tags like #boss or #quest to stay organized! Add them below and drag to notes."</p>
+                  </div>
+                )}
               </div>
-              <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5">
-                <div className="flex flex-wrap gap-2">
-                  {tagCounts.map(([tag, count]) => (
-                    <button 
-                      key={tag}
-                      draggable
-                      onDragStart={(e) => {
-                        e.dataTransfer.setData('application/x-game-log-tag', tag);
-                        e.dataTransfer.effectAllowed = 'copy';
-                        
-                        // Create a custom drag image that looks like the tag
-                        const dragPreview = e.currentTarget.cloneNode(true) as HTMLElement;
-                        dragPreview.style.position = 'absolute';
-                        dragPreview.style.top = '-1000px';
-                        dragPreview.style.opacity = '0.7';
-                        dragPreview.style.pointerEvents = 'none';
-                        document.body.appendChild(dragPreview);
-                        e.dataTransfer.setDragImage(dragPreview, 0, 0);
-                        setTimeout(() => document.body.removeChild(dragPreview), 0);
-                      }}
-                      onClick={() => {
-                        setFilteredTag(tag);
-                        scrollToTab('notes');
-                      }}
-                      className="px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg flex items-center gap-2 group hover:border-zinc-700 hover:bg-zinc-800 transition-colors animate-in fade-in cursor-grab active:cursor-grabbing"
-                    >
-                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter group-hover:text-zinc-300">{tag}</span>
-                      <span className="text-[10px] font-mono text-zinc-600 bg-zinc-900 px-1.5 py-0.5 rounded group-hover:bg-zinc-950">{count}</span>
-                    </button>
-                  ))}
-                </div>
+              <div className="p-3 bg-zinc-900 border-t border-zinc-800">
+                <TagAutocompleteInput
+                  gameId={selectedGame?.id || null}
+                  value={sessionTagInput}
+                  onChange={setSessionTagInput}
+                  onAddTag={(tag) => {
+                    const trimmed = tag.trim().toLowerCase();
+                    if (trimmed && !preAddedTags.includes(trimmed)) {
+                      setPreAddedTags(prev => [...prev, trimmed]);
+                      setSessionTagInput('');
+                    }
+                  }}
+                  existingTags={allSessionTagsList}
+                  placeholder="Pre-add a tag..."
+                  className="bg-transparent border-none focus:ring-0 text-sm text-zinc-300 placeholder:text-zinc-600 outline-none w-full"
+                />
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
