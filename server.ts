@@ -92,7 +92,7 @@ async function startServer() {
 
   // API Routes
   app.get("/api/health", (req, res) => {
-    res.json({ status: "ok" });
+    res.json({ status: "ok", version: "1.0.1", timestamp: "2026-05-08T05:44:00Z" });
   });
 
   app.post("/api/tags/suggest", aiLimiter, async (req, res) => {

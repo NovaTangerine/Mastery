@@ -350,27 +350,27 @@ export default function SessionView() {
       style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
     >
       {groupToDelete && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
-            <h3 className="text-2xl font-bold mb-4">Delete "{groupToDelete.title}"?</h3>
-            <p className="text-zinc-400 mb-8 leading-relaxed">
-              Are you sure you want to delete this group? Sessions will be ungrouped.
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-xl font-bold mb-2 text-white">Delete "{groupToDelete.title}"?</h3>
+            <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
+              Are you sure you want to delete this group? All sessions will be ungrouped. No data will be lost.
             </p>
-            <div className="flex gap-4">
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setGroupToDelete(null)}
+                className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-bold py-3 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
               <button 
                 onClick={() => {
                   handleDeleteSessionGroup(groupToDelete.id);
                   setGroupToDelete(null);
                 }}
-                className="flex-1 bg-red-600 text-white py-3 rounded-2xl font-bold hover:bg-red-500 transition-colors"
+                className="flex-1 bg-red-600/10 hover:bg-red-600/20 text-red-500 font-bold py-3 rounded-xl transition-colors"
               >
-                Delete
-              </button>
-              <button 
-                onClick={() => setGroupToDelete(null)}
-                className="flex-1 bg-zinc-800 text-zinc-100 py-3 rounded-2xl font-bold hover:bg-zinc-700 transition-colors"
-              >
-                Cancel
+                Delete Group
               </button>
             </div>
           </div>
@@ -378,15 +378,21 @@ export default function SessionView() {
       )}
 
       {sessionToDelete && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
-            <h3 className="text-2xl font-bold mb-4">Delete Session?</h3>
-            <p className="text-zinc-400 mb-8 leading-relaxed">
-              Are you sure you want to delete the session "{sessionToDelete.name}"?
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-xl font-bold mb-2 text-white">Delete Session?</h3>
+            <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
+              Are you sure you want to delete <span className="font-bold text-white">"{sessionToDelete.name}"</span>?
               <br/><br/>
-              <span className="text-red-400 font-bold">Warning:</span> Because this session has notes, deleting it will also permanently delete all its notes.
+              <span className="text-red-400 font-bold">Warning:</span> All associated notes will be permanently deleted. This cannot be undone.
             </p>
-            <div className="flex gap-4">
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setSessionToDelete(null)}
+                className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-bold py-3 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
               <button 
                 onClick={async () => {
                   if (sessionToDelete) {
@@ -394,15 +400,9 @@ export default function SessionView() {
                     await handleDeleteSessionAndShiftFocus(sessionToDelete.id);
                   }
                 }}
-                className="flex-1 bg-red-600 text-white py-3 rounded-2xl font-bold hover:bg-red-500 transition-colors"
+                className="flex-1 bg-red-600/10 hover:bg-red-600/20 text-red-500 font-bold py-3 rounded-xl transition-colors"
               >
                 Delete Session
-              </button>
-              <button 
-                onClick={() => setSessionToDelete(null)}
-                className="flex-1 bg-zinc-800 text-zinc-100 py-3 rounded-2xl font-bold hover:bg-zinc-700 transition-colors"
-              >
-                Cancel
               </button>
             </div>
           </div>

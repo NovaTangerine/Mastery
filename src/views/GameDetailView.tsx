@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, PenLine, Star, ChevronRight, History, Tag as TagIcon } from 'lucide-react';
 import { format } from 'date-fns';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
 import { useGameContext } from '../contexts/GameContext';
 import { useUI } from '../contexts/UIContext';
 import { useNotes } from '../hooks/useNotes';
@@ -26,7 +28,37 @@ export default function GameDetailView() {
 
   const { notes } = useNotes(selectedGame?.id || null);
   const [isDeletingGame, setIsDeletingGame] = useState(false);
+  const [deleteInfo, setDeleteInfo] = useState<{ sessions: number, notes: number } | null>(null);
+  const [isCheckingDelete, setIsCheckingDelete] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<GameSession | null>(null);
+
+  const handleDeleteClick = async () => {
+    if (!selectedGame) return;
+    
+    setIsCheckingDelete(true);
+    setDeleteInfo(null);
+    try {
+      const sessionsQuery = query(collection(db, 'sessions'), where('gameId', '==', selectedGame.id));
+      const sessionsSnap = await getDocs(sessionsQuery);
+      
+      const notesQuery = query(collection(db, 'notes'), where('gameId', '==', selectedGame.id));
+      const notesSnap = await getDocs(notesQuery);
+      
+      const sCount = sessionsSnap.size;
+      const nCount = notesSnap.size;
+      
+      if (sCount === 0 && nCount === 0) {
+         await handleDeleteGame();
+      } else {
+         setDeleteInfo({ sessions: sCount, notes: nCount });
+         setIsDeletingGame(true);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsCheckingDelete(false);
+    }
+  };
 
   React.useEffect(() => {
     if (!isSessionsLoading && selectedGame && sessions.length === 0) {
@@ -50,25 +82,37 @@ export default function GameDetailView() {
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {isDeletingGame && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
-            <h3 className="text-2xl font-bold mb-4">Delete "{selectedGame?.title}"?</h3>
-            <p className="text-zinc-400 mb-8 leading-relaxed">
-              This will permanently delete this game and all associated sessions and notes. This action cannot be undone.
+      {isDeletingGame && deleteInfo && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-xl font-bold mb-2 text-white">Delete Library Game?</h3>
+            <p className="text-zinc-400 text-sm mb-6">
+              You are about to delete <span className="font-bold text-white">{selectedGame?.title}</span>.
+              <br/><br/>
+              This game contains:
             </p>
-            <div className="flex gap-4">
+            <ul className="list-disc ml-5 mt-[-16px] mb-6 text-zinc-300 text-sm">
+              <li>{deleteInfo.sessions} session{deleteInfo.sessions !== 1 && 's'}</li>
+              <li>{deleteInfo.notes} note{deleteInfo.notes !== 1 && 's'}</li>
+            </ul>
+            <p className="text-zinc-400 text-sm mb-6 font-bold text-red-400">
+              This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
               <button 
-                onClick={() => handleDeleteGame()}
-                className="flex-1 bg-red-600 text-white py-3 rounded-2xl font-bold hover:bg-red-500 transition-colors"
-              >
-                Delete
-              </button>
-              <button 
-                onClick={() => setIsDeletingGame(false)}
-                className="flex-1 bg-zinc-800 text-zinc-100 py-3 rounded-2xl font-bold hover:bg-zinc-700 transition-colors"
+                onClick={() => {
+                  setIsDeletingGame(false);
+                  setDeleteInfo(null);
+                }}
+                className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-bold py-3 rounded-xl transition-colors"
               >
                 Cancel
+              </button>
+              <button 
+                onClick={() => handleDeleteGame()}
+                className="flex-1 bg-red-600/10 hover:bg-red-600/20 text-red-500 font-bold py-3 rounded-xl transition-colors"
+              >
+                Delete Game
               </button>
             </div>
           </div>
@@ -76,27 +120,27 @@ export default function GameDetailView() {
       )}
 
       {sessionToDelete && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
-            <h3 className="text-2xl font-bold mb-4">Delete Session?</h3>
-            <p className="text-zinc-400 mb-8 leading-relaxed">
-              This will permanently delete this session and all its notes. This action cannot be undone.
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-xl font-bold mb-2 text-white">Delete Session?</h3>
+            <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
+              This will permanently delete this session and all associated notes. This action cannot be undone.
             </p>
-            <div className="flex gap-4">
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setSessionToDelete(null)}
+                className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-bold py-3 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
               <button 
                 onClick={() => {
                   handleDeleteSession(sessionToDelete.id);
                   setSessionToDelete(null);
                 }}
-                className="flex-1 bg-red-600 text-white py-3 rounded-2xl font-bold hover:bg-red-500 transition-colors"
+                className="flex-1 bg-red-600/10 hover:bg-red-600/20 text-red-500 font-bold py-3 rounded-xl transition-colors"
               >
-                Delete
-              </button>
-              <button 
-                onClick={() => setSessionToDelete(null)}
-                className="flex-1 bg-zinc-800 text-zinc-100 py-3 rounded-2xl font-bold hover:bg-zinc-700 transition-colors"
-              >
-                Cancel
+                Delete Session
               </button>
             </div>
           </div>
@@ -138,11 +182,15 @@ export default function GameDetailView() {
               <Plus className="w-5 h-5" />
             </button>
             <button 
-              onClick={() => setIsDeletingGame(true)}
-              className="p-3 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
+              onClick={handleDeleteClick}
+              disabled={isCheckingDelete}
+              className={cn(
+                "p-3 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all",
+                isCheckingDelete && "opacity-50 cursor-not-allowed"
+              )}
               title="Delete Game"
             >
-              <Trash2 className="w-5 h-5" />
+              <Trash2 className={cn("w-5 h-5", isCheckingDelete && "animate-pulse")} />
             </button>
           </div>
           <button 

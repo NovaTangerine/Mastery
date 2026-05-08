@@ -95,10 +95,11 @@ export default function HomeView() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-4xl font-extrabold tracking-tight mb-3"
+            className="text-4xl font-extrabold tracking-tight mb-3 text-emerald-400"
           >
-            Let's build your Cartridge.
+            QuestLog: Build your Cartridge.
           </motion.h1>
+          <p className="bg-white text-black px-2 py-1 inline-block font-bold rounded mt-4">DEPLOYED: 2026-05-08 05:43</p>
           <motion.p 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}

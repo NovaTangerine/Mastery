@@ -248,7 +248,7 @@ export default function DashboardView() {
       )}
 
       {deleteInfo && gameToDelete && (
-        <div className="fixed inset-0 bg-zinc-950/80 backdrop-blur z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200">
             <h3 className="text-xl font-bold mb-2 text-white">Delete Library Game?</h3>
             <p className="text-zinc-400 text-sm mb-6">
