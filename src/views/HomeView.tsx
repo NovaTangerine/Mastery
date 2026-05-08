@@ -91,15 +91,12 @@ export default function HomeView() {
             <Sparkles className="w-3 h-3 text-zinc-300" />
             <span>Welcome to QuestLog</span>
           </motion.div>
-          <motion.h1 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-4xl font-extrabold tracking-tight mb-3 text-emerald-400"
-          >
+          <h1 className="text-4xl font-extrabold tracking-tight mb-3 text-emerald-400">
             QuestLog: Build your Cartridge.
-          </motion.h1>
-          <p className="bg-white text-black px-2 py-1 inline-block font-bold rounded mt-4">DEPLOYED: 2026-05-08 05:43</p>
+          </h1>
+          <div className="bg-emerald-500 text-zinc-950 px-3 py-1 inline-flex items-center gap-2 font-black rounded-lg mt-4 shadow-lg shadow-emerald-500/20">
+            <span className="animate-pulse">●</span> DEPLOYED: v1.0.2 @ 14:42
+          </div>
           <motion.p 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
