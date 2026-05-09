@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, X, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Search, X, Loader2, Image as ImageIcon, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface Game {
@@ -264,10 +264,10 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
                   )}
 
                   {results.map((game) => (
-                    <button
+                    <div
                       key={game.id}
                       onClick={() => handlePreviewGame(game)}
-                      className="w-full flex items-center gap-4 p-3 hover:bg-zinc-800/50 rounded-xl transition-colors text-left group"
+                      className="w-full flex items-center gap-4 p-3 hover:bg-zinc-800/50 rounded-xl transition-colors text-left group cursor-pointer"
                     >
                       <div className="w-12 h-16 bg-zinc-800 rounded-lg overflow-hidden shrink-0 flex items-center justify-center border border-zinc-700/50">
                         {game.cover?.image_id ? (
@@ -291,7 +291,17 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
                           </p>
                         )}
                       </div>
-                    </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectGame(game);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-2 rounded-full hover:bg-zinc-700 text-zinc-400 hover:text-amber-400 transition-all active:scale-95 shrink-0 bg-zinc-800 shadow-sm"
+                        title="Add to library"
+                      >
+                        <Plus className="w-5 h-5" />
+                      </button>
+                    </div>
                   ))}
                 </motion.div>
               )}

@@ -470,7 +470,7 @@ export default function SessionView() {
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-2 pb-24">
+        <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-2 pb-24 lg:pb-0">
           {sessions.length === 1 && sessions[0].id === activeSession.id && (
             <div className="px-2 py-4 mb-2 bg-indigo-500/5 border border-indigo-500/10 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-700">
               <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Getting Started</p>
@@ -1435,7 +1435,7 @@ export default function SessionView() {
         <div className="flex items-center justify-between mb-6">
           <h3 className="font-bold uppercase tracking-widest text-xs text-zinc-400">Trackers</h3>
         </div>
-        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 grid grid-cols-1 md:grid-cols-2 lg:flex lg:flex-col gap-4 items-start lg:items-stretch content-start pb-20">
+        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 grid grid-cols-1 md:grid-cols-2 lg:flex lg:flex-col gap-4 items-start lg:items-stretch content-start pb-24 lg:pb-0">
           {(() => {
             const metrics = activeSession.metrics || [];
             
@@ -1551,6 +1551,23 @@ export default function SessionView() {
             </div>
             
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl flex flex-col overflow-hidden">
+              <div className="p-3 bg-zinc-900 border-b border-zinc-800">
+                <TagAutocompleteInput
+                  gameId={selectedGame?.id || null}
+                  value={sessionTagInput}
+                  onChange={setSessionTagInput}
+                  onAddTag={(tag) => {
+                    const trimmed = tag.trim().toLowerCase();
+                    if (trimmed && !preAddedTags.includes(trimmed)) {
+                      setPreAddedTags(prev => [...prev, trimmed]);
+                      setSessionTagInput('');
+                    }
+                  }}
+                  existingTags={allSessionTagsList}
+                  placeholder="Add a tag..."
+                  className="bg-transparent border-none focus:ring-0 text-sm text-zinc-300 placeholder:text-zinc-600 outline-none w-full"
+                />
+              </div>
               <div className="p-5 flex-1">
                 {allSessionTagsList.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
@@ -1600,23 +1617,6 @@ export default function SessionView() {
                     <p className="text-[11px] text-zinc-400 italic">"Use tags like #boss or #quest to stay organized! Add them below and drag to notes."</p>
                   </div>
                 )}
-              </div>
-              <div className="p-3 bg-zinc-900 border-t border-zinc-800">
-                <TagAutocompleteInput
-                  gameId={selectedGame?.id || null}
-                  value={sessionTagInput}
-                  onChange={setSessionTagInput}
-                  onAddTag={(tag) => {
-                    const trimmed = tag.trim().toLowerCase();
-                    if (trimmed && !preAddedTags.includes(trimmed)) {
-                      setPreAddedTags(prev => [...prev, trimmed]);
-                      setSessionTagInput('');
-                    }
-                  }}
-                  existingTags={allSessionTagsList}
-                  placeholder="Pre-add a tag..."
-                  className="bg-transparent border-none focus:ring-0 text-sm text-zinc-300 placeholder:text-zinc-600 outline-none w-full"
-                />
               </div>
             </div>
           </div>

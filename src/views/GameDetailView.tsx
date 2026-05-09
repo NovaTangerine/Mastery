@@ -60,12 +60,6 @@ export default function GameDetailView() {
     }
   };
 
-  React.useEffect(() => {
-    if (!isSessionsLoading && selectedGame && sessions.length === 0) {
-      handleStartSession();
-    }
-  }, [selectedGame, isSessionsLoading, sessions.length, handleStartSession]);
-
   const tagCounts = React.useMemo(() => {
     const counts: Record<string, number> = {};
     for (const note of notes) {
