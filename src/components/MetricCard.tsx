@@ -10,9 +10,14 @@ interface MetricCardProps {
 }
 
 export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDelete, onEdit }) => {
+  const [isTapped, setIsTapped] = React.useState(false);
+
   if (metric.measurementType === 'checkbox') {
     return (
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3 flex items-center justify-between gap-4 group/metric relative transition-colors hover:border-zinc-700">
+      <div 
+        className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3 flex items-center justify-between gap-4 group/metric relative transition-colors hover:border-zinc-700 cursor-default"
+        onClick={() => setIsTapped(!isTapped)}
+      >
         <div className="flex-1 min-w-0">
           <h4 className={`font-bold text-sm transition-colors ${metric.completed ? 'text-zinc-500 line-through decoration-zinc-700' : 'text-zinc-100'}`}>
             {metric.title}
@@ -23,15 +28,15 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="opacity-0 group-hover/metric:opacity-100 flex items-center gap-0.5 transition-opacity mr-2">
+          <div className={`flex items-center gap-0.5 transition-opacity mr-2 ${isTapped ? 'opacity-100' : 'opacity-0 lg:group-hover/metric:opacity-100'}`}>
             <button 
-              onClick={() => onEdit(metric.id)}
+              onClick={(e) => { e.stopPropagation(); onEdit(metric.id); }}
               className="p-1 px-1.5 rounded-lg text-zinc-600 hover:text-indigo-400 hover:bg-zinc-800 transition-all"
             >
               <Edit2 className="w-3.5 h-3.5" />
             </button>
             <button 
-              onClick={() => onDelete(metric.id)}
+              onClick={(e) => { e.stopPropagation(); onDelete(metric.id); }}
               className="p-1 px-1.5 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-zinc-800 transition-all"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -39,7 +44,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
           </div>
           
           <button
-            onClick={() => onUpdate(metric.id, { completed: !metric.completed })}
+            onClick={(e) => { e.stopPropagation(); onUpdate(metric.id, { completed: !metric.completed }); }}
             className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all border shrink-0 ${
               metric.completed 
                 ? 'bg-indigo-500 border-indigo-400 text-white shadow-[0_0_10px_rgba(99,102,241,0.3)]' 
@@ -58,7 +63,10 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
   }
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex flex-col gap-3 group/metric relative overflow-hidden transition-colors hover:border-zinc-700">
+    <div 
+      className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex flex-col gap-3 group/metric relative overflow-hidden transition-colors hover:border-zinc-700 cursor-default"
+      onClick={() => setIsTapped(!isTapped)}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0 pr-14">
           <h4 className="font-bold text-sm text-zinc-100 truncate">{metric.title}</h4>
@@ -67,16 +75,16 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
           )}
         </div>
         
-        <div className="absolute right-3 top-3 opacity-0 group-hover/metric:opacity-100 flex items-center gap-1 transition-opacity">
+        <div className={`absolute right-3 top-3 flex items-center gap-1 transition-opacity ${isTapped ? 'opacity-100' : 'opacity-0 lg:group-hover/metric:opacity-100'}`}>
           <button 
-            onClick={() => onEdit(metric.id)}
+            onClick={(e) => { e.stopPropagation(); onEdit(metric.id); }}
             className="p-1.5 rounded-lg text-zinc-500 hover:text-indigo-400 hover:bg-zinc-800 transition-all"
             title="Edit Tracker"
           >
             <Edit2 className="w-3.5 h-3.5" />
           </button>
           <button 
-            onClick={() => onDelete(metric.id)}
+            onClick={(e) => { e.stopPropagation(); onDelete(metric.id); }}
             className="p-1.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-zinc-800 transition-all"
             title="Delete Tracker"
           >

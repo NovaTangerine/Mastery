@@ -30,30 +30,32 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 
 export default function SessionView() {
   const { goBack, navigateTo } = useUI();
-  const {
-    selectedGame,
-    sessions,
+  const { 
+    selectedGame, 
     activeSession,
-    handleStartSession,
-    handleResumeSession,
-    handleUpdateSessionDetails,
-    handleAddTracker,
-    handleAddTrackerItem,
-    handleUpdateTrackerItem,
-    handleRemoveTrackerItem,
-    handleDeleteTracker,
-    handleMigrateLegacyTrackers,
-    handleAddMetric,
-    handleUpdateMetric,
-    handleDeleteMetric,
+    sessions,
     sessionGroups,
+    handleDeleteGame, 
+    handleUpdateSessionDetails, 
+    handleDeleteSessionAndShiftFocus,
+    checkSessionHasNotes,
+    getSessionNotesCount,
     handleCreateSessionGroup,
     handleUpdateSessionGroup,
     handleDeleteSessionGroup,
     handleUpdateSessionGroupMembership,
     handleDeleteSession,
-    handleDeleteSessionAndShiftFocus,
-    checkSessionHasNotes,
+    handleResumeSession,
+    handleStartSession,
+    handleUpdateMetric,
+    handleDeleteMetric,
+    handleAddMetric,
+    handleMigrateLegacyTrackers,
+    handleAddTrackerItem,
+    handleUpdateTrackerItem,
+    handleRemoveTrackerItem,
+    handleAddTracker,
+    handleDeleteTracker
   } = useGameContext();
 
   const [filteredTag, setFilteredTag] = useState<string | null>(null);
@@ -129,6 +131,7 @@ export default function SessionView() {
   const [sessionSortOrder, setSessionSortOrder] = useState<'asc' | 'desc'>('desc');
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
   const [groupToDelete, setGroupToDelete] = useState<{id: string, title: string} | null>(null);
+  const [metricToDelete, setMetricToDelete] = useState<{ id: string, title: string, type: 'metric' | 'legacy' } | null>(null);
 
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [noteTags, setNoteTags] = useState<string[]>([]);
@@ -136,7 +139,7 @@ export default function SessionView() {
   const [tagInput, setTagInput] = useState('');
   const [isEditingTitleInline, setIsEditingTitleInline] = useState(false);
   const [inlineTitleInput, setInlineTitleInput] = useState('');
-  const [sessionToDelete, setSessionToDelete] = useState<{ id: string, name: string, hasNotes: boolean } | null>(null);
+  const [sessionToDelete, setSessionToDelete] = useState<{ id: string, name: string, notesCount: number } | null>(null);
   const [editingSidebarSessionId, setEditingSidebarSessionId] = useState<string | null>(null);
   const [editingSidebarSessionName, setEditingSidebarSessionName] = useState('');
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
@@ -330,6 +333,30 @@ export default function SessionView() {
     })
   );
 
+  const groupedSessions = React.useMemo(() => {
+    const groups = sessionGroups.map(group => ({
+      ...group,
+      sessions: sortedSessions.filter(s => s.groupId === group.id)
+    }));
+
+    return groups.sort((a, b) => {
+      const getCompareTime = (groupSessions: typeof sessions) => {
+        if (groupSessions.length === 0) return sessionSortOrder === 'desc' ? 0 : Infinity;
+        // For desc (newest first), we want the newest session in the group to represent it
+        // For asc (oldest first), we want the oldest session in the group to represent it
+        const times = groupSessions.map(s => s.startTime || 0);
+        return sessionSortOrder === 'desc' ? Math.max(...times) : Math.min(...times);
+      };
+
+      const timeA = getCompareTime(a.sessions);
+      const timeB = getCompareTime(b.sessions);
+
+      return sessionSortOrder === 'desc' ? timeB - timeA : timeA - timeB;
+    });
+  }, [sessionGroups, sortedSessions, sessionSortOrder]);
+
+  const ungroupedSessions = sortedSessions.filter(s => !s.groupId);
+
   if (!selectedGame || !activeSession) return null;
 
   const submitNote = async (e?: React.FormEvent) => {
@@ -363,30 +390,6 @@ export default function SessionView() {
     setIsCreatingNewGroup(false);
     setNewGroupNameInput('');
   };
-
-  const groupedSessions = React.useMemo(() => {
-    const groups = sessionGroups.map(group => ({
-      ...group,
-      sessions: sortedSessions.filter(s => s.groupId === group.id)
-    }));
-
-    return groups.sort((a, b) => {
-      const getCompareTime = (groupSessions: typeof sessions) => {
-        if (groupSessions.length === 0) return sessionSortOrder === 'desc' ? 0 : Infinity;
-        // For desc (newest first), we want the newest session in the group to represent it
-        // For asc (oldest first), we want the oldest session in the group to represent it
-        const times = groupSessions.map(s => s.startTime || 0);
-        return sessionSortOrder === 'desc' ? Math.max(...times) : Math.min(...times);
-      };
-
-      const timeA = getCompareTime(a.sessions);
-      const timeB = getCompareTime(b.sessions);
-
-      return sessionSortOrder === 'desc' ? timeB - timeA : timeA - timeB;
-    });
-  }, [sessionGroups, sortedSessions, sessionSortOrder]);
-
-  const ungroupedSessions = sortedSessions.filter(s => !s.groupId);
 
   return (
     <div 
@@ -423,13 +426,31 @@ export default function SessionView() {
       )}
 
       {sessionToDelete && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl"
+          >
+            <div className="w-12 h-12 bg-red-500/10 rounded-2xl flex items-center justify-center mb-4">
+              <Trash2 className="w-6 h-6 text-red-500" />
+            </div>
             <h3 className="text-xl font-bold mb-2 text-white">Delete Session?</h3>
             <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
               Are you sure you want to delete <span className="font-bold text-white">"{sessionToDelete.name}"</span>?
-              <br/><br/>
-              <span className="text-red-400 font-bold">Warning:</span> All associated notes will be permanently deleted. This cannot be undone.
+              {sessionToDelete.notesCount > 0 && (
+                <>
+                  <br/><br/>
+                  <span className="text-red-400 font-bold">Warning:</span> This session contains <span className="text-red-400 font-bold">{sessionToDelete.notesCount} {sessionToDelete.notesCount === 1 ? 'note' : 'notes'}</span> which will be permanently deleted. This cannot be undone.
+                </>
+              )}
+              {sessionToDelete.notesCount === 0 && (
+                <>
+                  <br/><br/>
+                  This action cannot be undone.
+                </>
+              )}
             </p>
             <div className="flex gap-3">
               <button 
@@ -441,16 +462,61 @@ export default function SessionView() {
               <button 
                 onClick={async () => {
                   if (sessionToDelete) {
-                    setSessionToDelete(null); // Close modal first for better UX
-                    await handleDeleteSessionAndShiftFocus(sessionToDelete.id);
+                    const id = sessionToDelete.id;
+                    setSessionToDelete(null);
+                    await handleDeleteSessionAndShiftFocus(id);
                   }
                 }}
-                className="flex-1 bg-red-600/10 hover:bg-red-600/20 text-red-500 font-bold py-3 rounded-xl transition-colors"
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-red-600/20"
               >
-                Delete Session
+                Delete
               </button>
             </div>
-          </div>
+          </motion.div>
+        </div>
+      )}
+
+      {metricToDelete && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl"
+          >
+            <div className="w-12 h-12 bg-red-500/10 rounded-2xl flex items-center justify-center mb-4">
+              <Trash2 className="w-6 h-6 text-red-500" />
+            </div>
+            <h3 className="text-xl font-bold mb-2 text-white">Delete Tracker?</h3>
+            <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
+              Are you sure you want to delete <span className="font-bold text-white">"{metricToDelete.title}"</span>? This tracker and its data will be permanently removed. This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setMetricToDelete(null)}
+                className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-bold py-3 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={async () => {
+                  if (metricToDelete) {
+                    const id = metricToDelete.id;
+                    const type = metricToDelete.type;
+                    setMetricToDelete(null);
+                    if (type === 'metric') {
+                      await handleDeleteMetric(id);
+                    } else {
+                      await handleDeleteTracker(id);
+                    }
+                  }
+                }}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-red-600/20"
+              >
+                Delete
+              </button>
+            </div>
+          </motion.div>
         </div>
       )}
 
@@ -524,7 +590,7 @@ export default function SessionView() {
         )}
 
         <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-4 sm:pr-6 lg:pr-2 pb-24 lg:pb-0">
-          {sessions.length === 1 && sessions[0].id === activeSession.id && (
+          {sessions.length === 1 && sessions[0].id === activeSession?.id && (
             <div className="px-2 py-4 mb-2 bg-indigo-500/5 border border-indigo-500/10 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-700">
               <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Getting Started</p>
               <p className="text-xs text-zinc-400 leading-relaxed">
@@ -573,7 +639,7 @@ export default function SessionView() {
                   )}
                 </div>
                 
-                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 bg-zinc-950/80 rounded-md px-1">
+                <div className={`flex items-center gap-0.5 transition-opacity shrink-0 bg-zinc-950/80 rounded-md px-1 ${activeMenuId === group.id && activeMenuType === 'group' ? 'opacity-100' : 'opacity-0 lg:group-hover:opacity-100'}`}>
                   {editingGroupId === group.id ? (
                     <>
                       <button
@@ -728,7 +794,7 @@ export default function SessionView() {
                              }
                              setEditingSidebarSessionId(null);
                           }}
-                          className={`flex-1 bg-zinc-950 border border-zinc-800 rounded px-2 py-2 text-sm font-bold focus:outline-none focus:border-zinc-600 min-w-0 ${activeSession.id === session.id ? 'text-zinc-100' : 'text-zinc-400'}`}
+                          className={`flex-1 bg-zinc-950 border border-zinc-800 rounded px-2 py-2 text-sm font-bold focus:outline-none focus:border-zinc-600 min-w-0 ${activeSession?.id === session.id ? 'text-zinc-100' : 'text-zinc-400'}`}
                         />
                       ) : (
                         <button
@@ -736,15 +802,19 @@ export default function SessionView() {
                             handleResumeSession(session);
                             scrollToTab('notes');
                           }}
-                          className={`flex-1 text-left p-3 rounded-xl transition-all min-w-0 h-full flex flex-col justify-center border ${activeSession.id === session.id ? 'bg-zinc-800 border-zinc-600 shadow-sm' : 'bg-zinc-900/40 border-zinc-800/50 hover:bg-zinc-900/80 hover:border-zinc-700'}`}
+                          className={`flex-1 text-left p-3 rounded-xl transition-all min-w-0 h-full flex flex-col justify-center border ${activeSession?.id === session.id ? 'bg-zinc-800 border-zinc-600 shadow-sm' : 'bg-zinc-900/40 border-zinc-800/50 hover:bg-zinc-900/80 hover:border-zinc-700'}`}
                         >
-                          <p className={`font-bold text-sm truncate pr-14 ${activeSession.id === session.id ? 'text-zinc-100' : 'text-zinc-400'}`}>{session.name || session.progressMarker}</p>
-                          <p className={`text-[10px] mt-1 ${activeSession.id === session.id ? 'text-zinc-400' : 'text-zinc-500'}`}>{format(session.startTime, 'MMM d, yyyy')}</p>
+                          <p className={`font-bold text-sm truncate pr-14 ${activeSession?.id === session.id ? 'text-zinc-100' : 'text-zinc-400'}`}>{session.name || session.progressMarker}</p>
+                          <p className={`text-[10px] mt-1 ${activeSession?.id === session.id ? 'text-zinc-400' : 'text-zinc-500'}`}>{format(session.startTime, 'MMM d, yyyy')}</p>
                         </button>
                       )}
                       
                       {editingSidebarSessionId !== session.id && editingGroupId === null && (
-                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover/session:opacity-100 transition-opacity bg-zinc-900/90 rounded px-1 group-hover/session:visible invisible">
+                        <div className={`absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 transition-opacity bg-zinc-900/90 rounded px-1 ${
+                          session.id === activeSession?.id || (activeMenuId === session.id && activeMenuType === 'session')
+                            ? 'opacity-100 visible'
+                            : 'opacity-0 invisible lg:group-hover/session:opacity-100 lg:group-hover/session:visible'
+                        }`}>
                           <div className="relative flex items-center">
                             <button
                               onClick={(e) => {
@@ -779,12 +849,8 @@ export default function SessionView() {
                                 <button
                                   onClick={async (e) => {
                                     e.stopPropagation();
-                                    const hasNotes = await checkSessionHasNotes(session.id);
-                                    if (hasNotes) {
-                                      setSessionToDelete({ id: session.id, name: session.name || session.progressMarker, hasNotes: true });
-                                    } else {
-                                      await handleDeleteSessionAndShiftFocus(session.id);
-                                    }
+                                    const notesCount = await getSessionNotesCount(session.id);
+                                    setSessionToDelete({ id: session.id, name: session.name || session.progressMarker, notesCount });
                                     setActiveMenuId(null);
                                     setActiveMenuType(null);
                                   }}
@@ -907,7 +973,7 @@ export default function SessionView() {
                              }
                              setEditingSidebarSessionId(null);
                           }}
-                          className={`flex-1 bg-zinc-950 border border-zinc-800 rounded px-2 py-2 text-sm font-bold focus:outline-none focus:border-zinc-600 min-w-0 ${activeSession.id === session.id ? 'text-zinc-100' : 'text-zinc-400'}`}
+                          className={`flex-1 bg-zinc-950 border border-zinc-800 rounded px-2 py-2 text-sm font-bold focus:outline-none focus:border-zinc-600 min-w-0 ${activeSession?.id === session.id ? 'text-zinc-100' : 'text-zinc-400'}`}
                         />
                       ) : (
                         <button
@@ -915,15 +981,19 @@ export default function SessionView() {
                             handleResumeSession(session);
                             scrollToTab('notes');
                           }}
-                          className={`flex-1 text-left p-3 rounded-xl transition-all min-w-0 h-full flex flex-col justify-center border ${activeSession.id === session.id ? 'bg-zinc-800 border-zinc-600 shadow-sm' : 'bg-zinc-900/40 border-zinc-800/50 hover:bg-zinc-900/80 hover:border-zinc-700'}`}
+                          className={`flex-1 text-left p-3 rounded-xl transition-all min-w-0 h-full flex flex-col justify-center border ${activeSession?.id === session.id ? 'bg-zinc-800 border-zinc-600 shadow-sm' : 'bg-zinc-900/40 border-zinc-800/50 hover:bg-zinc-900/80 hover:border-zinc-700'}`}
                         >
-                          <p className={`font-bold text-sm truncate pr-14 ${activeSession.id === session.id ? 'text-zinc-100' : 'text-zinc-400'}`}>{session.name || session.progressMarker}</p>
-                          <p className={`text-[10px] mt-1 ${activeSession.id === session.id ? 'text-zinc-400' : 'text-zinc-500'}`}>{format(session.startTime, 'MMM d, yyyy')}</p>
+                          <p className={`font-bold text-sm truncate pr-14 ${activeSession?.id === session.id ? 'text-zinc-100' : 'text-zinc-400'}`}>{session.name || session.progressMarker}</p>
+                          <p className={`text-[10px] mt-1 ${activeSession?.id === session.id ? 'text-zinc-400' : 'text-zinc-500'}`}>{format(session.startTime, 'MMM d, yyyy')}</p>
                         </button>
                       )}
 
                       {editingSidebarSessionId !== session.id && editingGroupId === null && (
-                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover/session:opacity-100 transition-opacity bg-zinc-900/90 rounded px-1 group-hover/session:visible invisible">
+                        <div className={`absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 transition-opacity bg-zinc-900/90 rounded px-1 ${
+                          session.id === activeSession?.id || (activeMenuId === session.id && activeMenuType === 'session')
+                            ? 'opacity-100 visible'
+                            : 'opacity-0 invisible lg:group-hover/session:opacity-100 lg:group-hover/session:visible'
+                        }`}>
                           <div className="relative flex items-center">
                             <button
                               onClick={(e) => {
@@ -958,12 +1028,8 @@ export default function SessionView() {
                                 <button
                                   onClick={async (e) => {
                                     e.stopPropagation();
-                                    const hasNotes = await checkSessionHasNotes(session.id);
-                                    if (hasNotes) {
-                                      setSessionToDelete({ id: session.id, name: session.name || session.progressMarker, hasNotes: true });
-                                    } else {
-                                      await handleDeleteSessionAndShiftFocus(session.id);
-                                    }
+                                    const notesCount = await getSessionNotesCount(session.id);
+                                    setSessionToDelete({ id: session.id, name: session.name || session.progressMarker, notesCount });
                                     setActiveMenuId(null);
                                     setActiveMenuType(null);
                                   }}
@@ -1571,7 +1637,7 @@ export default function SessionView() {
                     key={metric.id}
                     metric={metric}
                     onUpdate={handleUpdateMetric}
-                    onDelete={handleDeleteMetric}
+                    onDelete={() => setMetricToDelete({ id: metric.id, title: metric.title, type: 'metric' })}
                     onEdit={setEditingMetricId}
                   />
                 ))}
@@ -1598,7 +1664,7 @@ export default function SessionView() {
                             key={metric.id}
                             metric={metric}
                             onUpdate={handleUpdateMetric}
-                            onDelete={handleDeleteMetric}
+                            onDelete={() => setMetricToDelete({ id: metric.id, title: metric.title, type: 'metric' })}
                             onEdit={setEditingMetricId}
                           />
                         ))}
@@ -1649,7 +1715,7 @@ export default function SessionView() {
                   onAddItem={handleAddTrackerItem}
                   onUpdateItem={handleUpdateTrackerItem}
                   onRemoveItem={handleRemoveTrackerItem}
-                  onDeleteTracker={handleDeleteTracker}
+                  onDeleteTracker={() => setMetricToDelete({ id: tracker.id, title: tracker.title, type: 'legacy' })}
                 />
               ))}
               <AddTrackerMenu onAddTracker={handleAddTracker} />

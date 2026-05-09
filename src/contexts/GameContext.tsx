@@ -51,6 +51,7 @@ interface GameContextType {
   handleDeleteSession: (sessionId: string) => Promise<void>;
   handleDeleteSessionAndShiftFocus: (sessionId: string) => Promise<void>;
   checkSessionHasNotes: (sessionId: string) => Promise<boolean>;
+  getSessionNotesCount: (sessionId: string) => Promise<number>;
   handleCreateSessionGroup: (title: string) => Promise<{ id: string; title: string } | null>;
   handleUpdateSessionGroup: (groupId: string, title: string) => Promise<void>;
   handleDeleteSessionGroup: (groupId: string) => Promise<void>;
@@ -394,6 +395,22 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const getSessionNotesCount = async (sessionId: string) => {
+    if (!user) return 0;
+    try {
+      const q = query(
+        collection(db, 'notes'),
+        where('sessionId', '==', sessionId),
+        where('uid', '==', user.uid)
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.size;
+    } catch (error) {
+      console.error(error);
+      return 0;
+    }
+  };
+
   const handleDeleteSessionAndShiftFocus = async (sessionId: string) => {
     if (!user || !selectedGame) return;
     
@@ -734,6 +751,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     handleDeleteSession,
     handleDeleteSessionAndShiftFocus,
     checkSessionHasNotes,
+    getSessionNotesCount,
     handleCreateSessionGroup,
     handleUpdateSessionGroup,
     handleDeleteSessionGroup,

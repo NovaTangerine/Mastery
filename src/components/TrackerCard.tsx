@@ -24,15 +24,19 @@ const TrackerItemRow = ({
   onRemoveItem: (trackerId: string, itemId: string | number) => void
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isTapped, setIsTapped] = useState(false);
 
   // Handle legacy string items
   if (typeof item === 'string') {
     return (
-      <div className="group flex items-start justify-between bg-zinc-950/50 rounded-lg p-2 text-sm">
+      <div 
+        className="group flex items-start justify-between bg-zinc-950/50 rounded-lg p-2 text-sm"
+        onClick={() => setIsTapped(!isTapped)}
+      >
         <span className="text-zinc-300 break-words pr-2">{item}</span>
         <button 
-          onClick={() => onRemoveItem(trackerId, index)}
-          className="opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-red-400 transition-colors shrink-0 mt-0.5"
+          onClick={(e) => { e.stopPropagation(); onRemoveItem(trackerId, index); }}
+          className={`text-zinc-600 hover:text-red-400 transition-colors shrink-0 mt-0.5 ${isTapped ? 'opacity-100' : 'opacity-0 lg:group-hover:opacity-100'}`}
         >
           <X className="w-3.5 h-3.5" />
         </button>
@@ -66,12 +70,15 @@ const TrackerItemRow = ({
   };
 
   return (
-    <div className="group flex flex-col bg-zinc-950/50 rounded-lg p-2 text-sm transition-all">
+    <div 
+      className="group flex flex-col bg-zinc-950/50 rounded-lg p-2 text-sm transition-all"
+      onClick={() => setIsTapped(!isTapped)}
+    >
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-2 flex-1 min-w-0">
           {item.description && (
             <button 
-              onClick={() => setIsExpanded(!isExpanded)}
+              onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
               className="mt-0.5 text-zinc-500 hover:text-zinc-300 transition-colors shrink-0"
             >
               {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
@@ -79,7 +86,7 @@ const TrackerItemRow = ({
           )}
           
           {item.quantifierType === 'checkbox' && (
-            <button onClick={toggleCheckbox} className="mt-0.5 text-zinc-400 hover:text-zinc-100 shrink-0">
+            <button onClick={(e) => { e.stopPropagation(); toggleCheckbox(); }} className="mt-0.5 text-zinc-400 hover:text-zinc-100 shrink-0">
               {item.completed ? <CheckSquare className="w-4 h-4 text-emerald-500" /> : <Square className="w-4 h-4" />}
             </button>
           )}
@@ -99,11 +106,11 @@ const TrackerItemRow = ({
                   />
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <button onClick={handleDecrement} className="p-0.5 bg-zinc-800 rounded hover:bg-zinc-700 text-zinc-400">
+                  <button onClick={(e) => { e.stopPropagation(); handleDecrement(); }} className="p-0.5 bg-zinc-800 rounded hover:bg-zinc-700 text-zinc-400">
                     <Minus className="w-3 h-3" />
                   </button>
                   <span className="text-xs text-zinc-500 w-8 text-center">{item.currentValue || 0}/{item.maxValue || 100}</span>
-                  <button onClick={handleIncrement} className="p-0.5 bg-zinc-800 rounded hover:bg-zinc-700 text-zinc-400">
+                  <button onClick={(e) => { e.stopPropagation(); handleIncrement(); }} className="p-0.5 bg-zinc-800 rounded hover:bg-zinc-700 text-zinc-400">
                     <Plus className="w-3 h-3" />
                   </button>
                 </div>
@@ -120,10 +127,10 @@ const TrackerItemRow = ({
                   />
                 ))}
                 <div className="flex items-center gap-1 ml-auto shrink-0">
-                  <button onClick={handleDecrement} className="p-0.5 bg-zinc-800 rounded hover:bg-zinc-700 text-zinc-400">
+                  <button onClick={(e) => { e.stopPropagation(); handleDecrement(); }} className="p-0.5 bg-zinc-800 rounded hover:bg-zinc-700 text-zinc-400">
                     <Minus className="w-3 h-3" />
                   </button>
-                  <button onClick={handleIncrement} className="p-0.5 bg-zinc-800 rounded hover:bg-zinc-700 text-zinc-400">
+                  <button onClick={(e) => { e.stopPropagation(); handleIncrement(); }} className="p-0.5 bg-zinc-800 rounded hover:bg-zinc-700 text-zinc-400">
                     <Plus className="w-3 h-3" />
                   </button>
                 </div>
@@ -133,8 +140,8 @@ const TrackerItemRow = ({
         </div>
 
         <button 
-          onClick={() => onRemoveItem(trackerId, item.id)}
-          className="opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-red-400 transition-colors shrink-0 mt-0.5 ml-2"
+          onClick={(e) => { e.stopPropagation(); onRemoveItem(trackerId, item.id); }}
+          className={`text-zinc-600 hover:text-red-400 transition-colors shrink-0 mt-0.5 ml-2 ${isTapped ? 'opacity-100' : 'opacity-0 lg:group-hover:opacity-100'}`}
         >
           <X className="w-3.5 h-3.5" />
         </button>
@@ -156,6 +163,7 @@ export const TrackerCard = React.memo(({ tracker, onAddItem, onUpdateItem, onRem
   const [newItemDesc, setNewItemDesc] = useState('');
   const [quantifierType, setQuantifierType] = useState<QuantifierType>('none');
   const [maxValue, setMaxValue] = useState(10);
+  const [isTapped, setIsTapped] = useState(false);
 
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
@@ -182,12 +190,15 @@ export const TrackerCard = React.memo(({ tracker, onAddItem, onUpdateItem, onRem
 
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 w-full flex-shrink-0 flex flex-col max-h-[500px]">
-      <div className="flex justify-between items-center mb-3 group">
+      <div 
+        className="flex justify-between items-center mb-3 group cursor-default"
+        onClick={() => setIsTapped(!isTapped)}
+      >
         <h4 className="font-bold text-sm text-zinc-300 uppercase tracking-wider truncate pr-2">{tracker.title}</h4>
         <div className="flex items-center gap-1">
           {!isAdding && (
             <button 
-              onClick={() => setIsAdding(true)}
+              onClick={(e) => { e.stopPropagation(); setIsAdding(true); }}
               className="p-1 text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 rounded-md transition-all"
               title="Add Item"
             >
@@ -195,8 +206,8 @@ export const TrackerCard = React.memo(({ tracker, onAddItem, onUpdateItem, onRem
             </button>
           )}
           <button 
-            onClick={() => onDeleteTracker(tracker.id)}
-            className="opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-all"
+            onClick={(e) => { e.stopPropagation(); onDeleteTracker(tracker.id); }}
+            className={`p-1 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-all ${isTapped ? 'opacity-100' : 'opacity-0 lg:group-hover:opacity-100'}`}
             title="Delete Tracker"
           >
             <Trash2 className="w-4 h-4" />
