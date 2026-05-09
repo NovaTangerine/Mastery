@@ -8,6 +8,8 @@ interface TrackerCardProps {
   onUpdateItem: (trackerId: string, itemId: string, updates: Partial<TrackerItem>) => void;
   onRemoveItem: (trackerId: string, itemId: string | number) => void;
   onDeleteTracker: (trackerId: string) => void;
+  activeTappedId?: string | null;
+  onTap?: (id: string) => void;
 }
 
 const TrackerItemRow = ({ 
@@ -15,23 +17,30 @@ const TrackerItemRow = ({
   index, 
   trackerId, 
   onUpdateItem, 
-  onRemoveItem 
+  onRemoveItem,
+  activeTappedId,
+  onTap
 }: { 
   item: TrackerItem | string, 
   index: number, 
   trackerId: string, 
   onUpdateItem: (trackerId: string, itemId: string, updates: Partial<TrackerItem>) => void,
-  onRemoveItem: (trackerId: string, itemId: string | number) => void
+  onRemoveItem: (trackerId: string, itemId: string | number) => void,
+  activeTappedId: string | null,
+  onTap: (id: string) => void
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isTapped, setIsTapped] = useState(false);
+  
+  const itemIdString = typeof item === 'string' ? `${trackerId}-item-${index}` : item.id;
+  const isTapped = activeTappedId === itemIdString;
+  const handleTap = () => onTap(itemIdString);
 
   // Handle legacy string items
   if (typeof item === 'string') {
     return (
       <div 
         className="group flex items-start justify-between bg-zinc-950/50 rounded-lg p-2 text-sm"
-        onClick={() => setIsTapped(!isTapped)}
+        onClick={handleTap}
       >
         <span className="text-zinc-300 break-words pr-2">{item}</span>
         <button 
@@ -72,7 +81,7 @@ const TrackerItemRow = ({
   return (
     <div 
       className="group flex flex-col bg-zinc-950/50 rounded-lg p-2 text-sm transition-all"
-      onClick={() => setIsTapped(!isTapped)}
+      onClick={handleTap}
     >
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-2 flex-1 min-w-0">
@@ -157,13 +166,15 @@ const TrackerItemRow = ({
   );
 };
 
-export const TrackerCard = React.memo(({ tracker, onAddItem, onUpdateItem, onRemoveItem, onDeleteTracker }: TrackerCardProps) => {
+export const TrackerCard = React.memo(({ tracker, onAddItem, onUpdateItem, onRemoveItem, onDeleteTracker, activeTappedId, onTap }: TrackerCardProps) => {
   const [isAdding, setIsAdding] = useState(false);
   const [newItemTitle, setNewItemTitle] = useState('');
   const [newItemDesc, setNewItemDesc] = useState('');
   const [quantifierType, setQuantifierType] = useState<QuantifierType>('none');
   const [maxValue, setMaxValue] = useState(10);
-  const [isTapped, setIsTapped] = useState(false);
+  
+  const isTapped = activeTappedId === tracker.id;
+  const handleTap = () => onTap?.(tracker.id);
 
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
@@ -192,7 +203,7 @@ export const TrackerCard = React.memo(({ tracker, onAddItem, onUpdateItem, onRem
     <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 w-full flex-shrink-0 flex flex-col max-h-[500px]">
       <div 
         className="flex justify-between items-center mb-3 group cursor-default"
-        onClick={() => setIsTapped(!isTapped)}
+        onClick={handleTap}
       >
         <h4 className="font-bold text-sm text-zinc-300 uppercase tracking-wider truncate pr-2">{tracker.title}</h4>
         <div className="flex items-center gap-1">
@@ -224,6 +235,8 @@ export const TrackerCard = React.memo(({ tracker, onAddItem, onUpdateItem, onRem
             trackerId={tracker.id}
             onUpdateItem={onUpdateItem}
             onRemoveItem={onRemoveItem}
+            activeTappedId={activeTappedId || null}
+            onTap={onTap || (() => {})}
           />
         ))}
         {tracker.items.length === 0 && (

@@ -144,6 +144,7 @@ export default function SessionView() {
   const [editingSidebarSessionName, setEditingSidebarSessionName] = useState('');
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [activeMenuType, setActiveMenuType] = useState<'group' | 'session' | null>(null);
+  const [activeTappedId, setActiveTappedId] = useState<string | null>(null);
   const [isTrackersCollapsed, setIsTrackersCollapsed] = useState(false);
   const [collapsedTrackerGroups, setCollapsedTrackerGroups] = useState<Set<string>>(new Set());
 
@@ -600,6 +601,7 @@ export default function SessionView() {
           )}
           {groupedSessions.map(group => {
             const isCollapsed = collapsedGroups.has(group.id);
+            const isGroupTapped = activeTappedId === group.id;
             return (
             <div key={group.id} className={`space-y-2 group relative ${(activeMenuId === group.id && activeMenuType === 'group') || (activeMenuType === 'session' && group.sessions.some(s => s.id === activeMenuId)) ? 'z-50' : 'z-10'}`}>
               <div 
@@ -608,6 +610,7 @@ export default function SessionView() {
                   // Don't toggle if clicking on buttons or inputs
                   const target = e.target as HTMLElement;
                   if (target.closest('button') || target.closest('input')) return;
+                  setActiveTappedId(isGroupTapped ? null : group.id);
                   toggleGroupCollapse(group.id);
                 }}
               >
@@ -639,7 +642,7 @@ export default function SessionView() {
                   )}
                 </div>
                 
-                <div className={`flex items-center gap-0.5 transition-opacity shrink-0 bg-zinc-950/80 rounded-md px-1 ${activeMenuId === group.id && activeMenuType === 'group' ? 'opacity-100' : 'opacity-0 lg:group-hover:opacity-100'}`}>
+                <div className={`flex items-center gap-0.5 transition-opacity shrink-0 bg-zinc-950/80 rounded-md px-1 ${(activeMenuId === group.id && activeMenuType === 'group') || isGroupTapped ? 'opacity-100' : 'opacity-0 lg:group-hover:opacity-100'}`}>
                   {editingGroupId === group.id ? (
                     <>
                       <button
@@ -866,11 +869,11 @@ export default function SessionView() {
                     </div>
                   ))}
                   {group.sessions.length > 0 && (
-                    <div className="md:col-span-2 lg:col-span-1 grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-all duration-200 ease-in-out">
+                    <div className={`md:col-span-2 lg:col-span-1 grid transition-all duration-200 ease-in-out ${isGroupTapped ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] lg:group-hover:grid-rows-[1fr]'}`}>
                       <div className="overflow-hidden">
                         <button
                           onClick={() => handleStartSession(group.id)}
-                          className="w-full text-left p-2 rounded-xl text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 h-10"
+                          className={`w-full text-left p-2 rounded-xl text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50 transition-all flex items-center justify-center gap-2 h-10 ${isGroupTapped ? 'opacity-100' : 'opacity-0 lg:group-hover:opacity-100'}`}
                         >
                           <Plus className="w-3.5 h-3.5" />
                           <span className="text-xs font-bold uppercase tracking-wider">New Session</span>
@@ -887,12 +890,19 @@ export default function SessionView() {
             </div>
           )})}
 
-          {ungroupedSessions.length > 0 && (
+          {ungroupedSessions.length > 0 && (() => {
+            const isGroupTapped = activeTappedId === 'ungrouped';
+            return (
             <div className="space-y-2 group">
               {groupedSessions.length > 0 && (
                 <div 
                   className="flex items-center justify-between px-2 mt-4 cursor-pointer hover:bg-zinc-900/50 rounded py-1 -mx-2 group/ungrouped"
-                  onClick={() => toggleGroupCollapse('ungrouped')}
+                  onClick={(e) => {
+                    const target = e.target as HTMLElement;
+                    if (target.closest('button') || target.closest('input')) return;
+                    setActiveTappedId(isGroupTapped ? null : 'ungrouped');
+                    toggleGroupCollapse('ungrouped');
+                  }}
                 >
                   <div className="flex items-center gap-2">
                     {collapsedGroups.has('ungrouped') ? (
@@ -902,7 +912,7 @@ export default function SessionView() {
                     )}
                     <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Ungrouped</h4>
                   </div>
-                  <div className="flex items-center gap-0.5 opacity-0 group-hover/ungrouped:opacity-100 transition-opacity shrink-0 bg-zinc-950/80 rounded-md px-1">
+                  <div className={`flex items-center gap-0.5 transition-opacity shrink-0 bg-zinc-950/80 rounded-md px-1 ${isGroupTapped ? 'opacity-100' : 'opacity-0 lg:group-hover/ungrouped:opacity-100'}`}>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -1045,11 +1055,11 @@ export default function SessionView() {
                     </div>
                   ))}
                   {ungroupedSessions.length > 0 && groupedSessions.length > 0 && (
-                     <div className="md:col-span-2 lg:col-span-1 grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-all duration-200 ease-in-out">
+                     <div className={`md:col-span-2 lg:col-span-1 grid transition-all duration-200 ease-in-out ${isGroupTapped ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] lg:group-hover:grid-rows-[1fr]'}`}>
                        <div className="overflow-hidden">
                          <button
                            onClick={() => handleStartSession()}
-                           className="w-full text-left p-2 rounded-xl text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 h-10"
+                           className={`w-full text-left p-2 rounded-xl text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50 transition-all flex items-center justify-center gap-2 h-10 ${isGroupTapped ? 'opacity-100' : 'opacity-0 lg:group-hover:opacity-100'}`}
                          >
                            <Plus className="w-3.5 h-3.5" />
                            <span className="text-xs font-bold uppercase tracking-wider">New Session</span>
@@ -1061,7 +1071,8 @@ export default function SessionView() {
                 </div>
               </div>
             </div>
-          )}
+            );
+          })()}
         </div>
         </div>
       </div>
@@ -1639,6 +1650,8 @@ export default function SessionView() {
                     onUpdate={handleUpdateMetric}
                     onDelete={() => setMetricToDelete({ id: metric.id, title: metric.title, type: 'metric' })}
                     onEdit={setEditingMetricId}
+                    activeTappedId={activeTappedId}
+                    onTap={(id) => setActiveTappedId(activeTappedId === id ? null : id)}
                   />
                 ))}
                 
@@ -1666,6 +1679,8 @@ export default function SessionView() {
                             onUpdate={handleUpdateMetric}
                             onDelete={() => setMetricToDelete({ id: metric.id, title: metric.title, type: 'metric' })}
                             onEdit={setEditingMetricId}
+                            activeTappedId={activeTappedId}
+                            onTap={(id) => setActiveTappedId(activeTappedId === id ? null : id)}
                           />
                         ))}
                       </div>
@@ -1716,6 +1731,8 @@ export default function SessionView() {
                   onUpdateItem={handleUpdateTrackerItem}
                   onRemoveItem={handleRemoveTrackerItem}
                   onDeleteTracker={() => setMetricToDelete({ id: tracker.id, title: tracker.title, type: 'legacy' })}
+                  activeTappedId={activeTappedId}
+                  onTap={(id) => setActiveTappedId(activeTappedId === id ? null : id)}
                 />
               ))}
               <AddTrackerMenu onAddTracker={handleAddTracker} />

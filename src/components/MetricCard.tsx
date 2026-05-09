@@ -7,16 +7,19 @@ interface MetricCardProps {
   onUpdate: (metricId: string, updates: Partial<SessionMetric>) => void;
   onDelete: (metricId: string) => void;
   onEdit: (metricId: string) => void;
+  activeTappedId?: string | null;
+  onTap?: (id: string) => void;
 }
 
-export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDelete, onEdit }) => {
-  const [isTapped, setIsTapped] = React.useState(false);
+export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDelete, onEdit, activeTappedId, onTap }) => {
+  const isTapped = activeTappedId === metric.id;
+  const handleTap = () => onTap?.(metric.id);
 
   if (metric.measurementType === 'checkbox') {
     return (
       <div 
         className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3 flex items-center justify-between gap-4 group/metric relative transition-colors hover:border-zinc-700 cursor-default"
-        onClick={() => setIsTapped(!isTapped)}
+        onClick={handleTap}
       >
         <div className="flex-1 min-w-0">
           <h4 className={`font-bold text-sm transition-colors ${metric.completed ? 'text-zinc-500 line-through decoration-zinc-700' : 'text-zinc-100'}`}>
@@ -65,7 +68,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
   return (
     <div 
       className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex flex-col gap-3 group/metric relative overflow-hidden transition-colors hover:border-zinc-700 cursor-default"
-      onClick={() => setIsTapped(!isTapped)}
+      onClick={handleTap}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0 pr-14">
