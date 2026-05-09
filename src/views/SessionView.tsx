@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Plus, BookOpen, Clock, PenLine, X, Send, ChevronRight, Trash2, List, LayoutDashboard, ChevronUp, ChevronDown, Tag as TagIcon, MoreVertical } from 'lucide-react';
+import { Plus, BookOpen, Clock, PenLine, X, Send, ChevronRight, Trash2, List, LayoutDashboard, ChevronUp, ChevronDown, Tag as TagIcon, MoreVertical, ArrowUpDown } from 'lucide-react';
 import { format } from 'date-fns';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   DndContext, 
   closestCenter,
@@ -105,6 +105,10 @@ export default function SessionView() {
     });
   }, [tagCounts, preAddedTags]);
 
+  const anySessionHasTrackers = React.useMemo(() => {
+    return sessions.some(s => (s.metrics && s.metrics.length > 0) || (s.trackers && s.trackers.length > 0));
+  }, [sessions]);
+
   const [noteInput, setNoteInput] = useState('');
   const [isEditingSessionDetails, setIsEditingSessionDetails] = useState(false);
   const [sessionNameInput, setSessionNameInput] = useState('');
@@ -122,6 +126,7 @@ export default function SessionView() {
   const [isCreatingGroupFromList, setIsCreatingGroupFromList] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [activeMobileTab, setActiveMobileTab] = useState<'sessions' | 'notes' | 'trackers'>('notes');
+  const [sessionSortOrder, setSessionSortOrder] = useState<'asc' | 'desc'>('desc');
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
   const [groupToDelete, setGroupToDelete] = useState<{id: string, title: string} | null>(null);
 
@@ -136,6 +141,21 @@ export default function SessionView() {
   const [editingSidebarSessionName, setEditingSidebarSessionName] = useState('');
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [activeMenuType, setActiveMenuType] = useState<'group' | 'session' | null>(null);
+  const [isTrackersCollapsed, setIsTrackersCollapsed] = useState(false);
+  const [collapsedTrackerGroups, setCollapsedTrackerGroups] = useState<Set<string>>(new Set());
+
+  const toggleTrackerGroup = (groupName: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setCollapsedTrackerGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(groupName)) {
+        next.delete(groupName);
+      } else {
+        next.add(groupName);
+      }
+      return next;
+    });
+  };
 
   const handleDeleteSessionTag = async (tagToDelete: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -245,6 +265,14 @@ export default function SessionView() {
     });
   };
 
+  const sortedSessions = React.useMemo(() => {
+    return [...sessions].sort((a, b) => {
+      const timeA = a.startTime || 0;
+      const timeB = b.startTime || 0;
+      return sessionSortOrder === 'desc' ? timeB - timeA : timeA - timeB;
+    });
+  }, [sessions, sessionSortOrder]);
+
   const parentRef = useRef<HTMLDivElement>(null);
   const notesEndRef = useRef<HTMLDivElement>(null);
   const lastScrollY = useRef(0);
@@ -336,12 +364,29 @@ export default function SessionView() {
     setNewGroupNameInput('');
   };
 
-  const groupedSessions = sessionGroups.map(group => ({
-    ...group,
-    sessions: sessions.filter(s => s.groupId === group.id)
-  }));
+  const groupedSessions = React.useMemo(() => {
+    const groups = sessionGroups.map(group => ({
+      ...group,
+      sessions: sortedSessions.filter(s => s.groupId === group.id)
+    }));
 
-  const ungroupedSessions = sessions.filter(s => !s.groupId);
+    return groups.sort((a, b) => {
+      const getCompareTime = (groupSessions: typeof sessions) => {
+        if (groupSessions.length === 0) return sessionSortOrder === 'desc' ? 0 : Infinity;
+        // For desc (newest first), we want the newest session in the group to represent it
+        // For asc (oldest first), we want the oldest session in the group to represent it
+        const times = groupSessions.map(s => s.startTime || 0);
+        return sessionSortOrder === 'desc' ? Math.max(...times) : Math.min(...times);
+      };
+
+      const timeA = getCompareTime(a.sessions);
+      const timeB = getCompareTime(b.sessions);
+
+      return sessionSortOrder === 'desc' ? timeB - timeA : timeA - timeB;
+    });
+  }, [sessionGroups, sortedSessions, sessionSortOrder]);
+
+  const ungroupedSessions = sortedSessions.filter(s => !s.groupId);
 
   return (
     <div 
@@ -411,9 +456,17 @@ export default function SessionView() {
 
       {/* Sidebar for Sessions */}
       <div id="mobile-tab-sessions" className="w-full shrink-0 snap-center snap-always lg:w-72 flex-col lg:border-r border-zinc-800/50 lg:pr-6 min-h-0 flex">
-        <div className="flex items-center justify-between mb-6">
+        <div className="w-full md:max-w-2xl lg:max-w-none mx-auto flex flex-col h-full min-h-0 flex-1 pl-4 sm:pl-6 lg:pl-0">
+        <div className="flex items-center justify-between mb-6 pr-4 sm:pr-6 lg:pr-0">
           <h3 className="font-bold uppercase tracking-widest text-xs text-zinc-400">Sessions</h3>
           <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setSessionSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+              className={`p-1.5 rounded-lg transition-colors ${sessionSortOrder === 'asc' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900'}`}
+              title={sessionSortOrder === 'desc' ? 'Sorting Newest First' : 'Sorting Oldest First'}
+            >
+              <ArrowUpDown className="w-4 h-4" />
+            </button>
             <button 
               onClick={() => setIsCreatingGroupFromList(true)}
               className="p-1.5 bg-zinc-900 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-zinc-100 transition-colors"
@@ -435,7 +488,7 @@ export default function SessionView() {
         </div>
 
         {isCreatingGroupFromList && (
-          <div className="mb-4 p-3 bg-zinc-900/50 border border-zinc-800 rounded-xl space-y-3">
+          <div className="mb-4 p-3 bg-zinc-900/50 border border-zinc-800 rounded-xl space-y-3 mr-4 sm:mr-6 lg:mr-0">
             <input
               type="text"
               value={newGroupNameInput}
@@ -470,7 +523,7 @@ export default function SessionView() {
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-2 pb-24 lg:pb-0">
+        <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-4 sm:pr-6 lg:pr-2 pb-24 lg:pb-0">
           {sessions.length === 1 && sessions[0].id === activeSession.id && (
             <div className="px-2 py-4 mb-2 bg-indigo-500/5 border border-indigo-500/10 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-700">
               <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Getting Started</p>
@@ -944,14 +997,15 @@ export default function SessionView() {
             </div>
           )}
         </div>
+        </div>
       </div>
 
       {/* Main Session View or Filtered View */}
       <div id="mobile-tab-notes" className="w-full shrink-0 snap-center snap-always lg:flex-1 lg:max-w-2xl flex-col min-w-0 min-h-0 flex">
-        <div className="w-full md:max-w-2xl lg:max-w-none mx-auto flex flex-col h-full min-h-0 flex-1">
+        <div className="w-full md:max-w-2xl lg:max-w-none mx-auto flex flex-col h-full min-h-0 flex-1 pl-4 sm:pl-6 lg:pl-0">
         {filteredTag ? (
           <>
-            <div className="mb-3 sm:mb-6 bg-zinc-900 border border-zinc-700/50 rounded-2xl p-4 shrink-0 flex items-center justify-between shadow-lg">
+            <div className="mb-3 sm:mb-6 bg-zinc-900 border border-zinc-700/50 rounded-2xl p-4 shrink-0 flex items-center justify-between shadow-lg mr-4 sm:mr-6 lg:mr-0">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center shrink-0">
                   <TagIcon className="w-5 h-5 text-zinc-400" />
@@ -999,7 +1053,7 @@ export default function SessionView() {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-8">
+            <div className="flex-1 overflow-y-auto pr-4 sm:pr-6 lg:pr-2 custom-scrollbar space-y-8">
               {Object.entries(filteredNotesBySession)
                 .filter(([sid]) => filterScope === 'global' ? true : sid === (activeSession?.id || 'global'))
                 .map(([sessionId, groupNotes]) => (
@@ -1042,7 +1096,7 @@ export default function SessionView() {
           <>
             {/* Compact Session Header */}
             <div 
-          className={`mb-3 sm:mb-6 bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-3 sm:p-4 shrink-0 flex-col transition-all duration-300 ${isEditingSessionDetails ? 'flex' : 'hidden lg:flex'}`}
+          className={`mb-3 sm:mb-6 mr-4 sm:mr-6 lg:mr-0 bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-3 sm:p-4 shrink-0 flex-col transition-all duration-300 ${isEditingSessionDetails ? 'flex' : 'hidden lg:flex'}`}
           onMouseEnter={() => setIsHeaderCollapsed(false)}
         >
           <div className="hidden lg:flex items-center justify-between gap-4">
@@ -1264,7 +1318,7 @@ export default function SessionView() {
         {/* Notes Feed */}
         <div 
           ref={parentRef} 
-          className="flex-1 overflow-y-auto pr-2 custom-scrollbar"
+          className="flex-1 overflow-y-auto pr-4 sm:pr-6 lg:pr-2 custom-scrollbar"
           onScroll={handleScroll}
           onMouseEnter={() => {
             if (parentRef.current && parentRef.current.scrollTop > 20) {
@@ -1356,7 +1410,7 @@ export default function SessionView() {
               }
             }}
           >
-            <form onSubmit={submitNote} className="flex flex-col gap-2">
+            <form onSubmit={submitNote} className="flex flex-col">
               <div className="flex gap-2 items-end">
                 <textarea 
                   value={noteInput}
@@ -1371,57 +1425,85 @@ export default function SessionView() {
                     }
                   }}
                 />
-                <button 
-                  type="submit"
-                  disabled={!noteInput.trim() || isSubmittingNote}
-                  className="bg-zinc-100 text-zinc-950 px-6 h-[48px] rounded-2xl font-bold hover:bg-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shrink-0"
-                >
-                  {isSubmittingNote ? (
-                    <div className="w-5 h-5 border-2 border-zinc-950 border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <Plus className="w-5 h-5" />
-                      <span className="hidden sm:inline">Save</span>
-                    </>
-                  )}
-                </button>
+                {!isInputFocused && (
+                  <button 
+                    type="submit"
+                    disabled={!noteInput.trim() || isSubmittingNote}
+                    className="bg-zinc-100 text-zinc-950 px-6 h-[48px] rounded-2xl font-bold hover:bg-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shrink-0 mb-0.5"
+                  >
+                    {isSubmittingNote ? (
+                      <div className="w-5 h-5 border-2 border-zinc-950 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <Plus className="w-5 h-5" />
+                        <span className="hidden sm:inline">Save</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
               
-              {isInputFocused && (
-                <div className="px-4 pb-2 flex flex-wrap items-center gap-2 border-t border-zinc-800/50 pt-2 mt-1">
-                  <TagIcon className="w-4 h-4 text-zinc-500" />
-                  {noteTags.map(tag => (
-                    <span key={tag} className="px-2 py-1 bg-zinc-800 text-zinc-300 text-xs rounded-md flex items-center gap-1">
-                      {tag}
+              <AnimatePresence>
+                {isInputFocused && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="pl-4 pr-0 pb-1 flex flex-wrap items-center justify-between gap-4 border-t border-zinc-800/50 pt-2 mt-1">
+                      <div className="flex flex-wrap items-center gap-2 flex-1 min-h-[40px]">
+                        <TagIcon className="w-4 h-4 text-zinc-500 shrink-0" />
+                        {noteTags.map(tag => (
+                          <span key={tag} className="px-2 py-1 bg-zinc-800 text-zinc-300 text-xs rounded-md flex items-center gap-1">
+                            {tag}
+                            <button 
+                              type="button"
+                              onClick={() => setNoteTags(prev => prev.filter(t => t !== tag))}
+                              className="hover:text-white"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        ))}
+                        <TagAutocompleteInput
+                          gameId={selectedGame.id}
+                          value={tagInput}
+                          onChange={setTagInput}
+                          onAddTag={(tag) => {
+                            const trimmed = tag.trim().toLowerCase();
+                            if (trimmed && !noteTags.includes(trimmed)) {
+                              setNoteTags(prev => [...prev, trimmed]);
+                              setTagInput('');
+                            }
+                          }}
+                          onRemoveLastTag={() => {
+                            setNoteTags(prev => prev.slice(0, -1));
+                          }}
+                          existingTags={noteTags}
+                          placeholder="Add tags (press Enter)..."
+                          className="bg-transparent border-none focus:ring-0 text-sm text-zinc-300 placeholder:text-zinc-600 outline-none flex-1 py-1"
+                        />
+                      </div>
                       <button 
-                        type="button"
-                        onClick={() => setNoteTags(prev => prev.filter(t => t !== tag))}
-                        className="hover:text-white"
+                        type="submit"
+                        onMouseDown={(e) => e.preventDefault()}
+                        disabled={!noteInput.trim() || isSubmittingNote}
+                        className="bg-zinc-100 text-zinc-950 px-6 h-[48px] rounded-2xl font-bold hover:bg-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shrink-0"
                       >
-                        <X className="w-3 h-3" />
+                        {isSubmittingNote ? (
+                          <div className="w-5 h-5 border-2 border-zinc-950 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            <Plus className="w-5 h-5" />
+                            <span className="hidden sm:inline">Save</span>
+                          </>
+                        )}
                       </button>
-                    </span>
-                  ))}
-                  <TagAutocompleteInput
-                    gameId={selectedGame.id}
-                    value={tagInput}
-                    onChange={setTagInput}
-                    onAddTag={(tag) => {
-                      const trimmed = tag.trim().toLowerCase();
-                      if (trimmed && !noteTags.includes(trimmed)) {
-                        setNoteTags(prev => [...prev, trimmed]);
-                        setTagInput('');
-                      }
-                    }}
-                    onRemoveLastTag={() => {
-                      setNoteTags(prev => prev.slice(0, -1));
-                    }}
-                    existingTags={noteTags}
-                    placeholder="Add tags (press Enter)..."
-                    className="bg-transparent border-none focus:ring-0 text-sm text-zinc-300 placeholder:text-zinc-600 outline-none w-48"
-                  />
-                </div>
-              )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </form>
           </div>
         </div>
@@ -1432,10 +1514,26 @@ export default function SessionView() {
 
       {/* Right Column: Trackers */}
       <div id="mobile-tab-trackers" className="w-full shrink-0 snap-center snap-always lg:w-80 flex-col lg:border-l border-zinc-800/50 lg:pl-6 min-h-0 flex">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="font-bold uppercase tracking-widest text-xs text-zinc-400">Trackers</h3>
+        <div className="w-full md:max-w-2xl lg:max-w-none mx-auto flex flex-col h-full min-h-0 flex-1 pl-4 sm:pl-6 lg:pl-0">
+        <div 
+          onClick={() => {
+            setIsTrackersCollapsed(!isTrackersCollapsed);
+            if (isTrackersCollapsed) {
+              setCollapsedTrackerGroups(new Set());
+            }
+          }}
+          className="flex items-center justify-between mb-6 pr-4 sm:pr-6 lg:pr-0 cursor-pointer group"
+        >
+          <h3 className="font-bold uppercase tracking-widest text-xs text-zinc-400 transition-colors group-hover:text-zinc-300">Trackers</h3>
+          {isTrackersCollapsed ? (
+            <ChevronRight className="w-4 h-4 text-zinc-600 transition-colors group-hover:text-zinc-400" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-zinc-600 transition-colors group-hover:text-zinc-400" />
+          )}
         </div>
-        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 grid grid-cols-1 md:grid-cols-2 lg:flex lg:flex-col gap-4 items-start lg:items-stretch content-start pb-24 lg:pb-0">
+        <div className="flex-1 overflow-y-auto custom-scrollbar pr-4 sm:pr-6 lg:pr-2 flex flex-col pt-1 pb-24 lg:pb-0">
+          {!isTrackersCollapsed && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:flex lg:flex-col gap-2 items-start lg:items-stretch content-start mb-12">
           {(() => {
             const metrics = activeSession.metrics || [];
             
@@ -1452,9 +1550,9 @@ export default function SessionView() {
               }
             });
 
-            if (metrics.length === 0 && (!activeSession.trackers || activeSession.trackers.length === 0)) {
+            if (metrics.length === 0 && (!activeSession.trackers || activeSession.trackers.length === 0) && !anySessionHasTrackers) {
               return (
-                <div className="w-full py-12 px-6 bg-zinc-900/30 border border-dashed border-zinc-800 rounded-3xl text-center animate-in fade-in zoom-in-95 duration-700">
+                <div className="md:col-span-full w-full py-12 px-6 bg-zinc-900/30 border border-dashed border-zinc-800 rounded-3xl text-center animate-in fade-in zoom-in-95 duration-700">
                   <div className="w-12 h-12 bg-zinc-900/50 rounded-xl flex items-center justify-center mb-4 mx-auto">
                     <LayoutDashboard className="w-6 h-6 text-zinc-600" />
                   </div>
@@ -1478,39 +1576,55 @@ export default function SessionView() {
                   />
                 ))}
                 
-                {Object.entries(groupedMetrics).map(([groupName, groupMetrics]) => (
-                  <div key={groupName} className="space-y-3">
-                    <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1 mt-2">{groupName}</h4>
-                    <div className="space-y-3">
-                      {groupMetrics.map(metric => (
-                        <MetricCard 
-                          key={metric.id}
-                          metric={metric}
-                          onUpdate={handleUpdateMetric}
-                          onDelete={handleDeleteMetric}
-                          onEdit={setEditingMetricId}
-                        />
-                      ))}
+                {Object.entries(groupedMetrics).map(([groupName, groupMetrics]) => {
+                  const isGroupCollapsed = collapsedTrackerGroups.has(groupName);
+                  return (
+                  <div key={groupName} className="space-y-2 md:col-span-full xl:col-auto">
+                    <div 
+                      onClick={(e) => toggleTrackerGroup(groupName, e)}
+                      className={`flex items-center justify-between gap-1 mt-2 cursor-pointer group/header ${isGroupCollapsed ? 'mb-2' : ''}`}
+                    >
+                      <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1 transition-colors group-hover/header:text-zinc-400">{groupName}</h4>
+                      {isGroupCollapsed ? (
+                        <ChevronRight className="w-3 h-3 text-zinc-600 transition-colors group-hover/header:text-zinc-500" />
+                      ) : (
+                        <ChevronDown className="w-3 h-3 text-zinc-600 transition-colors group-hover/header:text-zinc-500" />
+                      )}
                     </div>
+                    {!isGroupCollapsed && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-2 lg:flex lg:flex-col lg:space-y-2 lg:gap-0 lg:pt-0">
+                        {groupMetrics.map(metric => (
+                          <MetricCard 
+                            key={metric.id}
+                            metric={metric}
+                            onUpdate={handleUpdateMetric}
+                            onDelete={handleDeleteMetric}
+                            onEdit={setEditingMetricId}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
-                ))}
+                )})}
               </>
             );
           })()}
 
           {isAddingMetric ? (
-            <AddMetricForm 
-              onAddMetric={handleAddMetric}
-              onCancel={() => setIsAddingMetric(false)}
-              onSuccess={(id) => {
-                setIsAddingMetric(false);
-                setEditingMetricId(id);
-              }}
-            />
+            <div className="md:col-span-full lg:col-auto w-full mt-2 lg:mt-0">
+              <AddMetricForm 
+                onAddMetric={handleAddMetric}
+                onCancel={() => setIsAddingMetric(false)}
+                onSuccess={(id) => {
+                  setIsAddingMetric(false);
+                  setEditingMetricId(id);
+                }}
+              />
+            </div>
           ) : (
             <button
               onClick={() => setIsAddingMetric(true)}
-              className="w-full py-3 px-4 rounded-xl border border-dashed border-zinc-700/50 text-zinc-500 hover:text-zinc-300 hover:border-zinc-500 hover:bg-zinc-900/50 transition-all flex items-center justify-center gap-2"
+              className="md:col-span-full lg:col-auto w-full py-3 px-4 rounded-xl border border-dashed border-zinc-700/50 text-zinc-500 hover:text-zinc-300 hover:border-zinc-500 hover:bg-zinc-900/50 transition-all flex items-center justify-center gap-2 mt-2 lg:mt-0"
             >
               <Plus className="w-4 h-4" />
               <span className="text-sm font-bold uppercase tracking-wider">New Tracker</span>
@@ -1518,7 +1632,7 @@ export default function SessionView() {
           )}
 
           {activeSession.trackers?.length ? (
-            <div className="mt-8 border-t border-zinc-800 pt-6 space-y-4">
+            <div className="md:col-span-full lg:col-auto mt-8 border-t border-zinc-800 pt-6 space-y-4 w-full">
               <div className="flex items-center justify-between px-1">
                 <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Legacy Trackers</h4>
                 <button
@@ -1541,10 +1655,12 @@ export default function SessionView() {
               <AddTrackerMenu onAddTracker={handleAddTracker} />
             </div>
           ) : null}
+            </div>
+          )}
           
           {/* Always render tags module */}
-          <div className="hidden lg:block lg:flex-1"></div>
-          <div className="mt-8 lg:mt-0 space-y-4 w-full md:col-span-2 lg:col-span-1">
+          <div className="hidden lg:block lg:flex-1 min-h-[0px]"></div>
+          <div className="space-y-4 w-full md:col-span-2 lg:col-span-1 border-zinc-800 lg:border-t-0 mt-6 lg:mt-auto">
             <div className="flex items-center gap-2 text-zinc-400">
               <TagIcon className="w-4 h-4 text-zinc-600" />
               <h3 className="font-bold uppercase tracking-widest text-xs">Session Tags</h3>
@@ -1619,6 +1735,7 @@ export default function SessionView() {
                 )}
               </div>
             </div>
+          </div>
           </div>
         </div>
       </div>
