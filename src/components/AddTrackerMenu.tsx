@@ -3,15 +3,22 @@ import { Plus, Check, X } from 'lucide-react';
 
 interface AddTrackerMenuProps {
   onAddTracker: (title: string) => void;
+  existingTrackers?: string[];
 }
 
 const PRESETS = ['Objectives', 'Key Characters', 'Locations', 'Loot', 'Lore'];
 
-export const AddTrackerMenu: React.FC<AddTrackerMenuProps> = ({ onAddTracker }) => {
+export const AddTrackerMenu: React.FC<AddTrackerMenuProps> = ({ onAddTracker, existingTrackers = [] }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isCustom, setIsCustom] = useState(false);
   const [customTitle, setCustomTitle] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Combine standard presets and dynamically generated trackers from history
+  const allPresets = React.useMemo(() => {
+    const combined = new Set([...PRESETS, ...existingTrackers]);
+    return Array.from(combined);
+  }, [existingTrackers]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -68,15 +75,17 @@ export const AddTrackerMenu: React.FC<AddTrackerMenuProps> = ({ onAddTracker }) 
                     <X className="w-4 h-4" />
                   </button>
                 </div>
-                {PRESETS.map(preset => (
-                  <button
-                    key={preset}
-                    onClick={() => handleSelectPreset(preset)}
-                    className="px-5 md:px-4 py-4 md:py-2 text-base md:text-sm text-left text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 transition-colors"
-                  >
-                    {preset}
-                  </button>
-                ))}
+                <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                  {allPresets.map(preset => (
+                    <button
+                      key={preset}
+                      onClick={() => handleSelectPreset(preset)}
+                      className="w-full px-5 md:px-4 py-4 md:py-2 text-base md:text-sm text-left text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 transition-colors"
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
                 <div className="h-px bg-zinc-800/50 my-1 md:my-1" />
                 <button
                   onClick={() => setIsCustom(true)}

@@ -79,6 +79,7 @@ export interface GameSession {
   hoursPlayed?: number;
   trackers?: SessionTracker[];
   metrics?: SessionMetric[];
+  tags?: string[];
 }
 
 export interface Note {

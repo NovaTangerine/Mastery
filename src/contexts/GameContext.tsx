@@ -45,6 +45,7 @@ interface GameContextType {
   handleStartSession: (groupId?: string) => Promise<void>;
   handleResumeSession: (session: GameSession) => void;
   handleUpdateSessionDetails: (name: string, chapter: string, hoursPlayed: string, groupId?: string, targetSessionId?: string) => Promise<void>;
+  handleUpdateSessionTags: (sessionId: string, tags: string[]) => Promise<void>;
   handleUpdateGameField: (field: 'overallNotes' | 'storySynopsis', value: string) => Promise<void>;
   handleUpdateGameStatus: (status: Game['status']) => Promise<void>;
   handleDeleteGame: (targetGameId?: string) => Promise<void>;
@@ -233,6 +234,15 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       toast.success('Session details updated');
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `sessions/${sessionIdToUpdate}`);
+    }
+  };
+
+  const handleUpdateSessionTags = async (sessionId: string, tags: string[]) => {
+    if (!user) return;
+    try {
+      await updateDoc(doc(db, 'sessions', sessionId), { tags });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `sessions/${sessionId}`);
     }
   };
 
@@ -745,6 +755,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     handleStartSession,
     handleResumeSession,
     handleUpdateSessionDetails,
+    handleUpdateSessionTags,
     handleUpdateGameField,
     handleUpdateGameStatus,
     handleDeleteGame,

@@ -37,6 +37,7 @@ export default function SessionView() {
     sessionGroups,
     handleDeleteGame, 
     handleUpdateSessionDetails, 
+    handleUpdateSessionTags,
     handleDeleteSessionAndShiftFocus,
     checkSessionHasNotes,
     getSessionNotesCount,
@@ -95,9 +96,9 @@ export default function SessionView() {
     return counts;
   }, [allSessionNotes]);
 
-  const [preAddedTags, setPreAddedTags] = useState<string[]>([]);
+  const activeSessionTags = activeSession?.tags || [];
   const allSessionTagsList = React.useMemo(() => {
-    const combined = new Set([...Object.keys(tagCounts), ...preAddedTags]);
+    const combined = new Set([...Object.keys(tagCounts), ...activeSessionTags]);
     return Array.from(combined).sort((a, b) => {
       // Sort by count descending, then alphabetical
       const countA = tagCounts[a] || 0;
@@ -105,7 +106,23 @@ export default function SessionView() {
       if (countB !== countA) return countB - countA;
       return a.localeCompare(b);
     });
-  }, [tagCounts, preAddedTags]);
+  }, [tagCounts, activeSessionTags]);
+
+  const globalSessionTags = React.useMemo(() => {
+    const tags = new Set<string>();
+    sessions.forEach(s => {
+      s.tags?.forEach(tag => tags.add(tag));
+    });
+    return Array.from(tags);
+  }, [sessions]);
+
+  const existingTrackerTitles = React.useMemo(() => {
+    const titles = new Set<string>();
+    sessions.forEach(s => {
+      s.trackers?.forEach(t => titles.add(t.title));
+    });
+    return Array.from(titles);
+  }, [sessions]);
 
   const anySessionHasTrackers = React.useMemo(() => {
     return sessions.some(s => (s.metrics && s.metrics.length > 0) || (s.trackers && s.trackers.length > 0));
@@ -164,8 +181,9 @@ export default function SessionView() {
   const handleDeleteSessionTag = async (tagToDelete: string, e: React.MouseEvent) => {
     e.stopPropagation();
     
-    // Remove from pre-added tags
-    setPreAddedTags(prev => prev.filter(t => t !== tagToDelete));
+    if (activeSession) {
+      handleUpdateSessionTags(activeSession.id, activeSessionTags.filter(t => t !== tagToDelete));
+    }
     
     // Clear filter if active
     if (filteredTag === tagToDelete) {
@@ -1558,6 +1576,7 @@ export default function SessionView() {
                             setNoteTags(prev => prev.slice(0, -1));
                           }}
                           existingTags={noteTags}
+                          additionalSuggestions={globalSessionTags}
                           placeholder="Add tags (press Enter)..."
                           className="bg-transparent border-none focus:ring-0 text-sm text-zinc-300 placeholder:text-zinc-600 outline-none flex-1 py-1"
                         />
@@ -1735,7 +1754,7 @@ export default function SessionView() {
                   onTap={(id) => setActiveTappedId(activeTappedId === id ? null : id)}
                 />
               ))}
-              <AddTrackerMenu onAddTracker={handleAddTracker} />
+              <AddTrackerMenu onAddTracker={handleAddTracker} existingTrackers={existingTrackerTitles} />
             </div>
           ) : null}
             </div>
@@ -1756,13 +1775,15 @@ export default function SessionView() {
                   value={sessionTagInput}
                   onChange={setSessionTagInput}
                   onAddTag={(tag) => {
+                    if (!activeSession) return;
                     const trimmed = tag.trim().toLowerCase();
-                    if (trimmed && !preAddedTags.includes(trimmed)) {
-                      setPreAddedTags(prev => [...prev, trimmed]);
+                    if (trimmed && !activeSessionTags.includes(trimmed)) {
+                      handleUpdateSessionTags(activeSession.id, [...activeSessionTags, trimmed]);
                       setSessionTagInput('');
                     }
                   }}
                   existingTags={allSessionTagsList}
+                  additionalSuggestions={globalSessionTags}
                   placeholder="Add a tag..."
                   className="bg-transparent border-none focus:ring-0 text-sm text-zinc-300 placeholder:text-zinc-600 outline-none w-full"
                 />
@@ -1794,7 +1815,7 @@ export default function SessionView() {
                             setFilteredTag(tag);
                             scrollToTab('notes');
                           }}
-                          className="px-3 py-1.5 pr-8 bg-zinc-950 border border-zinc-800 rounded-lg flex items-center gap-2 hover:border-zinc-700 hover:bg-zinc-800 transition-colors animate-in fade-in cursor-grab active:cursor-grabbing group-hover:border-zinc-700"
+                          className="px-3 py-1.5 pr-3 lg:group-hover:pr-8 bg-zinc-950 border border-zinc-800 rounded-lg flex items-center gap-2 hover:border-zinc-700 hover:bg-zinc-800 transition-all animate-in fade-in cursor-grab active:cursor-grabbing lg:group-hover:border-zinc-700"
                         >
                           <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter group-hover:text-zinc-300">{tag}</span>
                           {count > 0 && (

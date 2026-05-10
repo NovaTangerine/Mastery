@@ -14,6 +14,7 @@ interface TagAutocompleteInputProps {
   className?: string;
   autoFocus?: boolean;
   existingTags: string[];
+  additionalSuggestions?: string[];
 }
 
 export const TagAutocompleteInput: React.FC<TagAutocompleteInputProps> = ({
@@ -28,6 +29,7 @@ export const TagAutocompleteInput: React.FC<TagAutocompleteInputProps> = ({
   className = "",
   autoFocus = false,
   existingTags,
+  additionalSuggestions = [],
 }) => {
   const { tags: allGameTags, addTagToCache } = useGameTags(gameId);
   const [isFocused, setIsFocused] = useState(false);
@@ -38,7 +40,8 @@ export const TagAutocompleteInput: React.FC<TagAutocompleteInputProps> = ({
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   
   // Filter tags to suggest
-  const availableTags = allGameTags.filter(tag => !existingTags.includes(tag.toLowerCase()));
+  const combinedTags = Array.from(new Set([...allGameTags, ...additionalSuggestions]));
+  const availableTags = combinedTags.filter(tag => !existingTags.includes(tag.toLowerCase()));
   
   let suggestions = availableTags;
   if (value.trim()) {
