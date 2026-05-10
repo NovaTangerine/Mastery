@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, X, Trash2, CheckSquare, Square, Minus, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, X, Trash2, Check, Minus, ChevronDown, ChevronRight } from 'lucide-react';
 import { SessionTracker, TrackerItem, QuantifierType } from '../types';
 
 interface TrackerCardProps {
@@ -95,8 +95,19 @@ const TrackerItemRow = ({
           )}
           
           {item.quantifierType === 'checkbox' && (
-            <button onClick={(e) => { e.stopPropagation(); toggleCheckbox(); }} className="mt-0.5 text-zinc-400 hover:text-zinc-100 shrink-0">
-              {item.completed ? <CheckSquare className="w-4 h-4 text-emerald-500" /> : <Square className="w-4 h-4" />}
+            <button 
+              onClick={(e) => { e.stopPropagation(); toggleCheckbox(); }} 
+              className={`mt-0.5 w-[14px] h-[14px] rounded-[3px] flex items-center justify-center transition-all border shrink-0 ${
+                item.completed 
+                  ? 'bg-blue-500 border-blue-400 text-white shadow-[0_0_8px_rgba(59,130,246,0.25)]' 
+                  : 'bg-zinc-950 border-zinc-800 text-zinc-700 hover:border-zinc-600'
+              }`}
+            >
+              {item.completed ? (
+                <Check className="w-[10px] h-[10px] stroke-[3px]" />
+              ) : (
+                <div className="w-[10px] h-[10px] rounded-[2px]" />
+              )}
             </button>
           )}
 
@@ -110,7 +121,7 @@ const TrackerItemRow = ({
               <div className="flex items-center gap-2 mt-2 pr-2">
                 <div className="flex-1 h-2 bg-zinc-800 rounded-full overflow-hidden">
                   <div 
-                    className="h-full bg-emerald-500 transition-all duration-300"
+                    className="h-full bg-blue-500 transition-all duration-300"
                     style={{ width: `${((item.currentValue || 0) / (item.maxValue || 100)) * 100}%` }}
                   />
                 </div>
@@ -132,7 +143,7 @@ const TrackerItemRow = ({
                 {Array.from({ length: item.maxValue || 5 }).map((_, i) => (
                   <div 
                     key={i} 
-                    className={`w-2 h-2 rounded-full transition-colors ${i < (item.currentValue || 0) ? 'bg-emerald-500' : 'bg-zinc-800'}`}
+                    className={`w-2 h-2 rounded-full transition-colors ${i < (item.currentValue || 0) ? 'bg-blue-500' : 'bg-zinc-800'}`}
                   />
                 ))}
                 <div className="flex items-center gap-1 ml-auto shrink-0">

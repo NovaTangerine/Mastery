@@ -39,6 +39,32 @@ export const TagAutocompleteInput: React.FC<TagAutocompleteInputProps> = ({
   
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   
+  const [isHovered, setIsHovered] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnter = useCallback(() => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    setIsHovered(true);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    hoverTimeoutRef.current = setTimeout(() => {
+      setIsHovered(false);
+    }, 100);
+  }, []);
+
+  const wakeUpFromTyping = useCallback(() => {
+    setIsTyping(true);
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+    }, 2000);
+  }, []);
+
+  const showFully = isHovered || isTyping;
+
   // Filter tags to suggest
   const combinedTags = Array.from(new Set([...allGameTags, ...additionalSuggestions]));
   const availableTags = combinedTags.filter(tag => !existingTags.includes(tag.toLowerCase()));
@@ -109,6 +135,7 @@ export const TagAutocompleteInput: React.FC<TagAutocompleteInputProps> = ({
   }, [onBlur]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    wakeUpFromTyping();
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setSelectedIndex(prev => (prev < suggestions.length - 1 ? prev + 1 : prev));
@@ -143,13 +170,27 @@ export const TagAutocompleteInput: React.FC<TagAutocompleteInputProps> = ({
   };
 
   return (
-    <div className="relative inline-block" ref={wrapperRef}>
+    <div 
+      className="relative inline-block" 
+      ref={wrapperRef}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <input
         type="text"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => {
+          wakeUpFromTyping();
+          onChange(e.target.value);
+        }}
+        onClick={() => {
+          wakeUpFromTyping();
+        }}
         onKeyDown={handleKeyDown}
-        onFocus={() => setIsFocused(true)}
+        onFocus={() => {
+          setIsFocused(true);
+          wakeUpFromTyping();
+        }}
         className={className}
         placeholder={placeholder}
         autoFocus={autoFocus}
@@ -157,7 +198,9 @@ export const TagAutocompleteInput: React.FC<TagAutocompleteInputProps> = ({
       {isFocused && suggestions.length > 0 && createPortal(
         <div 
           ref={dropdownRef}
-          className="fixed z-[9999] max-h-48 overflow-y-auto bg-zinc-800 border border-zinc-700/50 rounded-xl shadow-xl p-1 custom-scrollbar"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          className={`tag-autocomplete-dropdown fixed z-[9999] max-h-48 overflow-y-auto bg-zinc-800 border border-zinc-700/50 rounded-xl shadow-xl p-1 custom-scrollbar transition-opacity duration-700 ease-in-out ${showFully ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
           style={dropdownStyle}
         >
           {suggestions.map((suggestion, idx) => (

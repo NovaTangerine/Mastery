@@ -48,16 +48,16 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
           
           <button
             onClick={(e) => { e.stopPropagation(); onUpdate(metric.id, { completed: !metric.completed }); }}
-            className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all border shrink-0 ${
+            className={`w-5 h-5 rounded flex items-center justify-center transition-all border shrink-0 ${
               metric.completed 
-                ? 'bg-indigo-500 border-indigo-400 text-white shadow-[0_0_10px_rgba(99,102,241,0.3)]' 
+                ? 'bg-blue-500 border-blue-400 text-white shadow-[0_0_8px_rgba(59,130,246,0.25)]' 
                 : 'bg-zinc-950 border-zinc-800 text-zinc-700 hover:border-zinc-600'
             }`}
           >
             {metric.completed ? (
-              <Check className="w-3.5 h-3.5 stroke-[4px]" />
+              <Check className="w-3.5 h-3.5 stroke-[3px]" />
             ) : (
-              <div className="w-3.5 h-3.5 rounded-md" />
+              <div className="w-3.5 h-3.5 rounded-sm" />
             )}
           </button>
         </div>
@@ -131,7 +131,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
                 {Array.from({ length: metric.targetCount || Math.max(5, metric.currentCount ?? 0) }).map((_, i) => (
                   <div 
                     key={i} 
-                    className={`w-2 h-2 rounded-full transition-colors ${i < (metric.currentCount ?? 0) ? 'bg-indigo-500' : 'bg-zinc-800'}`}
+                    className={`w-2 h-2 rounded-full transition-colors ${i < (metric.currentCount ?? 0) ? 'bg-blue-500' : 'bg-zinc-800'}`}
                   />
                 ))}
               </div>
@@ -145,7 +145,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
                 className="w-full relative h-6 bg-zinc-950 rounded-full overflow-hidden border border-zinc-800"
               >
                 <div 
-                  className="absolute left-0 top-0 bottom-0 bg-indigo-500/50 transition-all duration-300"
+                  className="absolute left-0 top-0 bottom-0 bg-blue-500/50 transition-all duration-300"
                   style={{ width: `${Math.min(100, Math.max(0, metric.currentValue ?? 0))}%` }}
                 />
                 <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-zinc-300 z-10 w-full mix-blend-screen mix-blend-plus-lighter">

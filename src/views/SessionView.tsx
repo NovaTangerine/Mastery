@@ -162,6 +162,7 @@ export default function SessionView() {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [activeMenuType, setActiveMenuType] = useState<'group' | 'session' | null>(null);
   const [activeTappedId, setActiveTappedId] = useState<string | null>(null);
+  const noteInputContainerRef = useRef<HTMLDivElement>(null);
   const [isTrackersCollapsed, setIsTrackersCollapsed] = useState(false);
   const [collapsedTrackerGroups, setCollapsedTrackerGroups] = useState<Set<string>>(new Set());
 
@@ -274,6 +275,19 @@ export default function SessionView() {
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, [activeMenuId]);
+
+  useEffect(() => {
+    const handleMouseDown = (e: MouseEvent) => {
+      if (isInputFocused && noteInputContainerRef.current && !noteInputContainerRef.current.contains(e.target as Node)) {
+        const target = e.target as HTMLElement;
+        if (!target.closest('.tag-autocomplete-dropdown')) {
+          setIsInputFocused(false);
+        }
+      }
+    };
+    document.addEventListener('mousedown', handleMouseDown);
+    return () => document.removeEventListener('mousedown', handleMouseDown);
+  }, [isInputFocused]);
 
   const toggleGroupCollapse = (groupId: string) => {
     setCollapsedGroups(prev => {
@@ -1497,13 +1511,9 @@ export default function SessionView() {
         {/* Input Area */}
         <div className="shrink-0 bg-zinc-950 pt-2 hidden lg:block">
           <div 
+            ref={noteInputContainerRef}
             className="bg-zinc-900 border border-zinc-800 rounded-3xl p-2 shadow-2xl transition-all duration-300 focus-within:border-zinc-700 hover:border-zinc-700"
             onFocus={() => setIsInputFocused(true)}
-            onBlur={(e) => {
-              if (!e.currentTarget.contains(e.relatedTarget)) {
-                setIsInputFocused(false);
-              }
-            }}
           >
             <form onSubmit={submitNote} className="flex flex-col">
               <div className="flex gap-2 items-end">
@@ -1512,7 +1522,7 @@ export default function SessionView() {
                   onChange={(e) => setNoteInput(e.target.value)}
                   placeholder="Type a note about your experience..."
                   rows={1}
-                  className="flex-1 bg-transparent border-none focus:ring-0 text-zinc-100 px-4 py-3 placeholder:text-zinc-600 outline-none transition-all duration-300 resize-none h-[48px] hover:h-[120px] focus:h-[120px] custom-scrollbar"
+                  className={`flex-1 bg-transparent border-none focus:ring-0 text-zinc-100 px-4 py-3 placeholder:text-zinc-600 outline-none transition-all duration-300 resize-none custom-scrollbar ${isInputFocused ? 'h-[120px]' : 'h-[48px] hover:h-[120px] focus:h-[120px]'}`}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
