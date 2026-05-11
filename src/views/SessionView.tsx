@@ -56,6 +56,7 @@ export default function SessionView() {
     handleUpdateTrackerItem,
     handleRemoveTrackerItem,
     handleAddTracker,
+    handleUpdateTracker,
     handleDeleteTracker
   } = useGameContext();
 
@@ -122,6 +123,28 @@ export default function SessionView() {
       s.trackers?.forEach(t => titles.add(t.title));
     });
     return Array.from(titles);
+  }, [sessions]);
+
+  const trackerItemSuggestions = React.useMemo(() => {
+    const itemsMap: Record<string, Set<string>> = {};
+    sessions.forEach(s => {
+      s.trackers?.forEach(t => {
+        if (!itemsMap[t.title]) itemsMap[t.title] = new Set();
+        t.items.forEach(item => {
+          if (typeof item === 'string') {
+            itemsMap[t.title].add(item);
+          } else {
+            itemsMap[t.title].add(item.title);
+          }
+        });
+      });
+    });
+    
+    const result: Record<string, string[]> = {};
+    Object.keys(itemsMap).forEach(k => {
+      result[k] = Array.from(itemsMap[k]);
+    });
+    return result;
   }, [sessions]);
 
   const anySessionHasTrackers = React.useMemo(() => {
@@ -1638,8 +1661,9 @@ export default function SessionView() {
           )}
         </div>
         <div className="flex-1 overflow-y-auto custom-scrollbar pr-4 sm:pr-6 lg:pr-2 flex flex-col pt-1 pb-24 lg:pb-0">
-          {!isTrackersCollapsed && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:flex lg:flex-col gap-2 items-start lg:items-stretch content-start mb-12">
+          <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${isTrackersCollapsed ? 'grid-rows-[0fr] opacity-0 pointer-events-none' : 'grid-rows-[1fr] opacity-100'}`}>
+            <div className="overflow-hidden has-[.z-50]:overflow-visible min-h-0">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:flex lg:flex-col gap-2 items-start lg:items-stretch content-start mb-12">
           {(() => {
             const metrics = activeSession.metrics || [];
             
@@ -1684,7 +1708,15 @@ export default function SessionView() {
                   />
                 ))}
                 
-                {Object.entries(groupedMetrics).map(([groupName, groupMetrics]) => {
+                {Object.entries(groupedMetrics)
+                  .sort((a, b) => {
+                    const aPinned = a[1].some(m => m.isGroupPinnedToTop);
+                    const bPinned = b[1].some(m => m.isGroupPinnedToTop);
+                    if (aPinned && !bPinned) return -1;
+                    if (!aPinned && bPinned) return 1;
+                    return 0;
+                  })
+                  .map(([groupName, groupMetrics]) => {
                   const isGroupCollapsed = collapsedTrackerGroups.has(groupName);
                   return (
                   <div key={groupName} className="space-y-2 md:col-span-full xl:col-auto">
@@ -1699,21 +1731,23 @@ export default function SessionView() {
                         <ChevronDown className="w-3 h-3 text-zinc-600 transition-colors group-hover/header:text-zinc-500" />
                       )}
                     </div>
-                    {!isGroupCollapsed && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-2 lg:flex lg:flex-col lg:space-y-2 lg:gap-0 lg:pt-0">
-                        {groupMetrics.map(metric => (
-                          <MetricCard 
-                            key={metric.id}
-                            metric={metric}
-                            onUpdate={handleUpdateMetric}
-                            onDelete={() => setMetricToDelete({ id: metric.id, title: metric.title, type: 'metric' })}
-                            onEdit={setEditingMetricId}
-                            activeTappedId={activeTappedId}
-                            onTap={(id) => setActiveTappedId(activeTappedId === id ? null : id)}
-                          />
-                        ))}
+                    <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${isGroupCollapsed ? 'grid-rows-[0fr] opacity-0 pointer-events-none' : 'grid-rows-[1fr] opacity-100'}`}>
+                      <div className="overflow-hidden has-[.z-50]:overflow-visible min-h-0">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-2 lg:flex lg:flex-col lg:space-y-2 lg:gap-0 lg:pt-0">
+                          {groupMetrics.map(metric => (
+                            <MetricCard 
+                              key={metric.id}
+                              metric={metric}
+                              onUpdate={handleUpdateMetric}
+                              onDelete={() => setMetricToDelete({ id: metric.id, title: metric.title, type: 'metric' })}
+                              onEdit={setEditingMetricId}
+                              activeTappedId={activeTappedId}
+                              onTap={(id) => setActiveTappedId(activeTappedId === id ? null : id)}
+                            />
+                          ))}
+                        </div>
                       </div>
-                    )}
+                    </div>
                   </div>
                 )})}
               </>
@@ -1759,16 +1793,19 @@ export default function SessionView() {
                   onAddItem={handleAddTrackerItem}
                   onUpdateItem={handleUpdateTrackerItem}
                   onRemoveItem={handleRemoveTrackerItem}
+                  onUpdateTracker={handleUpdateTracker}
                   onDeleteTracker={() => setMetricToDelete({ id: tracker.id, title: tracker.title, type: 'legacy' })}
                   activeTappedId={activeTappedId}
                   onTap={(id) => setActiveTappedId(activeTappedId === id ? null : id)}
+                  itemSuggestions={trackerItemSuggestions[tracker.title] || []}
                 />
               ))}
               <AddTrackerMenu onAddTracker={handleAddTracker} existingTrackers={existingTrackerTitles} />
             </div>
           ) : null}
+              </div>
             </div>
-          )}
+          </div>
           
           {/* Always render tags module */}
           <div className="hidden lg:block lg:flex-1 min-h-[0px]"></div>

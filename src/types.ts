@@ -45,16 +45,17 @@ export interface SessionGroup {
   order: string;
 }
 
-export type MeasurementType = 'none' | 'counter' | 'checkbox' | 'progress';
+export type MeasurementType = 'none' | 'visual_counter' | 'numeric_counter' | 'checkbox' | 'progress';
 
 export interface SessionMetric {
   id: string;
   title: string;
   description?: string;
   group?: string;
+  isGroupPinnedToTop?: boolean;
   measurementType: MeasurementType;
   
-  // For 'counter'
+  // For 'visual_counter' and 'numeric_counter'
   currentCount?: number;
   targetCount?: number;
   

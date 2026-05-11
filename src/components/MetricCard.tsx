@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { SessionMetric } from '../types';
-import { Check, Edit2, Minus, Plus, Trash2, Hash, Target, CheckSquare } from 'lucide-react';
+import { Check, Edit2, Minus, Plus, Trash2, Hash, Target, CheckSquare, MoreVertical } from 'lucide-react';
 
 interface MetricCardProps {
   metric: SessionMetric;
@@ -15,10 +15,25 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
   const isTapped = activeTappedId === metric.id;
   const handleTap = () => onTap?.(metric.id);
 
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMenuOpen]);
+
   if (metric.measurementType === 'checkbox') {
     return (
       <div 
-        className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3 flex items-center justify-between gap-4 group/metric relative transition-colors hover:border-zinc-700 cursor-default"
+        className={`relative bg-zinc-900 border border-zinc-800 rounded-2xl p-3 flex items-center justify-between gap-4 group/metric transition-colors hover:border-zinc-700 cursor-default ${isMenuOpen ? 'z-50' : 'z-auto'}`}
         onClick={handleTap}
       >
         <div className="flex-1 min-w-0">
@@ -31,19 +46,45 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
         </div>
 
         <div className="flex items-center gap-2">
-          <div className={`flex items-center gap-0.5 transition-opacity mr-2 ${isTapped ? 'opacity-100' : 'opacity-0 lg:group-hover/metric:opacity-100'}`}>
+          <div className="relative" ref={menuRef}>
             <button 
-              onClick={(e) => { e.stopPropagation(); onEdit(metric.id); }}
-              className="p-1 px-1.5 rounded-lg text-zinc-600 hover:text-indigo-400 hover:bg-zinc-800 transition-all"
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                setIsMenuOpen(!isMenuOpen);
+              }}
+              className={`p-1 rounded-md transition-all ${isMenuOpen ? 'text-zinc-100 bg-zinc-800' : 'text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800'} ${isTapped || isMenuOpen ? 'opacity-100' : 'opacity-0 lg:group-hover/metric:opacity-100'}`}
+              title="More Options"
             >
-              <Edit2 className="w-3.5 h-3.5" />
+              <MoreVertical className="w-4 h-4" />
             </button>
-            <button 
-              onClick={(e) => { e.stopPropagation(); onDelete(metric.id); }}
-              className="p-1 px-1.5 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-zinc-800 transition-all"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
+
+            {isMenuOpen && (
+              <div className="absolute right-0 top-full mt-1 w-32 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl overflow-hidden z-50 py-1">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(metric.id);
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs text-zinc-300 hover:bg-zinc-800 flex items-center transition-colors gap-2"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  Edit Tracker
+                </button>
+                <div className="h-px bg-zinc-800 my-1 font-bold" />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(metric.id);
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs text-red-500 font-medium hover:bg-zinc-800 flex items-center transition-colors gap-2"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Delete Tracker
+                </button>
+              </div>
+            )}
           </div>
           
           <button
@@ -67,7 +108,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
 
   return (
     <div 
-      className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex flex-col gap-3 group/metric relative overflow-hidden transition-colors hover:border-zinc-700 cursor-default"
+      className={`relative bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex flex-col gap-3 group/metric transition-colors hover:border-zinc-700 cursor-default ${isMenuOpen ? 'z-50' : 'z-auto'}`}
       onClick={handleTap}
     >
       <div className="flex items-start justify-between gap-3">
@@ -78,62 +119,101 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
           )}
         </div>
         
-        <div className={`absolute right-3 top-3 flex items-center gap-1 transition-opacity ${isTapped ? 'opacity-100' : 'opacity-0 lg:group-hover/metric:opacity-100'}`}>
-          <button 
-            onClick={(e) => { e.stopPropagation(); onEdit(metric.id); }}
-            className="p-1.5 rounded-lg text-zinc-500 hover:text-indigo-400 hover:bg-zinc-800 transition-all"
-            title="Edit Tracker"
-          >
-            <Edit2 className="w-3.5 h-3.5" />
-          </button>
-          <button 
-            onClick={(e) => { e.stopPropagation(); onDelete(metric.id); }}
-            className="p-1.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-zinc-800 transition-all"
-            title="Delete Tracker"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
+        <div className={`absolute right-3 top-3 flex items-center gap-1 transition-opacity ${isTapped || isMenuOpen ? 'opacity-100' : 'opacity-0 lg:group-hover/metric:opacity-100'}`}>
+          <div className="relative" ref={menuRef}>
+            <button 
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                setIsMenuOpen(!isMenuOpen);
+              }}
+              className={`p-1.5 rounded-lg transition-all ${isMenuOpen ? 'text-zinc-100 bg-zinc-800' : 'text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800'}`}
+              title="More Options"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+
+            {isMenuOpen && (
+              <div className="absolute right-0 top-full mt-1 w-32 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl overflow-hidden z-50 py-1">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(metric.id);
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs text-zinc-300 hover:bg-zinc-800 flex items-center transition-colors gap-2"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  Edit Tracker
+                </button>
+                <div className="h-px bg-zinc-800 my-1 font-bold" />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(metric.id);
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs text-red-500 font-medium hover:bg-zinc-800 flex items-center transition-colors gap-2"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Delete Tracker
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {metric.measurementType !== 'none' && (
         <div className="pt-2 border-t border-zinc-800/50 flex items-center justify-between">
           
-          {metric.measurementType === 'counter' && (
-            <div className="flex flex-col gap-3 w-full">
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-1.5 text-zinc-400 bg-zinc-950 px-2 py-1 rounded-md">
-                  <Hash className="w-3.5 h-3.5" />
-                  <span className="text-xs font-mono font-medium">
-                    {metric.currentCount ?? 0}
-                    {metric.targetCount ? ` / ${metric.targetCount}` : ''}
-                  </span>
+          {metric.measurementType === 'visual_counter' && (
+            <div className="flex items-center gap-1.5 w-full flex-wrap">
+              {Array.from({ length: metric.targetCount || Math.max(5, metric.currentCount ?? 0) }).map((_, i) => (
+                <div 
+                  key={i} 
+                  className={`w-2 h-2 rounded-full transition-colors ${i < (metric.currentCount ?? 0) ? 'bg-blue-500' : 'bg-zinc-800'}`}
+                />
+              ))}
+              <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-lg ml-auto shrink-0">
+                <button
+                  onClick={() => onUpdate(metric.id, { currentCount: Math.max(0, (metric.currentCount ?? 0) - 1) })}
+                  className="w-7 h-7 rounded bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center text-zinc-400 transition-colors"
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                </button>
+                <div className="min-w-[2rem] px-2 text-center text-sm font-bold text-zinc-300">
+                  {metric.currentCount ?? 0}
+                  {metric.targetCount ? ` / ${metric.targetCount}` : ''}
                 </div>
-                <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-lg">
-                  <button
-                    onClick={() => onUpdate(metric.id, { currentCount: Math.max(0, (metric.currentCount ?? 0) - 1) })}
-                    className="w-7 h-7 rounded bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center text-zinc-400 transition-colors"
-                  >
-                    <Minus className="w-3.5 h-3.5" />
-                  </button>
-                  <div className="w-8 text-center text-sm font-bold text-zinc-300">
-                    {metric.currentCount ?? 0}
-                  </div>
-                  <button
-                    onClick={() => onUpdate(metric.id, { currentCount: (metric.currentCount ?? 0) + 1 })}
-                    className="w-7 h-7 rounded bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center text-zinc-400 transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                <button
+                  onClick={() => onUpdate(metric.id, { currentCount: (metric.currentCount ?? 0) + 1 })}
+                  className="w-7 h-7 rounded bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center text-zinc-400 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
               </div>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {Array.from({ length: metric.targetCount || Math.max(5, metric.currentCount ?? 0) }).map((_, i) => (
-                  <div 
-                    key={i} 
-                    className={`w-2 h-2 rounded-full transition-colors ${i < (metric.currentCount ?? 0) ? 'bg-blue-500' : 'bg-zinc-800'}`}
-                  />
-                ))}
+            </div>
+          )}
+
+          {metric.measurementType === 'numeric_counter' && (
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-lg ml-auto">
+                <button
+                  onClick={() => onUpdate(metric.id, { currentCount: Math.max(0, (metric.currentCount ?? 0) - 1) })}
+                  className="w-7 h-7 rounded bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center text-zinc-400 transition-colors"
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                </button>
+                <div className="min-w-[2rem] px-2 text-center text-sm font-bold text-zinc-300">
+                  {metric.currentCount ?? 0}
+                  {metric.targetCount ? ` / ${metric.targetCount}` : ''}
+                </div>
+                <button
+                  onClick={() => onUpdate(metric.id, { currentCount: (metric.currentCount ?? 0) + 1 })}
+                  className="w-7 h-7 rounded bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center text-zinc-400 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
           )}

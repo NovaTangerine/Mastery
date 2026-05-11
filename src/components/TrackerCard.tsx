@@ -1,15 +1,18 @@
-import React, { useState } from 'react';
-import { Plus, X, Trash2, Check, Minus, ChevronDown, ChevronRight } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Plus, X, Trash2, Check, Minus, ChevronDown, ChevronRight, MoreVertical, Edit2 } from 'lucide-react';
 import { SessionTracker, TrackerItem, QuantifierType } from '../types';
+import { TagAutocompleteInput } from './TagAutocompleteInput';
 
 interface TrackerCardProps {
   tracker: SessionTracker;
   onAddItem: (trackerId: string, item: TrackerItem | string) => void;
   onUpdateItem: (trackerId: string, itemId: string, updates: Partial<TrackerItem>) => void;
   onRemoveItem: (trackerId: string, itemId: string | number) => void;
+  onUpdateTracker: (trackerId: string, title: string) => void;
   onDeleteTracker: (trackerId: string) => void;
   activeTappedId?: string | null;
   onTap?: (id: string) => void;
+  itemSuggestions?: string[];
 }
 
 const TrackerItemRow = ({ 
@@ -177,12 +180,38 @@ const TrackerItemRow = ({
   );
 };
 
-export const TrackerCard = React.memo(({ tracker, onAddItem, onUpdateItem, onRemoveItem, onDeleteTracker, activeTappedId, onTap }: TrackerCardProps) => {
+export const TrackerCard = React.memo(({ tracker, onAddItem, onUpdateItem, onRemoveItem, onUpdateTracker, onDeleteTracker, activeTappedId, onTap, itemSuggestions = [] }: TrackerCardProps) => {
   const [isAdding, setIsAdding] = useState(false);
   const [newItemTitle, setNewItemTitle] = useState('');
   const [newItemDesc, setNewItemDesc] = useState('');
-  const [quantifierType, setQuantifierType] = useState<QuantifierType>('none');
+  const [quantifierType, setQuantifierType] = useState<QuantifierType>('checkbox');
   const [maxValue, setMaxValue] = useState(10);
+  
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(tracker.title);
+  
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMenuOpen]);
+
+  const handleTitleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editedTitle.trim() && editedTitle.trim() !== tracker.title) {
+      onUpdateTracker(tracker.id, editedTitle.trim());
+    }
+    setIsEditingTitle(false);
+  };
   
   const isTapped = activeTappedId === tracker.id;
   const handleTap = () => onTap?.(tracker.id);
@@ -205,20 +234,33 @@ export const TrackerCard = React.memo(({ tracker, onAddItem, onUpdateItem, onRem
     // Reset form
     setNewItemTitle('');
     setNewItemDesc('');
-    setQuantifierType('none');
+    setQuantifierType('checkbox');
     setMaxValue(10);
     setIsAdding(false);
   };
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 w-full flex-shrink-0 flex flex-col max-h-[500px]">
+    <div className={`relative bg-zinc-900 border border-zinc-800 rounded-2xl p-4 w-full flex-shrink-0 flex flex-col max-h-[500px] ${isMenuOpen ? 'z-50' : 'z-auto'}`}>
       <div 
-        className="flex justify-between items-center mb-3 group cursor-default"
+        className="flex justify-between items-center mb-3 group cursor-default relative"
         onClick={handleTap}
       >
-        <h4 className="font-bold text-sm text-zinc-300 uppercase tracking-wider truncate pr-2">{tracker.title}</h4>
-        <div className="flex items-center gap-1">
-          {!isAdding && (
+        {isEditingTitle ? (
+          <form onSubmit={handleTitleSubmit} className="flex-1 mr-2" onClick={(e) => e.stopPropagation()}>
+            <input
+              type="text"
+              value={editedTitle}
+              onChange={(e) => setEditedTitle(e.target.value)}
+              onBlur={() => handleTitleSubmit({ preventDefault: () => {} } as React.FormEvent)}
+              autoFocus
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1 text-sm font-bold text-zinc-300 uppercase tracking-wider focus:outline-none focus:border-zinc-500"
+            />
+          </form>
+        ) : (
+          <h4 className="font-bold text-sm text-zinc-300 uppercase tracking-wider truncate pr-2 flex-1">{tracker.title}</h4>
+        )}
+        <div className="flex items-center gap-1 shrink-0">
+          {!isAdding && !isEditingTitle && (
             <button 
               onClick={(e) => { e.stopPropagation(); setIsAdding(true); }}
               className="p-1 text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 rounded-md transition-all"
@@ -227,13 +269,48 @@ export const TrackerCard = React.memo(({ tracker, onAddItem, onUpdateItem, onRem
               <Plus className="w-4 h-4" />
             </button>
           )}
-          <button 
-            onClick={(e) => { e.stopPropagation(); onDeleteTracker(tracker.id); }}
-            className={`p-1 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-all ${isTapped ? 'opacity-100' : 'opacity-0 lg:group-hover:opacity-100'}`}
-            title="Delete Tracker"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          
+          <div className="relative" ref={menuRef}>
+            <button 
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                setIsMenuOpen(!isMenuOpen);
+              }}
+              className={`p-1 rounded-md transition-all ${isMenuOpen ? 'text-zinc-100 bg-zinc-800' : 'text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800'} ${isTapped || isMenuOpen ? 'opacity-100' : 'opacity-0 lg:group-hover:opacity-100'}`}
+              title="More Options"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+
+            {isMenuOpen && (
+              <div className="absolute right-0 top-full mt-1 w-32 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl overflow-hidden z-50 py-1">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsEditingTitle(true);
+                    setEditedTitle(tracker.title);
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs text-zinc-300 hover:bg-zinc-800 flex items-center transition-colors gap-2"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  Edit Name
+                </button>
+                <div className="h-px bg-zinc-800 my-1 font-bold" />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteTracker(tracker.id);
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs text-red-500 font-medium hover:bg-zinc-800 flex items-center transition-colors gap-2"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Delete Tracker
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -257,14 +334,23 @@ export const TrackerCard = React.memo(({ tracker, onAddItem, onUpdateItem, onRem
 
       {isAdding && (
         <form onSubmit={handleAddItem} className="mt-auto bg-zinc-950/50 p-3 rounded-xl border border-zinc-800 space-y-3 animate-in fade-in slide-in-from-bottom-2">
-          <input
-            type="text"
-            value={newItemTitle}
-            onChange={(e) => setNewItemTitle(e.target.value)}
-            placeholder="Item title..."
-            autoFocus
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-zinc-500 transition-colors"
-          />
+          <div className="w-full">
+            <TagAutocompleteInput
+              gameId={null}
+              value={newItemTitle}
+              onChange={setNewItemTitle}
+              onAddTag={(tag) => {
+                setNewItemTitle(tag);
+              }}
+              existingTags={tracker.items.map(item => typeof item === 'string' ? item : item.title)}
+              additionalSuggestions={itemSuggestions}
+              mode="generic"
+              triggerOnEnterOnly={true}
+              placeholder="Item title..."
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-zinc-500 transition-colors"
+              autoFocus
+            />
+          </div>
           <input
             type="text"
             value={newItemDesc}

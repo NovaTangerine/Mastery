@@ -13,10 +13,11 @@ export const EditMetricModal: React.FC<EditMetricModalProps> = ({ metric, existi
   const [title, setTitle] = useState(metric.title);
   const [description, setDescription] = useState(metric.description || '');
   const [group, setGroup] = useState(metric.group || '');
+  const [isGroupPinnedToTop, setIsGroupPinnedToTop] = useState(metric.isGroupPinnedToTop ?? false);
   const [showGroupSuggestions, setShowGroupSuggestions] = useState(false);
   const [isMeasured, setIsMeasured] = useState(metric.measurementType !== 'none');
   const [measurementType, setMeasurementType] = useState<MeasurementType>(
-    metric.measurementType !== 'none' ? metric.measurementType : 'counter'
+    metric.measurementType !== 'none' ? metric.measurementType : 'visual_counter'
   );
   const [targetCount, setTargetCount] = useState<number | ''>(metric.targetCount ?? '');
 
@@ -31,11 +32,12 @@ export const EditMetricModal: React.FC<EditMetricModalProps> = ({ metric, existi
       title: title.trim(),
       description: description.trim() || undefined,
       group: group.trim() || undefined,
+      isGroupPinnedToTop: group.trim() ? isGroupPinnedToTop : undefined,
       measurementType: isMeasured ? measurementType : 'none',
     };
 
     if (isMeasured) {
-      if (measurementType === 'counter') {
+      if (measurementType === 'visual_counter' || measurementType === 'numeric_counter') {
         updates.currentCount = metric.currentCount ?? 0;
         updates.targetCount = targetCount !== '' ? Number(targetCount) : undefined;
       } else if (measurementType === 'progress') {
@@ -97,6 +99,17 @@ export const EditMetricModal: React.FC<EditMetricModalProps> = ({ metric, existi
                 </div>
               )}
             </div>
+            {group.trim() && (
+              <label className="flex items-center gap-3 cursor-pointer mt-3">
+                <input 
+                  type="checkbox"
+                  checked={isGroupPinnedToTop}
+                  onChange={(e) => setIsGroupPinnedToTop(e.target.checked)}
+                  className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-indigo-500 focus:ring-indigo-500/50 focus:ring-offset-zinc-900" 
+                />
+                <span className="text-xs font-medium text-zinc-400">Pin this group to the top</span>
+              </label>
+            )}
           </div>
 
           <div>
@@ -123,36 +136,45 @@ export const EditMetricModal: React.FC<EditMetricModalProps> = ({ metric, existi
 
             {isMeasured && (
               <div className="space-y-4 animate-in slide-in-from-top-2 fade-in duration-200">
-                <div className="flex gap-2">
+                <div className="grid grid-cols-2 gap-2 mt-4">
                   <button
                     type="button"
-                    onClick={() => setMeasurementType('counter')}
-                    className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${measurementType === 'counter' ? 'bg-indigo-500/10 border-indigo-500/50 text-indigo-400' : 'bg-zinc-950 border-zinc-800 text-zinc-500 hover:bg-zinc-900'}`}
+                    onClick={() => setMeasurementType('visual_counter')}
+                    className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${measurementType === 'visual_counter' ? 'bg-indigo-500/10 border-indigo-500/50 text-indigo-400' : 'bg-zinc-950 border-zinc-800 text-zinc-500 hover:bg-zinc-900'}`}
                   >
                     <Hash className="w-5 h-5" />
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Counter</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-center">Visual Counter</span>
                   </button>
                   
                   <button
                     type="button"
+                    onClick={() => setMeasurementType('numeric_counter')}
+                    className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${measurementType === 'numeric_counter' ? 'bg-indigo-500/10 border-indigo-500/50 text-indigo-400' : 'bg-zinc-950 border-zinc-800 text-zinc-500 hover:bg-zinc-900'}`}
+                  >
+                    <Hash className="w-5 h-5" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-center">Numeric Counter</span>
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={() => setMeasurementType('checkbox')}
-                    className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${measurementType === 'checkbox' ? 'bg-indigo-500/10 border-indigo-500/50 text-indigo-400' : 'bg-zinc-950 border-zinc-800 text-zinc-500 hover:bg-zinc-900'}`}
+                    className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${measurementType === 'checkbox' ? 'bg-indigo-500/10 border-indigo-500/50 text-indigo-400' : 'bg-zinc-950 border-zinc-800 text-zinc-500 hover:bg-zinc-900'}`}
                   >
                     <CheckSquare className="w-5 h-5" />
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Checkbox</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-center">Checkbox</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setMeasurementType('progress')}
-                    className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${measurementType === 'progress' ? 'bg-indigo-500/10 border-indigo-500/50 text-indigo-400' : 'bg-zinc-950 border-zinc-800 text-zinc-500 hover:bg-zinc-900'}`}
+                    className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${measurementType === 'progress' ? 'bg-indigo-500/10 border-indigo-500/50 text-indigo-400' : 'bg-zinc-950 border-zinc-800 text-zinc-500 hover:bg-zinc-900'}`}
                   >
                     <Target className="w-5 h-5" />
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Progress</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-center">Progress</span>
                   </button>
                 </div>
                 
-                {measurementType === 'counter' && (
+                {(measurementType === 'visual_counter' || measurementType === 'numeric_counter') && (
                   <div>
                     <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Target Goal (Optional)</label>
                     <input

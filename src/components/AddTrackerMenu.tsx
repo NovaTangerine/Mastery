@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Check, X } from 'lucide-react';
+import { TagAutocompleteInput } from './TagAutocompleteInput';
 
 interface AddTrackerMenuProps {
   onAddTracker: (title: string) => void;
@@ -100,14 +101,26 @@ export const AddTrackerMenu: React.FC<AddTrackerMenuProps> = ({ onAddTracker, ex
                 <div className="flex items-center justify-between md:hidden mb-1">
                   <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Custom Tracker</span>
                 </div>
-                <input
-                  type="text"
-                  value={customTitle}
-                  onChange={(e) => setCustomTitle(e.target.value)}
-                  placeholder="Tracker name..."
-                  className="w-full md:flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 md:px-3 md:py-2 text-base md:text-sm focus:outline-none focus:border-zinc-500 transition-colors"
-                  autoFocus
-                />
+                <div className="w-full md:flex-1">
+                  <TagAutocompleteInput
+                    gameId={null}
+                    value={customTitle}
+                    onChange={setCustomTitle}
+                    onAddTag={(tag) => {
+                      onAddTracker(tag);
+                      setIsOpen(false);
+                      setIsCustom(false);
+                      setCustomTitle('');
+                    }}
+                    existingTags={[]}
+                    additionalSuggestions={allPresets}
+                    mode="generic"
+                    triggerOnEnterOnly={true}
+                    placeholder="Tracker name..."
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 md:px-3 md:py-2 text-base md:text-sm focus:outline-none focus:border-zinc-500 transition-colors"
+                    autoFocus
+                  />
+                </div>
                 <div className="flex gap-2 justify-end">
                   <button
                     type="button"

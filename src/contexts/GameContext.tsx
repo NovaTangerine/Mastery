@@ -58,6 +58,7 @@ interface GameContextType {
   handleDeleteSessionGroup: (groupId: string) => Promise<void>;
   handleUpdateSessionGroupMembership: (groupId: string, sessionIds: string[]) => Promise<void>;
   handleAddTracker: (title: string) => Promise<void>;
+  handleUpdateTracker: (trackerId: string, title: string) => Promise<void>;
   handleAddTrackerItem: (trackerId: string, item: TrackerItem | string) => Promise<void>;
   handleUpdateTrackerItem: (trackerId: string, itemId: string, updates: Partial<TrackerItem>) => Promise<void>;
   handleRemoveTrackerItem: (trackerId: string, itemId: string | number) => Promise<void>;
@@ -511,6 +512,24 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const handleUpdateTracker = async (trackerId: string, title: string) => {
+    if (!user || !activeSession) return;
+    try {
+      const updatedTrackers = (activeSession.trackers || []).map(t => {
+        if (t.id === trackerId) {
+          return { ...t, title };
+        }
+        return t;
+      });
+      
+      await updateDoc(doc(db, 'sessions', activeSession.id), {
+        trackers: updatedTrackers
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'sessions');
+    }
+  };
+
   const handleAddTrackerItem = async (trackerId: string, item: TrackerItem | string) => {
     if (!user || !activeSession) return;
     try {
@@ -624,7 +643,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
                delete newMetric.targetCount;
                delete newMetric.currentValue;
                delete newMetric.completed;
-               if (updates.measurementType === 'counter') newMetric.currentCount = 0;
+               if (updates.measurementType === 'visual_counter' || updates.measurementType === 'numeric_counter') newMetric.currentCount = 0;
                if (updates.measurementType === 'progress') newMetric.currentValue = 0;
                if (updates.measurementType === 'checkbox') newMetric.completed = false;
              }
@@ -667,10 +686,10 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
             const description = isString ? undefined : item.description;
             const completed = isString ? false : item.completed;
             const oldType = isString ? 'checkbox' : item.quantifierType;
-            let measurementType: 'none' | 'counter' | 'checkbox' | 'progress' = 'checkbox';
+            let measurementType: 'none' | 'visual_counter' | 'numeric_counter' | 'checkbox' | 'progress' = 'checkbox';
             
             if (oldType === 'none') measurementType = 'none';
-            if (oldType === 'stepper') measurementType = 'counter';
+            if (oldType === 'stepper') measurementType = 'visual_counter';
             if (oldType === 'progress') measurementType = 'progress';
             if (oldType === 'checkbox') measurementType = 'checkbox';
             
@@ -680,8 +699,8 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
               description,
               measurementType,
               completed,
-              currentCount: (!isString && measurementType === 'counter') ? item.currentValue : undefined,
-              targetCount: (!isString && measurementType === 'counter') ? item.maxValue : undefined,
+              currentCount: (!isString && measurementType === 'visual_counter') ? item.currentValue : undefined,
+              targetCount: (!isString && measurementType === 'visual_counter') ? item.maxValue : undefined,
               currentValue: (!isString && measurementType === 'progress') ? item.currentValue : undefined
             });
           }
@@ -768,6 +787,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     handleDeleteSessionGroup,
     handleUpdateSessionGroupMembership,
     handleAddTracker,
+    handleUpdateTracker,
     handleAddTrackerItem,
     handleUpdateTrackerItem,
     handleRemoveTrackerItem,

@@ -15,6 +15,8 @@ interface TagAutocompleteInputProps {
   autoFocus?: boolean;
   existingTags: string[];
   additionalSuggestions?: string[];
+  mode?: 'tags' | 'generic';
+  triggerOnEnterOnly?: boolean;
 }
 
 export const TagAutocompleteInput: React.FC<TagAutocompleteInputProps> = ({
@@ -30,8 +32,10 @@ export const TagAutocompleteInput: React.FC<TagAutocompleteInputProps> = ({
   autoFocus = false,
   existingTags,
   additionalSuggestions = [],
+  mode = 'tags',
+  triggerOnEnterOnly = false,
 }) => {
-  const { tags: allGameTags, addTagToCache } = useGameTags(gameId);
+  const { tags: allGameTags, addTagToCache } = useGameTags(mode === 'tags' ? gameId : null);
   const [isFocused, setIsFocused] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -142,16 +146,16 @@ export const TagAutocompleteInput: React.FC<TagAutocompleteInputProps> = ({
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setSelectedIndex(prev => (prev > 0 ? prev - 1 : -1));
-    } else if (e.key === 'Enter' || e.key === ',') {
+    } else if (e.key === 'Enter' || (!triggerOnEnterOnly && e.key === ',')) {
       e.preventDefault();
       if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
         const suggestion = suggestions[selectedIndex];
         onAddTag(suggestion);
-        addTagToCache(suggestion.toLowerCase());
+        if (mode === 'tags') addTagToCache(suggestion.toLowerCase());
       } else if (value.trim()) {
         const trimmed = value.trim().toLowerCase();
         onAddTag(value.trim());
-        addTagToCache(trimmed);
+        if (mode === 'tags') addTagToCache(trimmed);
       }
     } else if (e.key === 'Backspace' && !value && existingTags.length > 0 && onRemoveLastTag) {
       onRemoveLastTag();
@@ -163,7 +167,7 @@ export const TagAutocompleteInput: React.FC<TagAutocompleteInputProps> = ({
 
   const handleSuggestionClick = (suggestion: string) => {
     onAddTag(suggestion);
-    addTagToCache(suggestion.toLowerCase());
+    if (mode === 'tags') addTagToCache(suggestion.toLowerCase());
     setIsFocused(false); 
     const input = wrapperRef.current?.querySelector('input');
     if (input) input.focus();
