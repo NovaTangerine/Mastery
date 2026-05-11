@@ -3,11 +3,12 @@ import { createPortal } from 'react-dom';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { format } from 'date-fns';
-import { GripVertical, X, Edit3, Trash2, Sparkles, AlertCircle, RefreshCw } from 'lucide-react';
+import { GripVertical, X, Edit3, Trash2, Sparkles, AlertCircle, RefreshCw, MoreVertical, FolderOutput, ArrowRight } from 'lucide-react';
 import { Note } from '../types';
 import { cn } from '../lib/utils';
 import { TagAutocompleteInput } from './TagAutocompleteInput';
 import { motion, AnimatePresence } from 'motion/react';
+import { useFloating, offset, flip, shift, autoUpdate, FloatingPortal } from '@floating-ui/react';
 
 export const SortableNote = memo(({ 
   note, 
@@ -17,7 +18,9 @@ export const SortableNote = memo(({
   onRemoveTag,
   taggingStatus,
   onRetryTagging,
-  onTagClick
+  onTagClick,
+  availableSessions,
+  onMoveNote
 }: { 
   note: Note; 
   onUpdate: (id: string, content: string) => void;
@@ -27,8 +30,12 @@ export const SortableNote = memo(({
   taggingStatus?: 'loading' | 'error';
   onRetryTagging?: (id: string, content: string) => void;
   onTagClick?: (tag: string) => void;
+  availableSessions?: {id: string, name: string}[];
+  onMoveNote?: (newSessionId: string) => void;
 }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isHoveringMove, setIsHoveringMove] = useState(false);
   const [editingContent, setEditingContent] = useState(note.content);
   const [isManagingTags, setIsManagingTags] = useState(false);
   const [newTagInput, setNewTagInput] = useState('');
@@ -41,6 +48,35 @@ export const SortableNote = memo(({
   const holdStartTimeRef = React.useRef<number | null>(null);
   const progressTimerRef = React.useRef<NodeJS.Timeout | null>(null);
   const isDeletedRef = React.useRef(false);
+
+  const { refs, floatingStyles } = useFloating({
+    open: isMenuOpen,
+    placement: 'bottom-end',
+    middleware: [offset(4), flip(), shift({ padding: 8 })],
+    whileElementsMounted: autoUpdate,
+  });
+
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
+      if (refs.reference.current && refs.reference.current.contains(target)) {
+        return;
+      }
+      if (refs.floating.current && refs.floating.current.contains(target)) {
+        return;
+      }
+      setIsMenuOpen(false);
+      setIsHoveringMove(false);
+    };
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isMenuOpen, refs]);
 
   const HOLD_DURATION = 500;
   const UPDATE_INTERVAL = 30;
@@ -175,19 +211,22 @@ export const SortableNote = memo(({
       initial={false}
       animate={{
         scale: isDragOver ? 1.02 : showDropFeedback ? [1, 1.05, 0.98, 1] : 1,
-        borderColor: isDragOver ? "#6366f1" : "rgb(39 39 42)"
+        borderColor: isDragOver ? "#6366f1" : "rgb(39 39 42)",
+        zIndex: isMenuOpen ? 50 : "auto"
       }}
       transition={{ 
         scale: showDropFeedback 
           ? { type: "keyframes", duration: 0.5, ease: "easeOut" }
           : { type: "spring", stiffness: 400, damping: 25 },
         borderColor: { type: "spring", stiffness: 400, damping: 25 },
+        zIndex: { duration: 0 },
         duration: showDropFeedback ? 0.4 : 0.2
       }}
       className={cn(
         "group relative bg-zinc-900 border border-zinc-800 rounded-2xl transition-all cursor-pointer p-5",
         isDragging && "shadow-2xl opacity-50 border-zinc-500",
-        isDragOver && "bg-indigo-500/5 ring-4 ring-indigo-500/10"
+        isDragOver && "bg-indigo-500/5 ring-4 ring-indigo-500/10",
+        isMenuOpen && "z-[9999] shadow-2xl"
       )}
     >
       {/* Drop Feedback Particles */}
@@ -218,7 +257,8 @@ export const SortableNote = memo(({
         )}
       </AnimatePresence>
       <div className={cn(
-        "flex justify-between items-center gap-4 overflow-hidden transition-all ease-in-out",
+        "flex justify-between items-center gap-4 transition-all ease-in-out",
+        isMenuOpen ? "overflow-visible" : "overflow-hidden",
         isExpanded ? "duration-300 max-h-12 opacity-100 mb-2" : "duration-150 max-h-0 opacity-0 mb-0"
       )}>
         <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -338,42 +378,99 @@ export const SortableNote = memo(({
           <span className="text-[10px] font-mono text-zinc-600 shrink-0">
             {format(note.timestamp, 'HH:mm')}
           </span>
-          
           <div className={cn(
-            "flex items-center gap-1 transition-opacity shrink-0",
-            isExpanded ? "opacity-100" : "opacity-0"
+            "relative transition-opacity shrink-0",
+            isExpanded || isMenuOpen ? "opacity-100" : "opacity-0 lg:group-hover:opacity-100",
+            !isExpanded && !isMenuOpen && "pointer-events-none"
           )}>
             <button 
-              onClick={() => {
-                setIsEditing(true);
-                setEditingContent(note.content);
+              ref={refs.setReference}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMenuOpen(!isMenuOpen);
+                setIsHoveringMove(false);
               }}
-              className="p-1.5 text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 rounded-lg transition-all"
+              className={`p-1.5 rounded-lg transition-all ${isMenuOpen ? 'text-zinc-100 bg-zinc-800' : 'text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800'}`}
             >
-              <Edit3 className="w-3.5 h-3.5" />
+              <MoreVertical className="w-4 h-4" />
             </button>
-            <button 
-              onClick={(e) => e.stopPropagation()}
-              onMouseDown={startDeleteHold}
-              onMouseUp={endDeleteHold}
-              onMouseLeave={cancelDeleteHold}
-              onTouchStart={startDeleteHold}
-              onTouchEnd={endDeleteHold}
-              className="relative p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all overflow-hidden"
-              style={{
-                WebkitUserSelect: 'none',
-                userSelect: 'none'
-              }}
-            >
-              <div 
-                className="absolute inset-0 bg-red-500/20 origin-left" 
-                style={{ 
-                  transform: `scaleX(${deleteProgress / 100})`,
-                  transition: deleteProgress === 0 ? 'none' : 'transform 30ms linear' 
-                }} 
-              />
-              <Trash2 className="relative z-10 w-3.5 h-3.5" />
-            </button>
+
+            <FloatingPortal>
+              {isMenuOpen && (
+                <div 
+                  ref={refs.setFloating}
+                  style={floatingStyles}
+                  className="w-48 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl z-[9999] py-1 flex flex-col"
+                >
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsEditing(true);
+                      setEditingContent(note.content);
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                    Edit Note
+                  </button>
+                  
+                  {availableSessions && availableSessions.filter(s => s.id !== (note.sessionId || 'global') && s.id !== (note.isGlobal ? 'global' : null)).length > 0 && onMoveNote && (
+                    <div 
+                      className="relative"
+                      onMouseEnter={() => setIsHoveringMove(true)}
+                      onMouseLeave={() => setIsHoveringMove(false)}
+                    >
+                      <button
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // For touch devices, toggle submenu
+                          setIsHoveringMove(!isHoveringMove);
+                        }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <FolderOutput className="w-4 h-4" />
+                          Move to Session
+                        </div>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                      
+                      {isHoveringMove && (
+                        <div className="absolute right-full top-0 mr-1 w-48 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl py-1 max-h-64 overflow-y-auto z-[10000]">
+                          {availableSessions.filter(s => s.id !== (note.sessionId || 'global') && s.id !== (note.isGlobal ? 'global' : null)).map(session => (
+                            <button
+                              key={session.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onMoveNote(session.id);
+                                setIsMenuOpen(false);
+                                setIsHoveringMove(false);
+                              }}
+                              className="w-full text-left px-3 py-2 text-sm text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors truncate"
+                            >
+                              {session.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDeleteConfirm(true);
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete Note
+                  </button>
+                </div>
+              )}
+            </FloatingPortal>
           </div>
         </div>
       </div>

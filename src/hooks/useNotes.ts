@@ -179,6 +179,18 @@ export function useNotes(gameId: string | null, sessionId?: string | null, tagFi
     }
   };
 
+  const handleMoveNote = async (noteId: string, newSessionId: string | null) => {
+    try {
+      await updateDoc(doc(db, 'notes', noteId), { 
+        sessionId: newSessionId,
+        isGlobal: newSessionId === null 
+      });
+      toast.success('Note moved successfully');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'notes');
+    }
+  };
+
   const handleDeleteNote = async (noteId: string) => {
     try {
       await deleteDoc(doc(db, 'notes', noteId));
@@ -250,6 +262,7 @@ export function useNotes(gameId: string | null, sessionId?: string | null, tagFi
     handleAddNote,
     handleRetryTagging,
     handleUpdateNote,
+    handleMoveNote,
     handleDeleteNote,
     handleAddTag,
     handleRemoveTag,

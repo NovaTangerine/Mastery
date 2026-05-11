@@ -178,7 +178,7 @@ service cloud.firestore {
     match /notes/{noteId} {
       allow read: if isDocOwner() || isAdmin();
       allow create: if isAuthenticated() && isValidNote(request.resource.data) && uidUnchanged();
-      allow update: if isDocOwner() && isValidNote(request.resource.data) && uidNotModified() && areImmutableFieldsUnchanged(['uid', 'gameId', 'sessionId', 'timestamp']);
+      allow update: if isDocOwner() && isValidNote(request.resource.data) && uidNotModified() && areImmutableFieldsUnchanged(['uid', 'gameId', 'timestamp']);
       allow delete: if isDocOwner() || isAdmin();
     }
 

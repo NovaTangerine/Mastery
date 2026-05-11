@@ -75,7 +75,8 @@ export default function SessionView() {
     handleDragEnd,
     isSubmittingNote,
     taggingStatus,
-    handleRetryTagging
+    handleRetryTagging,
+    handleMoveNote
   } = useNotes(
     selectedGame?.id || null, 
     (filteredTag && filterScope === 'global') ? undefined : (activeSession?.id || null), 
@@ -360,6 +361,14 @@ export default function SessionView() {
     const found = sessions.find(s => s.id === sessionId);
     return found ? (found.name || found.progressMarker) : 'Unknown Session';
   };
+
+  const availableSessions = React.useMemo(() => [
+    { id: 'global', name: 'Global Notes' },
+    ...sessions.map(s => ({
+      id: s.id,
+      name: s.name || s.progressMarker || 'Unknown Session'
+    }))
+  ], [sessions]);
 
   const filteredNotesBySession = React.useMemo(() => {
     if (!filteredTag) return {};
@@ -1205,6 +1214,8 @@ export default function SessionView() {
                           taggingStatus={taggingStatus[note.id]}
                           onRetryTagging={handleRetryTagging}
                           onTagClick={setFilteredTag}
+                          availableSessions={availableSessions}
+                          onMoveNote={(targetSessionId) => handleMoveNote(note.id, targetSessionId === 'global' ? null : targetSessionId)}
                         />
                       </div>
                     ))}
@@ -1502,6 +1513,7 @@ export default function SessionView() {
                         key={note.id}
                         data-index={virtualRow.index}
                         ref={rowVirtualizer.measureElement}
+                        className=""
                         style={{
                           position: 'absolute',
                           top: 0,
@@ -1520,6 +1532,8 @@ export default function SessionView() {
                           taggingStatus={taggingStatus[note.id]}
                           onRetryTagging={handleRetryTagging}
                           onTagClick={setFilteredTag}
+                          availableSessions={availableSessions}
+                          onMoveNote={(targetSessionId) => handleMoveNote(note.id, targetSessionId === 'global' ? null : targetSessionId)}
                         />
                       </div>
                     );
@@ -1662,7 +1676,7 @@ export default function SessionView() {
         </div>
         <div className="flex-1 overflow-y-auto custom-scrollbar pr-4 sm:pr-6 lg:pr-2 flex flex-col pt-1 pb-24 lg:pb-0">
           <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${isTrackersCollapsed ? 'grid-rows-[0fr] opacity-0 pointer-events-none' : 'grid-rows-[1fr] opacity-100'}`}>
-            <div className="overflow-hidden has-[.z-50]:overflow-visible min-h-0">
+            <div className="overflow-hidden min-h-0">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:flex lg:flex-col gap-2 items-start lg:items-stretch content-start mb-12">
           {(() => {
             const metrics = activeSession.metrics || [];
@@ -1732,7 +1746,7 @@ export default function SessionView() {
                       )}
                     </div>
                     <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${isGroupCollapsed ? 'grid-rows-[0fr] opacity-0 pointer-events-none' : 'grid-rows-[1fr] opacity-100'}`}>
-                      <div className="overflow-hidden has-[.z-50]:overflow-visible min-h-0">
+                      <div className="overflow-hidden min-h-0">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-2 lg:flex lg:flex-col lg:space-y-2 lg:gap-0 lg:pt-0">
                           {groupMetrics.map(metric => (
                             <MetricCard 
