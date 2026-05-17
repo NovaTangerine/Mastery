@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { motion } from 'motion/react';
 import { Plus, X, Trash2, Check, Minus, ChevronDown, ChevronRight, MoreVertical, Edit2 } from 'lucide-react';
 import { SessionTracker, TrackerItem, QuantifierType } from '../types';
 import { TagAutocompleteInput } from './TagAutocompleteInput';
+import { useFloating, offset, flip, shift, autoUpdate, FloatingPortal } from '@floating-ui/react';
 
 interface TrackerCardProps {
   tracker: SessionTracker;
@@ -190,20 +192,34 @@ export const TrackerCard = React.memo(({ tracker, onAddItem, onUpdateItem, onRem
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState(tracker.title);
-  
-  const menuRef = useRef<HTMLDivElement>(null);
+
+  const { refs, floatingStyles } = useFloating({
+    open: isMenuOpen,
+    placement: 'bottom-end',
+    middleware: [offset(4), flip(), shift({ padding: 8 })],
+    whileElementsMounted: autoUpdate,
+  });
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setIsMenuOpen(false);
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
+      if (refs.reference.current && refs.reference.current.contains(target)) {
+        return;
       }
+      if (refs.floating.current && refs.floating.current.contains(target)) {
+        return;
+      }
+      setIsMenuOpen(false);
     };
     if (isMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
     }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isMenuOpen]);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isMenuOpen, refs]);
 
   const handleTitleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -215,6 +231,7 @@ export const TrackerCard = React.memo(({ tracker, onAddItem, onUpdateItem, onRem
   
   const isTapped = activeTappedId === tracker.id;
   const handleTap = () => onTap?.(tracker.id);
+  const [isBouncing, setIsBouncing] = useState(false);
 
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
@@ -240,7 +257,17 @@ export const TrackerCard = React.memo(({ tracker, onAddItem, onUpdateItem, onRem
   };
 
   return (
-    <div className={`relative bg-zinc-900 border border-zinc-800 rounded-2xl p-4 w-full flex-shrink-0 flex flex-col max-h-[500px] ${isMenuOpen ? 'z-50' : 'z-auto'}`}>
+    <motion.div 
+      className={`relative border rounded-2xl p-4 w-full flex-shrink-0 flex flex-col max-h-[500px] transition-colors ${isMenuOpen ? 'z-50 bg-zinc-900 border-zinc-700' : 'z-auto bg-zinc-900 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800/80'}`}
+      onHoverStart={() => {
+        if (!isBouncing) setIsBouncing(true);
+      }}
+      initial={{ y: 0 }}
+      animate={isBouncing ? { y: [0, -5, 0] } : { y: 0 }}
+      transition={isBouncing ? { duration: 0.25, times: [0, 0.4, 1], ease: ["easeOut", "easeIn"] } : { duration: 0 }}
+      onAnimationComplete={() => setIsBouncing(false)}
+      style={{ transformOrigin: "center" }}
+    >
       <div 
         className="flex justify-between items-center mb-3 group cursor-default relative"
         onClick={handleTap}
@@ -270,8 +297,9 @@ export const TrackerCard = React.memo(({ tracker, onAddItem, onUpdateItem, onRem
             </button>
           )}
           
-          <div className="relative" ref={menuRef}>
+          <div className="relative">
             <button 
+              ref={refs.setReference}
               onClick={(e) => { 
                 e.stopPropagation(); 
                 setIsMenuOpen(!isMenuOpen);
@@ -282,34 +310,40 @@ export const TrackerCard = React.memo(({ tracker, onAddItem, onUpdateItem, onRem
               <MoreVertical className="w-4 h-4" />
             </button>
 
-            {isMenuOpen && (
-              <div className="absolute right-0 top-full mt-1 w-32 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl overflow-hidden z-50 py-1">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsEditingTitle(true);
-                    setEditedTitle(tracker.title);
-                    setIsMenuOpen(false);
-                  }}
-                  className="w-full px-3 py-2 text-left text-xs text-zinc-300 hover:bg-zinc-800 flex items-center transition-colors gap-2"
+            <FloatingPortal>
+              {isMenuOpen && (
+                <div 
+                  ref={refs.setFloating}
+                  style={floatingStyles}
+                  className="w-32 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl overflow-hidden z-[9999] py-1"
                 >
-                  <Edit2 className="w-3.5 h-3.5" />
-                  Edit Name
-                </button>
-                <div className="h-px bg-zinc-800 my-1 font-bold" />
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteTracker(tracker.id);
-                    setIsMenuOpen(false);
-                  }}
-                  className="w-full px-3 py-2 text-left text-xs text-red-500 font-medium hover:bg-zinc-800 flex items-center transition-colors gap-2"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  Delete Tracker
-                </button>
-              </div>
-            )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsEditingTitle(true);
+                      setEditedTitle(tracker.title);
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs text-zinc-300 hover:bg-zinc-800 flex items-center transition-colors gap-2"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                    Edit Name
+                  </button>
+                  <div className="h-px bg-zinc-800 my-1 font-bold" />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteTracker(tracker.id);
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs text-red-500 font-medium hover:bg-zinc-800 flex items-center transition-colors gap-2"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Delete Tracker
+                  </button>
+                </div>
+              )}
+            </FloatingPortal>
           </div>
         </div>
       </div>
@@ -401,7 +435,7 @@ export const TrackerCard = React.memo(({ tracker, onAddItem, onUpdateItem, onRem
           </div>
         </form>
       )}
-    </div>
+    </motion.div>
   );
 });
 

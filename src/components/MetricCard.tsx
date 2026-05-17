@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { motion } from 'motion/react';
 import { SessionMetric } from '../types';
 import { Check, Edit2, Minus, Plus, Trash2, Hash, Target, CheckSquare, MoreVertical } from 'lucide-react';
+import { useFloating, offset, flip, shift, autoUpdate, FloatingPortal } from '@floating-ui/react';
 
 interface MetricCardProps {
   metric: SessionMetric;
@@ -16,25 +18,50 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
   const handleTap = () => onTap?.(metric.id);
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+
+  const { refs, floatingStyles } = useFloating({
+    open: isMenuOpen,
+    placement: 'bottom-end',
+    middleware: [offset(4), flip(), shift({ padding: 8 })],
+    whileElementsMounted: autoUpdate,
+  });
+
+  const [isBouncing, setIsBouncing] = useState(false);
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setIsMenuOpen(false);
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
+      if (refs.reference.current && refs.reference.current.contains(target)) {
+        return;
       }
+      if (refs.floating.current && refs.floating.current.contains(target)) {
+        return;
+      }
+      setIsMenuOpen(false);
     };
     if (isMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
     }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isMenuOpen]);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isMenuOpen, refs]);
 
   if (metric.measurementType === 'checkbox') {
     return (
-      <div 
-        className={`relative bg-zinc-900 border border-zinc-800 rounded-2xl p-3 flex items-center justify-between gap-4 group/metric transition-colors hover:border-zinc-700 cursor-default ${isMenuOpen ? 'z-50' : 'z-auto'}`}
+      <motion.div 
+        className={`relative border rounded-2xl p-3 flex items-center justify-between gap-4 group/metric transition-colors cursor-default ${isMenuOpen ? 'z-50 bg-zinc-900 border-zinc-700' : 'z-auto bg-zinc-900 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800/80'}`}
         onClick={handleTap}
+        onHoverStart={() => {
+          if (!isBouncing) setIsBouncing(true);
+        }}
+        initial={{ y: 0 }}
+        animate={isBouncing ? { y: [0, -5, 0] } : { y: 0 }}
+        transition={isBouncing ? { duration: 0.25, times: [0, 0.4, 1], ease: ["easeOut", "easeIn"] } : { duration: 0 }}
+        onAnimationComplete={() => setIsBouncing(false)}
+        style={{ transformOrigin: "center" }}
       >
         <div className="flex-1 min-w-0">
           <h4 className={`font-bold text-sm transition-colors ${metric.completed ? 'text-zinc-500 line-through decoration-zinc-700' : 'text-zinc-100'}`}>
@@ -46,8 +73,9 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="relative" ref={menuRef}>
+          <div className="relative">
             <button 
+              ref={refs.setReference}
               onClick={(e) => { 
                 e.stopPropagation(); 
                 setIsMenuOpen(!isMenuOpen);
@@ -58,33 +86,39 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
               <MoreVertical className="w-4 h-4" />
             </button>
 
-            {isMenuOpen && (
-              <div className="absolute right-0 top-full mt-1 w-32 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl overflow-hidden z-50 py-1">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit(metric.id);
-                    setIsMenuOpen(false);
-                  }}
-                  className="w-full px-3 py-2 text-left text-xs text-zinc-300 hover:bg-zinc-800 flex items-center transition-colors gap-2"
+            <FloatingPortal>
+              {isMenuOpen && (
+                <div 
+                  ref={refs.setFloating}
+                  style={floatingStyles}
+                  className="w-32 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl overflow-hidden z-[9999] py-1"
                 >
-                  <Edit2 className="w-3.5 h-3.5" />
-                  Edit Tracker
-                </button>
-                <div className="h-px bg-zinc-800 my-1 font-bold" />
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(metric.id);
-                    setIsMenuOpen(false);
-                  }}
-                  className="w-full px-3 py-2 text-left text-xs text-red-500 font-medium hover:bg-zinc-800 flex items-center transition-colors gap-2"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  Delete Tracker
-                </button>
-              </div>
-            )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(metric.id);
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs text-zinc-300 hover:bg-zinc-800 flex items-center transition-colors gap-2"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                    Edit Tracker
+                  </button>
+                  <div className="h-px bg-zinc-800 my-1 font-bold" />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(metric.id);
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs text-red-500 font-medium hover:bg-zinc-800 flex items-center transition-colors gap-2"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Delete Tracker
+                  </button>
+                </div>
+              )}
+            </FloatingPortal>
           </div>
           
           <button
@@ -102,14 +136,22 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
             )}
           </button>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div 
-      className={`relative bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex flex-col gap-3 group/metric transition-colors hover:border-zinc-700 cursor-default ${isMenuOpen ? 'z-50' : 'z-auto'}`}
+    <motion.div 
+      className={`relative border rounded-2xl p-4 flex flex-col gap-3 group/metric transition-colors cursor-default ${isMenuOpen ? 'z-50 bg-zinc-900 border-zinc-700' : 'z-auto bg-zinc-900 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800/80'}`}
       onClick={handleTap}
+      onHoverStart={() => {
+        if (!isBouncing) setIsBouncing(true);
+      }}
+      initial={{ y: 0 }}
+      animate={isBouncing ? { y: [0, -5, 0] } : { y: 0 }}
+      transition={isBouncing ? { duration: 0.25, times: [0, 0.4, 1], ease: ["easeOut", "easeIn"] } : { duration: 0 }}
+      onAnimationComplete={() => setIsBouncing(false)}
+      style={{ transformOrigin: "center" }}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0 pr-14">
@@ -120,8 +162,9 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
         </div>
         
         <div className={`absolute right-3 top-3 flex items-center gap-1 transition-opacity ${isTapped || isMenuOpen ? 'opacity-100' : 'opacity-0 lg:group-hover/metric:opacity-100'}`}>
-          <div className="relative" ref={menuRef}>
+          <div className="relative">
             <button 
+              ref={refs.setReference}
               onClick={(e) => { 
                 e.stopPropagation(); 
                 setIsMenuOpen(!isMenuOpen);
@@ -132,16 +175,21 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
               <MoreVertical className="w-4 h-4" />
             </button>
 
-            {isMenuOpen && (
-              <div className="absolute right-0 top-full mt-1 w-32 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl overflow-hidden z-50 py-1">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit(metric.id);
-                    setIsMenuOpen(false);
-                  }}
-                  className="w-full px-3 py-2 text-left text-xs text-zinc-300 hover:bg-zinc-800 flex items-center transition-colors gap-2"
+            <FloatingPortal>
+              {isMenuOpen && (
+                <div 
+                  ref={refs.setFloating}
+                  style={floatingStyles}
+                  className="w-32 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl overflow-hidden z-[9999] py-1"
                 >
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(metric.id);
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs text-zinc-300 hover:bg-zinc-800 flex items-center transition-colors gap-2"
+                  >
                   <Edit2 className="w-3.5 h-3.5" />
                   Edit Tracker
                 </button>
@@ -158,7 +206,8 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
                   Delete Tracker
                 </button>
               </div>
-            )}
+              )}
+            </FloatingPortal>
           </div>
         </div>
       </div>
@@ -236,6 +285,6 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
           )}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 };

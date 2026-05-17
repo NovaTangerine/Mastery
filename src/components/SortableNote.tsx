@@ -223,7 +223,7 @@ export const SortableNote = memo(({
         duration: showDropFeedback ? 0.4 : 0.2
       }}
       className={cn(
-        "group relative bg-zinc-900 border border-zinc-800 rounded-2xl transition-all cursor-pointer p-5",
+        "group relative bg-zinc-900 border border-zinc-800 rounded-2xl transition-all cursor-pointer p-5 hover:bg-zinc-800/80 hover:border-zinc-700",
         isDragging && "shadow-2xl opacity-50 border-zinc-500",
         isDragOver && "bg-indigo-500/5 ring-4 ring-indigo-500/10",
         isMenuOpen && "z-[9999] shadow-2xl"
