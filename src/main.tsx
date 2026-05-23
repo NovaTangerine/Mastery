@@ -10,21 +10,45 @@ if (import.meta.env.DEV) {
   });
 }
 
-// Suppress benign ResizeObserver errors caused by virtualization
+// Suppress benign ResizeObserver errors caused by virtualization and Firebase timestamp warnings
 const originalError = console.error;
 console.error = (...args) => {
-  const msg = args[0];
+  const msgStr = args.map(a => typeof a === 'string' ? a : (a instanceof Error ? a.message : '')).join(' ');
   if (
-    (typeof msg === 'string' && 
-      (msg.includes('ResizeObserver loop completed with undelivered notifications') || 
-       msg.includes('ResizeObserver loop limit exceeded'))) ||
-    (msg instanceof Error && 
-      (msg.message.includes('ResizeObserver loop completed with undelivered notifications') || 
-       msg.message.includes('ResizeObserver loop limit exceeded')))
+    msgStr.includes('ResizeObserver loop completed with undelivered notifications') || 
+    msgStr.includes('ResizeObserver loop limit exceeded') ||
+    msgStr.includes('Detected an update time that is in the future')
   ) {
     return;
   }
   originalError.call(console, ...args);
+};
+
+const originalWarn = console.warn;
+console.warn = (...args) => {
+  const msgStr = args.map(a => typeof a === 'string' ? a : '').join(' ');
+  if (msgStr.includes('Detected an update time that is in the future')) {
+    return;
+  }
+  originalWarn.call(console, ...args);
+};
+
+const originalLog = console.log;
+console.log = (...args) => {
+  const msgStr = args.map(a => typeof a === 'string' ? a : '').join(' ');
+  if (msgStr.includes('Detected an update time that is in the future')) {
+    return;
+  }
+  originalLog.call(console, ...args);
+};
+
+const originalInfo = console.info;
+console.info = (...args) => {
+  const msgStr = args.map(a => typeof a === 'string' ? a : '').join(' ');
+  if (msgStr.includes('Detected an update time that is in the future')) {
+    return;
+  }
+  originalInfo.call(console, ...args);
 };
 
 window.addEventListener('error', (e) => {

@@ -47,6 +47,7 @@ export const SortableNote = memo(({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const holdStartTimeRef = React.useRef<number | null>(null);
   const progressTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const hoverTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   const isDeletedRef = React.useRef(false);
 
   const { refs, floatingStyles } = useFloating({
@@ -143,6 +144,8 @@ export const SortableNote = memo(({
     };
   }, [isExpanded, note.id]);
 
+  const nodeRef = React.useRef<HTMLDivElement | null>(null);
+
   const {
     attributes,
     listeners,
@@ -151,6 +154,14 @@ export const SortableNote = memo(({
     transition,
     isDragging
   } = useSortable({ id: note.id });
+
+  const mergedRef = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      setNodeRef(node);
+      nodeRef.current = node;
+    },
+    [setNodeRef]
+  );
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -161,7 +172,7 @@ export const SortableNote = memo(({
 
   return (
     <motion.div 
-      ref={setNodeRef} 
+      ref={mergedRef} 
       style={style} 
       onClick={(e) => {
         if (!isEditing) {
@@ -173,12 +184,19 @@ export const SortableNote = memo(({
           if (newExpanded) {
             const event = new CustomEvent('note-expanding', { detail: { id: note.id, handled: false } });
             window.dispatchEvent(event);
-            if (event.detail.handled) {
-              setTimeout(() => {
-                setIsExpanded(true);
-              }, 150); // Wait for the other note to collapse
-            } else {
+            const expandAndScroll = () => {
               setIsExpanded(true);
+              setTimeout(() => {
+                if (nodeRef.current) {
+                  nodeRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+              }, 300);
+            };
+
+            if (event.detail.handled) {
+              setTimeout(expandAndScroll, 150); // Wait for the other note to collapse
+            } else {
+              expandAndScroll();
             }
           } else {
             setIsExpanded(false);
@@ -418,8 +436,15 @@ export const SortableNote = memo(({
                   {availableSessions && availableSessions.filter(s => s.id !== (note.sessionId || 'global') && s.id !== (note.isGlobal ? 'global' : null)).length > 0 && onMoveNote && (
                     <div 
                       className="relative"
-                      onMouseEnter={() => setIsHoveringMove(true)}
-                      onMouseLeave={() => setIsHoveringMove(false)}
+                      onMouseEnter={() => {
+                        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+                        setIsHoveringMove(true);
+                      }}
+                      onMouseLeave={() => {
+                        hoverTimeoutRef.current = setTimeout(() => {
+                          setIsHoveringMove(false);
+                        }, 300);
+                      }}
                     >
                       <button
                         className="w-full flex items-center justify-between px-3 py-2 text-sm text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"

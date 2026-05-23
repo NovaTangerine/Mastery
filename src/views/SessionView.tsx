@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Plus, BookOpen, Clock, PenLine, X, Send, ChevronRight, Trash2, List, LayoutDashboard, ChevronUp, ChevronDown, Tag as TagIcon, MoreVertical, ArrowUpDown } from 'lucide-react';
 import { format } from 'date-fns';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, LayoutGroup } from 'motion/react';
 import {
   DndContext, 
   closestCenter,
@@ -1600,19 +1600,25 @@ export default function SessionView() {
 
         {/* Input Area */}
         <div className="shrink-0 bg-zinc-950 pt-2 hidden lg:block">
-          <div 
-            ref={noteInputContainerRef}
-            className="bg-zinc-900 border border-zinc-800 rounded-3xl p-2 shadow-2xl transition-all duration-300 focus-within:border-zinc-700 hover:border-zinc-700"
-            onFocus={() => setIsInputFocused(true)}
-          >
-            <form onSubmit={submitNote} className="flex flex-col">
+          <LayoutGroup>
+            <div 
+              ref={noteInputContainerRef}
+              className="bg-zinc-900 border border-zinc-800 rounded-3xl p-2 shadow-2xl transition-all duration-300 focus-within:border-zinc-700 hover:border-zinc-700"
+              onFocus={() => setIsInputFocused(true)}
+            >
+              <motion.form 
+                layout 
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                onSubmit={submitNote} 
+                className="flex flex-col"
+              >
               <div className="flex gap-2 items-end">
                 <textarea 
                   value={noteInput}
                   onChange={(e) => setNoteInput(e.target.value)}
                   placeholder="Type a note about your experience..."
                   rows={1}
-                  className={`flex-1 bg-transparent border-none focus:ring-0 text-zinc-100 px-4 py-3 placeholder:text-zinc-600 outline-none transition-all duration-300 resize-none custom-scrollbar ${isInputFocused ? 'h-[120px]' : 'h-[48px] hover:h-[120px] focus:h-[120px]'}`}
+                  className={`flex-1 bg-transparent border-none focus:ring-0 text-zinc-100 px-4 py-3 placeholder:text-zinc-600 outline-none transition-all duration-300 ease-in-out resize-none custom-scrollbar ${isInputFocused ? 'h-[120px]' : 'h-[48px] hover:h-[120px] focus:h-[120px]'}`}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
@@ -1620,22 +1626,26 @@ export default function SessionView() {
                     }
                   }}
                 />
-                {!isInputFocused && (
-                  <button 
-                    type="submit"
-                    disabled={!noteInput.trim() || isSubmittingNote}
-                    className="bg-zinc-100 text-zinc-950 px-6 h-[48px] rounded-2xl font-bold hover:bg-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shrink-0 mb-0.5"
-                  >
-                    {isSubmittingNote ? (
-                      <div className="w-5 h-5 border-2 border-zinc-950 border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        <Plus className="w-5 h-5" />
-                        <span className="hidden sm:inline">Save</span>
-                      </>
-                    )}
-                  </button>
-                )}
+                <AnimatePresence>
+                  {!isInputFocused && (
+                    <motion.button 
+                      layoutId="save-note-btn"
+                      transition={{ duration: 0.3, ease: 'easeInOut' }}
+                      type="submit"
+                      disabled={!noteInput.trim() || isSubmittingNote}
+                      className="bg-zinc-100 text-zinc-950 px-6 h-[48px] rounded-2xl font-bold hover:bg-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shrink-0 mb-0.5"
+                    >
+                      {isSubmittingNote ? (
+                        <div className="w-5 h-5 border-2 border-zinc-950 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <Plus className="w-5 h-5" />
+                          <span className="hidden sm:inline">Save</span>
+                        </>
+                      )}
+                    </motion.button>
+                  )}
+                </AnimatePresence>
               </div>
               
               <AnimatePresence>
@@ -1644,6 +1654,7 @@ export default function SessionView() {
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: 'easeInOut' }}
                     className="overflow-hidden"
                   >
                     <div className="pl-4 pr-0 pb-1 flex flex-wrap items-center justify-between gap-4 border-t border-zinc-800/50 pt-2 mt-1">
@@ -1681,7 +1692,9 @@ export default function SessionView() {
                           className="bg-transparent border-none focus:ring-0 text-sm text-zinc-300 placeholder:text-zinc-600 outline-none flex-1 py-1"
                         />
                       </div>
-                      <button 
+                      <motion.button 
+                        layoutId="save-note-btn"
+                        transition={{ duration: 0.3, ease: 'easeInOut' }}
                         type="submit"
                         onMouseDown={(e) => e.preventDefault()}
                         disabled={!noteInput.trim() || isSubmittingNote}
@@ -1695,14 +1708,15 @@ export default function SessionView() {
                             <span className="hidden sm:inline">Save</span>
                           </>
                         )}
-                      </button>
+                      </motion.button>
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
-            </form>
+            </motion.form>
           </div>
-        </div>
+        </LayoutGroup>
+      </div>
         </>
         )}
         </div>
