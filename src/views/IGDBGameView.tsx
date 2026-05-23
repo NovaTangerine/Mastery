@@ -65,16 +65,62 @@ export default function IGDBGameView() {
     fetchGameDetails();
   }, [selectedIgdbId]);
 
+  const handleGoToSession = async () => {
+    if (!existingGame) return;
+    try {
+      const { collection, query, where, orderBy, limit, getDocs, addDoc } = await import('firebase/firestore');
+      const { db } = await import('../firebase');
+
+      const q = query(
+        collection(db, 'sessions'),
+        where('gameId', '==', existingGame.id),
+        orderBy('startTime', 'desc'),
+        limit(1)
+      );
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        const sessionDoc = snapshot.docs[0];
+        const sessionData = { id: sessionDoc.id, ...sessionDoc.data() } as any;
+        navigateTo('session-view', existingGame, sessionData);
+      } else {
+        const now = new Date();
+        const hour = now.getHours();
+        let timeOfDay = 'Morning';
+        if (hour >= 12 && hour < 17) timeOfDay = 'Afternoon';
+        else if (hour >= 17 && hour < 21) timeOfDay = 'Evening';
+        else if (hour >= 21 || hour < 4) timeOfDay = 'Night';
+
+        const { format } = await import('date-fns');
+        const sessionName = `${format(now, 'MMM d')}, ${timeOfDay} Session`;
+        
+        const sessionData: any = {
+          name: sessionName,
+          gameId: existingGame.id,
+          startTime: now.getTime(),
+          progressMarker: 'Starting session'
+        };
+        const docRef = await addDoc(collection(db, 'sessions'), sessionData);
+        const newSession = { id: docRef.id, ...sessionData };
+        navigateTo('session-view', existingGame, newSession);
+      }
+    } catch (error) {
+      console.error("Error creating or fetching session", error);
+    }
+  };
+
   const onAddGame = async () => {
     if (!game) return;
     const coverUrl = game.cover?.image_id 
       ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${game.cover.image_id}.jpg`
       : undefined;
     
-    await handleAddGame(game.name, coverUrl);
-    // After adding, we could navigate to the game detail view, but we don't have the new game ID immediately.
-    // For now, we'll just navigate to the dashboard.
-    navigateTo('dashboard');
+    // We navigate to dashboard so the user can easily click the game from there, 
+    // or we could handle quick resume logic directly if handleAddGame returned the ID.
+    // handleAddGame returns the string ID.
+    const newGameId = await handleAddGame(game.name, coverUrl);
+    if (newGameId) {
+       navigateTo('dashboard');
+    }
   };
 
   if (loading) {
@@ -168,7 +214,7 @@ export default function IGDBGameView() {
             >
               {existingGame ? (
                 <button 
-                  onClick={() => navigateTo('game-detail', existingGame)}
+                  onClick={handleGoToSession}
                   className="w-full bg-emerald-500 hover:bg-emerald-400 text-zinc-950 py-3.5 rounded-xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-[0_0_20px_-5px_rgba(16,185,129,0.4)]"
                 >
                   <PlayCircle className="w-5 h-5" />

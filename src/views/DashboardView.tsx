@@ -87,8 +87,7 @@ export default function DashboardView() {
      setDeleteInfo(null);
   };
 
-  const handleQuickResume = async (e: React.MouseEvent, game: Game) => {
-    e.stopPropagation();
+  const resumeOrCreateSession = async (game: Game) => {
     try {
       const q = query(
         collection(db, 'sessions'),
@@ -102,12 +101,34 @@ export default function DashboardView() {
         const sessionData = { id: sessionDoc.id, ...sessionDoc.data() } as GameSession;
         navigateTo('session-view', game, sessionData);
       } else {
-        navigateTo('game-detail', game, null);
+        const { addDoc } = await import('firebase/firestore');
+        const now = new Date();
+        const hour = now.getHours();
+        let timeOfDay = 'Morning';
+        if (hour >= 12 && hour < 17) timeOfDay = 'Afternoon';
+        else if (hour >= 17 && hour < 21) timeOfDay = 'Evening';
+        else if (hour >= 21 || hour < 4) timeOfDay = 'Night';
+
+        const sessionName = `${format(now, 'MMM d')}, ${timeOfDay} Session`;
+        const sessionData: any = {
+          name: sessionName,
+          gameId: game.id,
+          uid: user?.uid,
+          startTime: now.getTime(),
+          progressMarker: 'Starting session'
+        };
+        const docRef = await addDoc(collection(db, 'sessions'), sessionData);
+        const newSession = { id: docRef.id, ...sessionData } as GameSession;
+        navigateTo('session-view', game, newSession);
       }
     } catch (error) {
-      console.error("Error fetching latest session", error);
-      navigateTo('game-detail', game, null);
+      console.error("Error creating or fetching session", error);
     }
+  };
+
+  const handleQuickResume = async (e: React.MouseEvent, game: Game) => {
+    e.stopPropagation();
+    await resumeOrCreateSession(game);
   };
 
   const handleSelectGame = async (game: any) => {
@@ -119,9 +140,7 @@ export default function DashboardView() {
     setIsAddingGame(false);
     
     if (newGameId) {
-      // Create a partial game object that navigation can use
-      // The GameProvider will find the full record in the games array
-      navigateTo('game-detail', { id: newGameId, title: game.name } as Game, null);
+      await resumeOrCreateSession({ id: newGameId, title: game.name } as Game);
     }
   };
 
@@ -151,7 +170,7 @@ export default function DashboardView() {
         {games.map(game => (
           <div 
             key={game.id}
-            onClick={() => navigateTo('game-detail', game, null)}
+            onClick={() => resumeOrCreateSession(game)}
             className="relative group bg-zinc-900 border border-zinc-800 rounded-3xl p-6 text-left hover:border-zinc-700 transition-all hover:shadow-xl flex flex-col cursor-pointer hover:-translate-y-1 h-full"
           >
             <div className="flex justify-between items-start mb-4">

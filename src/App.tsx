@@ -30,7 +30,6 @@ import { useNetworkStatus } from './hooks/useNetworkStatus';
 
 import HomeView from './views/HomeView';
 import DashboardView from './views/DashboardView';
-import GameDetailView from './views/GameDetailView';
 import SessionView from './views/SessionView';
 import { NoteEditorView } from './views/NoteEditorView';
 import AllInsightsView from './views/AllInsightsView';
@@ -124,7 +123,7 @@ function MainApp() {
                   
                   {selectedGame && (
                     <button 
-                      onClick={() => navigateTo('game-detail')}
+                      onClick={() => navigateTo('session-view')}
                       className="flex items-center gap-2 text-zinc-500 hover:text-zinc-300 transition-colors"
                     >
                       <ChevronRight className="w-4 h-4" />
@@ -237,7 +236,6 @@ function MainApp() {
           <div className={`mx-auto w-full ${['session-view', 'note-editor'].includes(view) ? (view === 'note-editor' ? 'p-0 flex-1 min-h-0 flex flex-col' : 'p-2 sm:p-6 flex-1 min-h-0 flex flex-col max-w-[1440px]') : 'p-4 sm:p-6 max-w-6xl'}`}>
             {view === 'home' && <HomeView />}
             {view === 'dashboard' && <DashboardView />}
-            {view === 'game-detail' && <GameDetailView />}
             {view === 'all-insights' && <AllInsightsView />}
             {view === 'all-notes' && <AllNotesView />}
             {view === 'session-view' && <SessionView />}
