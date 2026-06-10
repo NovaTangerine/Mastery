@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, X, Loader2, Image as ImageIcon, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { getPaletteSync } from 'colorthief';
 
 interface Game {
   id: number;
@@ -34,6 +35,8 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [buttonGradient, setButtonGradient] = useState<string | null>(null);
+  const [buttonTextColor, setButtonTextColor] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleAddGame = async (game: Game, e?: React.MouseEvent) => {
@@ -59,6 +62,8 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
   const handlePreviewGame = async (game: Game) => {
     setIsLoadingDetails(true);
     setSelectedPreviewGame(game); // Set initial data for immediate UI feedback
+    setButtonGradient(null);
+    setButtonTextColor(null);
     
     try {
       const response = await fetch(`/api/games/${game.id}`);
@@ -110,25 +115,24 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
     return () => clearTimeout(debounceTimer);
   }, [query]);
 
-  if (!isOpen) return null;
-
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[10vh] px-4 sm:px-6">
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-          className="absolute inset-0 bg-zinc-950/80 backdrop-blur-sm"
-        />
-        
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
-        >
+      {isOpen && (
+        <>
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 z-[100] bg-zinc-950/50 backdrop-blur-[12px]"
+          />
+          <div className="fixed inset-0 z-[101] flex items-start justify-center pt-[10vh] px-4 sm:px-6 pointer-events-none">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-[800px] bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] pointer-events-auto"
+            >
           <div className="p-4 border-b border-zinc-800 flex items-center gap-3">
             {selectedPreviewGame ? (
               <button 
@@ -168,16 +172,56 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="p-5 flex flex-col gap-5"
+                  className="p-5 flex flex-col max-w-[720px] mx-auto w-full h-full"
                 >
-                  <div className="flex flex-col sm:flex-row gap-5">
-                    <div className="w-full sm:w-36 aspect-[3/4] bg-zinc-800 rounded-xl overflow-hidden shrink-0 border border-zinc-700 shadow-xl">
+                  <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-5 sm:mb-6">
+                    <div className="w-full sm:w-48 aspect-[3/4] bg-zinc-800 rounded-2xl overflow-hidden shrink-0 shadow-[0_4px_12px_rgba(0,0,0,0.5),0_8px_24px_rgba(0,0,0,0.4)] relative mt-0 sm:mt-1.5">
+                      <div className="absolute inset-0 border-[0.75px] border-white/80 mix-blend-overlay rounded-2xl z-10 pointer-events-none" />
+                      <div className="absolute inset-0 border-[0.75px] border-black/20 rounded-2xl z-20 pointer-events-none" />
                       {selectedPreviewGame.cover?.image_id ? (
                         <img 
                           src={`https://images.igdb.com/igdb/image/upload/t_cover_big/${selectedPreviewGame.cover.image_id}.jpg`}
                           alt={selectedPreviewGame.name}
                           className="w-full h-full object-cover"
-                          referrerPolicy="no-referrer"
+                          crossOrigin="anonymous"
+                          onLoad={(e) => {
+                            try {
+                              const palette = getPaletteSync(e.currentTarget, { colorCount: 8 });
+                              if (palette && palette.length > 0) {
+                                let vibrantColor = palette[0];
+                                let maxVibrancy = -1;
+
+                                for (const color of palette) {
+                                  const { s, l } = color.hsl();
+                                  // Consider colors not too dark or light
+                                  if (l > 15 && l < 85) {
+                                    // Vividness score based primarily on saturation, with a slight penalty for being too dark or light
+                                    const score = s - Math.abs(50 - l) * 0.5;
+                                    if (score > maxVibrancy) {
+                                      maxVibrancy = score;
+                                      vibrantColor = color;
+                                    }
+                                  }
+                                }
+
+                                const { h, s, l } = vibrantColor.hsl();
+                                
+                                // Ensure the base color has some punch
+                                const baseS = Math.max(s, 50); 
+                                const baseL = Math.max(Math.min(l, 60), 30);
+                                
+                                // Lighting effect: very bright top highlight, solid mid hue, deep dark edges
+                                const lightVariation = `hsl(${h}, ${Math.min(baseS + 20, 100)}%, ${Math.min(baseL + 30, 85)}%)`;
+                                const baseVariation = `hsl(${h}, ${baseS}%, ${baseL}%)`;
+                                const darkVariation = `hsl(${h}, ${Math.min(baseS + 15, 100)}%, ${Math.max(baseL - 25, 15)}%)`;
+                                
+                                setButtonGradient(`radial-gradient(120% 120% at 50% 0%, ${lightVariation} 0%, ${baseVariation} 40%, ${darkVariation} 100%)`);
+                                setButtonTextColor(vibrantColor.textColor);
+                              }
+                            } catch (err) {
+                              console.warn("Could not extract colors from image.", err);
+                            }
+                          }}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
@@ -186,74 +230,81 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
                       )}
                     </div>
                     
-                    <div className="flex-1 min-w-0 flex flex-col gap-4">
-                      <div>
-                        <h3 className="text-xl font-bold text-zinc-100 tracking-tight leading-tight">
+                    <div className="flex-1 min-w-0 flex flex-col">
+                      <div className="pl-[13px] sm:pl-[11px] sm:ml-2 pt-2 text-zinc-100">
+                        <h3 className="text-2xl sm:text-3xl font-medium tracking-tight leading-tight">
                           {selectedPreviewGame.name}
                         </h3>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-y-4 gap-x-6">
-                        <div className="space-y-0.5">
-                          <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">Developer</p>
-                          <p className="text-sm text-zinc-300">
-                            {selectedPreviewGame.involved_companies?.find(c => c.developer)?.company.name || 'Unknown'}
-                          </p>
+                      <div className="mt-3 sm:mt-4 ml-0 sm:ml-2 bg-zinc-900/40 border border-zinc-800/60 pr-3 pl-3 sm:pl-2.5 py-2 sm:py-4 flex flex-col gap-4 sm:gap-5">
+                        <div className="grid grid-cols-2 gap-y-4 gap-x-6">
+                          <div className="space-y-0.5">
+                            <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">Developer</p>
+                            <p className="text-sm text-zinc-300">
+                              {selectedPreviewGame.involved_companies?.find(c => c.developer)?.company.name || 'Unknown'}
+                            </p>
+                          </div>
+                          <div className="space-y-0.5">
+                            <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">Publisher</p>
+                            <p className="text-sm text-zinc-300">
+                              {selectedPreviewGame.involved_companies?.find(c => c.publisher)?.company.name || 'Unknown'}
+                            </p>
+                          </div>
+                          <div className="space-y-0.5">
+                            <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">Release Date</p>
+                            <p className="text-sm text-zinc-300">
+                              {selectedPreviewGame.first_release_date 
+                                ? new Date(selectedPreviewGame.first_release_date * 1000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+                                : 'Unknown'}
+                            </p>
+                          </div>
                         </div>
-                        <div className="space-y-0.5">
-                          <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">Publisher</p>
-                          <p className="text-sm text-zinc-300">
-                            {selectedPreviewGame.involved_companies?.find(c => c.publisher)?.company.name || 'Unknown'}
-                          </p>
-                        </div>
-                        <div className="space-y-0.5">
-                          <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">Release Date</p>
-                          <p className="text-sm text-zinc-300">
-                            {selectedPreviewGame.first_release_date 
-                              ? new Date(selectedPreviewGame.first_release_date * 1000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
-                              : 'Unknown'}
-                          </p>
+
+                        <div className="space-y-2">
+                          <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">About this game</p>
+                          {isLoadingDetails ? (
+                            <div className="space-y-2 animate-pulse">
+                              <div className="h-3.5 bg-zinc-800 rounded w-full" />
+                              <div className="h-3.5 bg-zinc-800 rounded w-[90%]" />
+                              <div className="h-3.5 bg-zinc-800 rounded w-[95%]" />
+                            </div>
+                          ) : (
+                            <p className="text-zinc-400 text-sm leading-relaxed font-normal line-clamp-4">
+                              {selectedPreviewGame.summary || "No description available for this title."}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">About this game</p>
-                    {isLoadingDetails ? (
-                      <div className="space-y-2 animate-pulse">
-                        <div className="h-3.5 bg-zinc-800 rounded w-full" />
-                        <div className="h-3.5 bg-zinc-800 rounded w-[90%]" />
-                        <div className="h-3.5 bg-zinc-800 rounded w-[95%]" />
-                      </div>
-                    ) : (
-                      <p className="text-zinc-400 text-sm leading-relaxed font-normal line-clamp-4">
-                        {selectedPreviewGame.summary || "No description available for this title."}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="mt-auto pt-4 border-t border-zinc-800 flex flex-col sm:flex-row gap-3">
-                    <button
-                      onClick={() => handleAddGame(selectedPreviewGame)}
-                      disabled={isAdding}
-                      className="flex-[2] bg-amber-400 hover:bg-amber-300 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-950 font-bold py-3 rounded-xl shadow-lg shadow-amber-400/5 transition-all flex items-center justify-center gap-2 active:scale-95 text-sm relative overflow-hidden"
-                    >
-                      {isAdding ? (
-                        <>
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          <span>CREATING SESSION...</span>
-                        </>
-                      ) : (
-                        "ADD TO LIBRARY"
-                      )}
-                    </button>
+                  <div className="mt-auto pt-6 border-t border-zinc-800 flex flex-col sm:flex-row gap-3 pb-1 sm:pb-2.5">
                     <button
                       onClick={() => setSelectedPreviewGame(null)}
                       disabled={isAdding}
-                      className="flex-1 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-zinc-300 font-semibold py-3 rounded-xl transition-all active:scale-95 text-sm"
+                      className="flex-1 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-zinc-300 font-semibold py-3 rounded-xl transition-all active:scale-95 text-sm order-2 sm:order-1"
                     >
                       Back
+                    </button>
+                    <button
+                      onClick={() => handleAddGame(selectedPreviewGame)}
+                      disabled={isAdding}
+                      style={{ 
+                        background: buttonGradient || undefined,
+                        color: buttonTextColor || undefined
+                      }}
+                      className={`flex-[2] ${!buttonGradient ? 'bg-amber-400 hover:bg-amber-300 text-zinc-950' : ''} disabled:opacity-50 disabled:cursor-not-allowed font-bold py-3 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95 text-sm relative overflow-hidden order-1 sm:order-2`}
+                    >
+                      <div className="absolute inset-0 bg-white/0 hover:bg-white/20 transition-colors pointer-events-none" />
+                      {isAdding ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin relative z-10" />
+                          <span className="relative z-10">CREATING SESSION...</span>
+                        </>
+                      ) : (
+                        <span className="relative z-10">ADD TO LIBRARY</span>
+                      )}
                     </button>
                   </div>
                 </motion.div>
@@ -297,7 +348,8 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
                           onClick={() => !isAdding && handlePreviewGame(game)}
                           className="w-full flex items-center gap-4 p-3 sm:p-4 hover:bg-zinc-800/80 rounded-2xl transition-colors text-left group cursor-pointer border border-transparent hover:border-zinc-700/50"
                         >
-                          <div className="w-14 sm:w-16 aspect-[3/4] bg-zinc-800 rounded-xl overflow-hidden shrink-0 flex items-center justify-center border border-zinc-700/50 shadow-md">
+                          <div className="w-14 sm:w-16 aspect-[3/4] bg-zinc-800 rounded-xl overflow-hidden shrink-0 flex items-center justify-center shadow-[0_2px_10px_rgba(0,0,0,0.3),0_8px_20px_rgba(0,0,0,0.5)] relative">
+                            <div className="absolute inset-0 border-[0.75px] border-white/80 mix-blend-overlay rounded-xl z-10 pointer-events-none" />
                             {game.cover?.image_id ? (
                               <img 
                                 src={`https://images.igdb.com/igdb/image/upload/t_cover_big/${game.cover.image_id}.jpg`}
@@ -336,7 +388,9 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
             </AnimatePresence>
           </div>
         </motion.div>
-      </div>
+          </div>
+        </>
+      )}
     </AnimatePresence>
   );
 }
