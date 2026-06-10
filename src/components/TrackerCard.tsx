@@ -203,10 +203,10 @@ export const TrackerCard = React.memo(({ tracker, onAddItem, onUpdateItem, onRem
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
       const target = e.target as Node;
-      if (refs.reference.current && refs.reference.current.contains(target)) {
+      if (refs.reference.current && (refs.reference.current as HTMLElement).contains(target)) {
         return;
       }
-      if (refs.floating.current && refs.floating.current.contains(target)) {
+      if (refs.floating.current && (refs.floating.current as HTMLElement).contains(target)) {
         return;
       }
       setIsMenuOpen(false);

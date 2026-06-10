@@ -52,7 +52,7 @@ export default function HomeView() {
     }
   ];
 
-  const handleSelectGame = (game: any) => {
+  const handleSelectGame = async (game: any) => {
     if (activeSlot === null) return;
     
     setTopGames(prev => {

@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { Plus, Trash2, PenLine, Star, ChevronRight, History, Tag as TagIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../firebase';
-import { useGameContext } from '../contexts/GameContext';
-import { useUI } from '../contexts/UIContext';
-import { useNotes } from '../hooks/useNotes';
-import { cn } from '../lib/utils';
+import { db } from '../../firebase';
+import { useGameContext } from '../../contexts/GameContext';
+import { useUI } from '../../contexts/UIContext';
+import { useNotes } from '../../hooks/useNotes';
+import { cn } from '../../lib/utils';
 
-import { GameSession } from '../types';
+import { GameSession } from '../../types';
 
 export default function GameDetailView() {
   const { navigateTo } = useUI();

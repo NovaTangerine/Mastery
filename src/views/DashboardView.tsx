@@ -137,11 +137,12 @@ export default function DashboardView() {
       : undefined;
       
     const newGameId = await handleAddGame(game.name, coverUrl);
-    setIsAddingGame(false);
     
     if (newGameId) {
       await resumeOrCreateSession({ id: newGameId, title: game.name } as Game);
     }
+    
+    setIsAddingGame(false);
   };
 
   return (
