@@ -48,6 +48,7 @@ interface GameContextType {
   handleUpdateSessionTags: (sessionId: string, tags: string[]) => Promise<void>;
   handleUpdateGameField: (field: 'overallNotes' | 'storySynopsis', value: string) => Promise<void>;
   handleUpdateGameStatus: (status: Game['status']) => Promise<void>;
+  handleUpdateGameDetails: (gameId: string, title: string, coverUrl?: string) => Promise<void>;
   handleDeleteGame: (targetGameId?: string) => Promise<void>;
   handleDeleteSession: (sessionId: string) => Promise<void>;
   handleDeleteSessionAndShiftFocus: (sessionId: string) => Promise<void>;
@@ -349,6 +350,23 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
         updatedAt: Date.now()
       });
       toast.success('Game status updated');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'games');
+    }
+  };
+
+  const handleUpdateGameDetails = async (gameId: string, title: string, coverUrl?: string) => {
+    try {
+      const updateData: any = {
+        title,
+        updatedAt: Date.now()
+      };
+      if (coverUrl !== undefined) {
+        updateData.coverUrl = coverUrl;
+      }
+      
+      await updateDoc(doc(db, 'games', gameId), updateData);
+      toast.success('Game synced successfully');
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'games');
     }
@@ -777,6 +795,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     handleUpdateSessionTags,
     handleUpdateGameField,
     handleUpdateGameStatus,
+    handleUpdateGameDetails,
     handleDeleteGame,
     handleDeleteSession,
     handleDeleteSessionAndShiftFocus,

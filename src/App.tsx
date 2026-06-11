@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Gamepad2, 
   LogOut, 
@@ -45,6 +45,8 @@ function MainApp() {
   const [isBackBarVisible, setIsBackBarVisible] = useState(true);
   const [cartridgeClickCount, setCartridgeClickCount] = useState(0);
   const [cartridgeUnlocked, setCartridgeUnlocked] = useState(false);
+  const [headerBlur, setHeaderBlur] = useState('24px');
+  const mainRef = useRef<HTMLElement>(null);
   const isOnline = useNetworkStatus();
   const { user, isAuthReady } = useAuth();
   const {
@@ -54,6 +56,31 @@ function MainApp() {
     clearHistory
   } = useUI();
   const { selectedGame, activeSession } = useGameContext();
+
+  useEffect(() => {
+    let t: NodeJS.Timeout;
+    const handleScroll = () => {
+      // Reduce blur while scrolling for better performance
+      setHeaderBlur('8px');
+      clearTimeout(t);
+      t = setTimeout(() => {
+        // Restore higher blur when scrolling stops
+        setHeaderBlur('24px');
+      }, 120);
+    };
+
+    const mainElement = mainRef.current;
+    if (mainElement) {
+      mainElement.addEventListener('scroll', handleScroll, { passive: true });
+    }
+
+    return () => {
+      if (mainElement) {
+        mainElement.removeEventListener('scroll', handleScroll);
+      }
+      clearTimeout(t);
+    };
+  }, []);
 
   // --- Render Helpers ---
 
@@ -71,20 +98,26 @@ function MainApp() {
 
   return (
     <ErrorBoundary>
-      <div className="h-[100dvh] flex flex-col bg-zinc-950 text-zinc-100 font-sans selection:bg-zinc-100 selection:text-zinc-950">
+      <div className="h-[100dvh] flex flex-col bg-zinc-950 text-zinc-100 font-sans selection:bg-zinc-100 selection:text-zinc-950 relative">
+        {view === 'dashboard' && (
+          <div className="absolute inset-x-0 top-0 h-[800px] pointer-events-none bg-[radial-gradient(ellipse_150%_100%_at_50%_0%,rgba(39,39,42,0.5)_0%,rgba(9,9,11,0)_100%)] z-0" />
+        )}
         <Toaster position="top-center" theme="dark" />
         
         {/* Offline Banner */}
         {!isOnline && (
-          <div className="shrink-0 z-40 bg-amber-900/20 border-b border-amber-900/30 px-6 py-2 flex items-center justify-center text-amber-500 text-xs font-medium text-center">
+          <div className="shrink-0 z-40 bg-amber-900/20 border-b border-amber-900/30 px-6 py-2 flex items-center justify-center text-amber-500 text-xs font-medium text-center relative">
             ⚠️ Offline Mode: Changes are saved locally. Reconnect to sync and prevent data loss.
           </div>
         )}
 
         {/* Navigation Rail / Header & Back Bar */}
         {view !== 'note-editor' && (
-          <div className="shrink-0 z-50 flex flex-col">
-            <header className="bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-900 px-4 sm:px-6 py-4 relative flex items-center min-h-[73px]">
+          <div className="shrink-0 z-50 flex flex-col relative">
+            <header 
+              className={`bg-zinc-950/10 border-b ${view === 'dashboard' ? 'border-transparent' : 'border-zinc-900'} px-4 sm:px-6 py-4 relative flex items-center min-h-[73px] transition-all duration-300 ease-out`}
+              style={{ backdropFilter: `blur(${headerBlur})`, WebkitBackdropFilter: `blur(${headerBlur})` }}
+            >
               
               {/* Standard Navbar (Hidden on mobile/tablet in session-view) */}
               <div className={`flex items-center justify-between w-full ${view === 'session-view' ? 'hidden lg:flex' : 'flex'}`}>
@@ -213,7 +246,10 @@ function MainApp() {
 
           {/* Back Bar */}
           {view === 'profile' && (
-            <div className={`w-full bg-zinc-950/80 backdrop-blur-xl transition-all duration-300 ease-in-out overflow-hidden ${isBackBarVisible ? 'max-h-16 border-b border-zinc-900 opacity-100' : 'max-h-0 border-transparent opacity-0'}`}>
+            <div 
+              className={`w-full bg-zinc-950/10 transition-all duration-300 ease-in-out overflow-hidden ${isBackBarVisible ? 'max-h-16 border-b border-zinc-900 opacity-100' : 'max-h-0 border-transparent opacity-0'}`}
+              style={{ backdropFilter: `blur(${headerBlur})`, WebkitBackdropFilter: `blur(${headerBlur})` }}
+            >
               <div className="px-6 py-2">
                 <div className="mx-auto flex items-center justify-between max-w-6xl">
                   <button 
@@ -232,8 +268,11 @@ function MainApp() {
         </div>
       )}
 
-        <main className={`flex-1 min-h-0 w-full ${['session-view', 'note-editor'].includes(view) ? 'flex flex-col' : 'overflow-y-auto'}`}>
-          <div className={`mx-auto w-full ${['session-view', 'note-editor'].includes(view) ? (view === 'note-editor' ? 'p-0 flex-1 min-h-0 flex flex-col' : 'p-2 sm:p-6 flex-1 min-h-0 flex flex-col max-w-[1440px]') : 'p-4 sm:p-6 max-w-6xl'}`}>
+        <main 
+          ref={mainRef}
+          className={`flex-1 min-h-0 w-full relative ${['session-view', 'note-editor'].includes(view) ? 'flex flex-col' : 'overflow-y-auto'}`}
+        >
+          <div className={`mx-auto w-full relative z-10 ${['session-view', 'note-editor'].includes(view) ? (view === 'note-editor' ? 'p-0 flex-1 min-h-0 flex flex-col' : 'p-2 sm:p-6 flex-1 min-h-0 flex flex-col max-w-[1440px]') : 'p-4 sm:p-6 max-w-6xl'}`}>
             {view === 'home' && <HomeView />}
             {view === 'dashboard' && <DashboardView />}
             {view === 'all-insights' && <AllInsightsView />}

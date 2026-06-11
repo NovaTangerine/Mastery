@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Gamepad2, Clock, Play, X, Trophy, MoreVertical, Trash2 } from 'lucide-react';
+import { Plus, Gamepad2, Clock, Play, X, Trophy, MoreVertical, Trash2, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -8,19 +8,23 @@ import { useGameContext } from '../contexts/GameContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useUI } from '../contexts/UIContext';
 import GameSearchModal from '../components/GameSearchModal';
+import GameSyncModal from '../components/GameSyncModal';
 
 export default function DashboardView() {
   const { user } = useAuth();
   const { navigateTo } = useUI();
+  const [layout, setLayout] = useState<'3col' | '2col' | '3col-art'>('3col');
   const {
     games,
     gamesLimit,
     loadMoreGames,
     handleAddGame,
-    handleDeleteGame
+    handleDeleteGame,
+    handleUpdateGameDetails
   } = useGameContext();
 
   const [isAddingGame, setIsAddingGame] = useState(false);
+  const [syncTargetGame, setSyncTargetGame] = useState<Game | null>(null);
   const [gameToDelete, setGameToDelete] = useState<Game | null>(null);
   const [deleteInfo, setDeleteInfo] = useState<{ sessions: number, notes: number } | null>(null);
   const [isCheckingDelete, setIsCheckingDelete] = useState(false);
@@ -146,17 +150,62 @@ export default function DashboardView() {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <GameSearchModal 
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 relative z-10">
+      <GameSearchModal  
         isOpen={isAddingGame}
         onClose={() => setIsAddingGame(false)}
         onSelectGame={handleSelectGame}
         slotNumber={null}
       />
 
+      <GameSyncModal
+        gameToSync={syncTargetGame}
+        onClose={() => setSyncTargetGame(null)}
+        onConfirmSync={async (gameId, igdbGame) => {
+          const coverUrl = igdbGame.cover?.image_id 
+            ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${igdbGame.cover.image_id}.jpg`
+            : undefined;
+          await handleUpdateGameDetails(gameId, igdbGame.name, coverUrl);
+        }}
+      />
+
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Your Library</h2>
         <div className="flex gap-3">
+          <div className="flex bg-zinc-900 border border-zinc-800 rounded-full p-1 self-center hidden sm:flex">
+            <button
+              onClick={() => setLayout('2col')}
+              className={`p-1.5 rounded-full transition-all ${layout === '2col' ? 'bg-zinc-800 text-amber-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+              title="2 Column Layout"
+            >
+              <div className="flex gap-[3px] items-center justify-center w-5 h-5">
+                <div className="w-2 h-[14px] bg-current rounded-[2px]" />
+                <div className="w-2 h-[14px] bg-current rounded-[2px]" />
+              </div>
+            </button>
+            <button
+              onClick={() => setLayout('3col')}
+              className={`p-1.5 rounded-full transition-all ${layout === '3col' ? 'bg-zinc-800 text-amber-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+              title="3 Column Layout"
+            >
+              <div className="flex gap-[2px] items-center justify-center w-5 h-5">
+                <div className="w-[5px] h-[14px] bg-current rounded-[2px]" />
+                <div className="w-[5px] h-[14px] bg-current rounded-[2px]" />
+                <div className="w-[5px] h-[14px] bg-current rounded-[2px]" />
+              </div>
+            </button>
+            <button
+              onClick={() => setLayout('3col-art')}
+              className={`p-1.5 rounded-full transition-all ${layout === '3col-art' ? 'bg-zinc-800 text-amber-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+              title="3 Column Layout with Art"
+            >
+              <div className="flex gap-[2px] items-center justify-center w-5 h-5">
+                <div className="w-[4px] h-[14px] border-[1.5px] border-current rounded-[1px] opacity-70" />
+                <div className="w-[4px] h-[14px] bg-current rounded-[1px]" />
+                <div className="w-[4px] h-[14px] bg-current rounded-[1px]" />
+              </div>
+            </button>
+          </div>
           <button 
             onClick={() => setIsAddingGame(true)}
             className="bg-zinc-100 text-zinc-950 px-5 py-2 rounded-full font-bold flex items-center gap-2 hover:bg-white transition-all active:scale-95"
@@ -167,18 +216,93 @@ export default function DashboardView() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+      <div className={`grid ${layout === '3col-art' ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-6' : `grid-cols-1 sm:grid-cols-2 ${layout.startsWith('3col') ? 'lg:grid-cols-3' : 'lg:grid-cols-2'} gap-3 sm:gap-4 lg:gap-6`}`}>
         {games.map(game => (
-          <div 
-            key={game.id}
-            onClick={() => resumeOrCreateSession(game)}
-            className="relative group bg-zinc-900 border border-zinc-800 rounded-3xl p-6 text-left hover:border-zinc-700 transition-all hover:shadow-xl flex flex-col cursor-pointer hover:-translate-y-1 h-full"
-          >
-            <div className="flex justify-between items-start mb-4">
-              <div className="w-12 h-12 bg-zinc-800 rounded-2xl flex items-center justify-center group-hover:bg-zinc-700 transition-colors duration-500 group-hover:delay-[150ms]">
-                <Gamepad2 className="w-6 h-6 text-zinc-500 group-hover:text-white transition-colors duration-500 group-hover:delay-[150ms]" />
+          layout === '3col-art' ? (
+            <div 
+              key={game.id}
+              onClick={() => resumeOrCreateSession(game)}
+              className="relative group aspect-[3/4] bg-zinc-900 rounded-md overflow-hidden cursor-pointer transition-all hover:scale-105 block shadow-[0_1px_3px_rgba(0,0,0,0.35)]"
+            >
+              <div className="absolute inset-0 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.15)] rounded-md z-20 pointer-events-none" />
+              {game.coverUrl ? (
+                <img src={game.coverUrl} alt={game.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-800 text-zinc-500 font-bold p-4 text-center">
+                  <Gamepad2 className="w-8 h-8 mb-2 opacity-30" />
+                  <span className="text-xs leading-tight opacity-70">{game.title}</span>
+                </div>
+              )}
+              
+              <div className="absolute top-3 right-3 z-30">
+                <div className={`transition-all duration-300 transform ${openMenuId === game.id ? 'opacity-100 scale-100' : 'opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100'}`}>
+                  {game.status === 'completed' && (
+                    <span className="flex items-center justify-center w-8 h-8 bg-black/50 backdrop-blur-md rounded-full border border-amber-400/30 text-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.3)]">
+                      <Trophy className="w-4 h-4" />
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20 flex flex-col justify-end p-4">
+                <div className="translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                  <h3 className="text-white font-bold text-sm sm:text-base line-clamp-2 mb-1">{game.title}</h3>
+                  <p className="text-zinc-400 text-xs flex items-center gap-1">
+                    <Clock className="w-3 h-3 flex-shrink-0" />
+                    <span className="truncate">{format(game.updatedAt, 'MMM d')}</span>
+                  </p>
+                </div>
               </div>
               
+              {/* Ellipse Menu triggered on hover */}
+              <div className={`absolute top-2 left-2 z-30 flex items-center justify-center transition-opacity duration-300 ${openMenuId === game.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                <button
+                  onClick={(e) => toggleMenu(e, game.id)}
+                  className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-md hover:bg-black/80 flex items-center justify-center text-white transition-colors border border-white/10"
+                >
+                  <MoreVertical className="w-4 h-4" />
+                </button>
+                
+                {openMenuId === game.id && (
+                  <div className="absolute left-0 top-full mt-2 w-48 bg-zinc-800 rounded-xl shadow-xl z-[60] border border-zinc-700 overflow-hidden">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenMenuId(null);
+                        setSyncTargetGame(game);
+                      }}
+                      className="hidden sm:flex w-full text-left px-4 py-3 text-zinc-300 hover:text-amber-400 hover:bg-zinc-700/50 items-center gap-2 transition-colors font-bold text-sm border-b border-zinc-700/50"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      Sync with IGDB
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenMenuId(null);
+                        handleDeleteClick(e, game);
+                      }}
+                      className="w-full text-left px-4 py-3 text-red-400 hover:bg-zinc-700/50 flex items-center gap-2 transition-colors font-bold text-sm"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete Game
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div 
+              key={game.id}
+              onClick={() => resumeOrCreateSession(game)}
+              className="relative group bg-zinc-900 border border-zinc-800 rounded-3xl p-6 text-left hover:border-zinc-700 transition-all hover:shadow-xl flex flex-col cursor-pointer hover:-translate-y-1 h-full"
+            >
+              <div className="flex justify-between items-start mb-4">
+                <div className="w-12 h-12 bg-zinc-800 rounded-2xl flex items-center justify-center group-hover:bg-zinc-700 transition-colors duration-500 group-hover:delay-[150ms]">
+                  <Gamepad2 className="w-6 h-6 text-zinc-500 group-hover:text-white transition-colors duration-500 group-hover:delay-[150ms]" />
+                </div>
+              </div>
+                
               <div className="flex items-center absolute right-6 top-6">
                 <div className={`transition-all duration-300 group-hover:delay-75 transform ${openMenuId === game.id ? '-translate-x-10' : 'group-hover:-translate-x-10'}`}>
                   {game.status === 'completed' ? (
@@ -209,6 +333,17 @@ export default function DashboardView() {
                         onClick={(e) => {
                           e.stopPropagation();
                           setOpenMenuId(null);
+                          setSyncTargetGame(game);
+                        }}
+                        className="hidden sm:flex w-full text-left px-4 py-3 text-zinc-300 hover:text-amber-400 hover:bg-zinc-700/50 items-center gap-2 transition-colors font-bold text-sm border-b border-zinc-700/50"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                        Sync with IGDB
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuId(null);
                           handleDeleteClick(e, game);
                         }}
                         className="w-full text-left px-4 py-3 text-red-400 hover:bg-zinc-700/50 flex items-center gap-2 transition-colors font-bold text-sm"
@@ -220,22 +355,25 @@ export default function DashboardView() {
                   )}
                 </div>
               </div>
+  
+              <div className="flex flex-col min-w-0">
+                <h3 className="text-xl font-medium tracking-tight mb-1 truncate pr-8">{game.title}</h3>
+                <p className="text-zinc-500 text-xs flex items-center gap-1 mt-auto pr-12">
+                  <Clock className="w-3 h-3 flex-shrink-0" />
+                  <span className="truncate">Last played {format(game.updatedAt, 'MMM d, yyyy')}</span>
+                </p>
+              </div>
+              
+              {/* Quick Resume Button */}
+              <button
+                onClick={(e) => handleQuickResume(e, game)}
+                className="absolute bottom-5 right-5 w-10 h-10 bg-zinc-100 text-zinc-950 rounded-xl flex items-center justify-center opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-200 ease-out hover:bg-white shadow-lg hover:scale-105"
+                title="Resume Last Session"
+              >
+                <Play className="w-5 h-5 ml-1" />
+              </button>
             </div>
-            <h3 className="text-xl font-bold mb-1 truncate pr-8">{game.title}</h3>
-            <p className="text-zinc-500 text-xs flex items-center gap-1 mt-auto pr-12">
-              <Clock className="w-3 h-3 flex-shrink-0" />
-              <span className="truncate">Last played {format(game.updatedAt, 'MMM d, yyyy')}</span>
-            </p>
-            
-            {/* Quick Resume Button */}
-            <button
-              onClick={(e) => handleQuickResume(e, game)}
-              className="absolute bottom-5 right-5 w-10 h-10 bg-zinc-100 text-zinc-950 rounded-xl flex items-center justify-center opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-200 ease-out hover:bg-white shadow-lg hover:scale-105"
-              title="Resume Last Session"
-            >
-              <Play className="w-5 h-5 ml-1" />
-            </button>
-          </div>
+          )
         ))}
         
         {games.length === 0 && !isAddingGame && (

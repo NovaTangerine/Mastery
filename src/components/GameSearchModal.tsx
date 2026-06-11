@@ -175,9 +175,8 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
                   className="p-5 flex flex-col max-w-[720px] mx-auto w-full h-full"
                 >
                   <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-5 sm:mb-6">
-                    <div className="w-full sm:w-48 aspect-[3/4] bg-zinc-800 rounded-2xl overflow-hidden shrink-0 shadow-[0_4px_12px_rgba(0,0,0,0.5),0_8px_24px_rgba(0,0,0,0.4)] relative mt-0 sm:mt-1.5">
-                      <div className="absolute inset-0 border-[0.75px] border-white/80 mix-blend-overlay rounded-2xl z-10 pointer-events-none" />
-                      <div className="absolute inset-0 border-[0.75px] border-black/20 rounded-2xl z-20 pointer-events-none" />
+                    <div className="w-full sm:w-48 aspect-[3/4] bg-zinc-800 rounded-md overflow-hidden shrink-0 shadow-[0_1px_3px_rgba(0,0,0,0.35)] relative mt-0 sm:mt-1.5">
+                      <div className="absolute inset-0 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.15)] rounded-md z-20 pointer-events-none" />
                       {selectedPreviewGame.cover?.image_id ? (
                         <img 
                           src={`https://images.igdb.com/igdb/image/upload/t_cover_big/${selectedPreviewGame.cover.image_id}.jpg`}
@@ -348,8 +347,8 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
                           onClick={() => !isAdding && handlePreviewGame(game)}
                           className="w-full flex items-center gap-4 p-3 sm:p-4 hover:bg-zinc-800/80 rounded-2xl transition-colors text-left group cursor-pointer border border-transparent hover:border-zinc-700/50"
                         >
-                          <div className="w-14 sm:w-16 aspect-[3/4] bg-zinc-800 rounded-xl overflow-hidden shrink-0 flex items-center justify-center shadow-[0_2px_10px_rgba(0,0,0,0.3),0_8px_20px_rgba(0,0,0,0.5)] relative">
-                            <div className="absolute inset-0 border-[0.75px] border-white/80 mix-blend-overlay rounded-xl z-10 pointer-events-none" />
+                          <div className="w-14 sm:w-16 aspect-[3/4] bg-zinc-800 rounded-md overflow-hidden shrink-0 flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.35)] relative">
+                            <div className="absolute inset-0 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.15)] rounded-md z-20 pointer-events-none" />
                             {game.cover?.image_id ? (
                               <img 
                                 src={`https://images.igdb.com/igdb/image/upload/t_cover_big/${game.cover.image_id}.jpg`}
