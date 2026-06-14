@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Search, X, Loader2, Image as ImageIcon, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getPaletteSync } from 'colorthief';
@@ -23,7 +24,7 @@ interface Game {
 interface GameSearchModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectGame: (game: Game) => Promise<void>;
+  onSelectGame: (game: Game, startPlaying?: boolean) => Promise<void>;
   slotNumber: number | null;
 }
 
@@ -33,19 +34,19 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
   const [isSearching, setIsSearching] = useState(false);
   const [selectedPreviewGame, setSelectedPreviewGame] = useState<Game | null>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
-  const [isAdding, setIsAdding] = useState(false);
+  const [addingState, setAddingState] = useState<'idle' | 'adding' | 'playing'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [buttonGradient, setButtonGradient] = useState<string | null>(null);
   const [buttonTextColor, setButtonTextColor] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleAddGame = async (game: Game, e?: React.MouseEvent) => {
+  const handleAddGame = async (game: Game, startPlaying: boolean = true, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    setIsAdding(true);
+    setAddingState(startPlaying ? 'playing' : 'adding');
     try {
-      await onSelectGame(game);
+      await onSelectGame(game, startPlaying);
     } finally {
-      setIsAdding(false);
+      setAddingState('idle');
     }
   };
 
@@ -115,7 +116,7 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
     return () => clearTimeout(debounceTimer);
   }, [query]);
 
-  return (
+  const modalContent = (
     <AnimatePresence>
       {isOpen && (
         <>
@@ -128,6 +129,8 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
           />
           <div className="fixed inset-0 z-[101] flex items-start justify-center pt-[10vh] px-4 sm:px-6 pointer-events-none">
             <motion.div 
+              layout
+              transition={{ layout: { duration: 0.5, ease: [0.32, 0.72, 0, 1] } }}
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -165,13 +168,14 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
           </div>
 
           <div className="overflow-y-auto overflow-x-hidden flex-1 min-h-[400px] relative">
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="popLayout" initial={false}>
               {selectedPreviewGame ? (
                 <motion.div
                   key="detail"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2 }}
                   className="p-5 flex flex-col max-w-[720px] mx-auto w-full h-full"
                 >
                   <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-5 sm:mb-6">
@@ -280,15 +284,22 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
 
                   <div className="mt-auto pt-6 border-t border-zinc-800 flex flex-col sm:flex-row gap-3 pb-1 sm:pb-2.5">
                     <button
-                      onClick={() => setSelectedPreviewGame(null)}
-                      disabled={isAdding}
-                      className="flex-1 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-zinc-300 font-semibold py-3 rounded-xl transition-all active:scale-95 text-sm order-2 sm:order-1"
+                      onClick={() => handleAddGame(selectedPreviewGame, false)}
+                      disabled={addingState !== 'idle'}
+                      className="flex-1 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-zinc-300 font-semibold py-3 rounded-xl transition-all active:scale-95 text-sm order-2 sm:order-1 flex items-center justify-center gap-2"
                     >
-                      Back
+                      {addingState === 'adding' ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <span>ADDING...</span>
+                        </>
+                      ) : (
+                        <span>ADD TO LIBRARY</span>
+                      )}
                     </button>
                     <button
-                      onClick={() => handleAddGame(selectedPreviewGame)}
-                      disabled={isAdding}
+                      onClick={() => handleAddGame(selectedPreviewGame, true)}
+                      disabled={addingState !== 'idle'}
                       style={{ 
                         background: buttonGradient || undefined,
                         color: buttonTextColor || undefined
@@ -296,13 +307,13 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
                       className={`flex-[2] ${!buttonGradient ? 'bg-amber-400 hover:bg-amber-300 text-zinc-950' : ''} disabled:opacity-50 disabled:cursor-not-allowed font-bold py-3 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95 text-sm relative overflow-hidden order-1 sm:order-2`}
                     >
                       <div className="absolute inset-0 bg-white/0 hover:bg-white/20 transition-colors pointer-events-none" />
-                      {isAdding ? (
+                      {addingState === 'playing' ? (
                         <>
                           <Loader2 className="w-5 h-5 animate-spin relative z-10" />
                           <span className="relative z-10">CREATING SESSION...</span>
                         </>
                       ) : (
-                        <span className="relative z-10">ADD TO LIBRARY</span>
+                        <span className="relative z-10">START PLAYING</span>
                       )}
                     </button>
                   </div>
@@ -313,12 +324,15 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.2 }}
                   className="p-2 sm:p-4 flex flex-col gap-4 relative"
                 >
-                  {isAdding && (
+                  {addingState !== 'idle' && (
                      <div className="absolute inset-0 bg-zinc-900/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-xl">
                         <Loader2 className="w-8 h-8 text-amber-400 animate-spin mb-4" />
-                        <p className="font-bold text-zinc-100 uppercase tracking-widest text-sm">Building Session...</p>
+                        <p className="font-bold text-zinc-100 uppercase tracking-widest text-sm">
+                           {addingState === 'playing' ? 'Building Session...' : 'Adding...'}
+                        </p>
                      </div>
                   )}
                   {error && (
@@ -344,7 +358,7 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
                       {results.map((game) => (
                         <div
                           key={game.id}
-                          onClick={() => !isAdding && handlePreviewGame(game)}
+                          onClick={() => addingState === 'idle' && handlePreviewGame(game)}
                           className="w-full flex items-center gap-4 p-3 sm:p-4 hover:bg-zinc-800/80 rounded-2xl transition-colors text-left group cursor-pointer border border-transparent hover:border-zinc-700/50"
                         >
                           <div className="w-14 sm:w-16 aspect-[3/4] bg-zinc-800 rounded-md overflow-hidden shrink-0 flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.35)] relative">
@@ -371,8 +385,8 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
                             )}
                           </div>
                           <button
-                            onClick={(e) => handleAddGame(game, e)}
-                            disabled={isAdding}
+                            onClick={(e) => handleAddGame(game, false, e)}
+                            disabled={addingState !== 'idle'}
                             className="opacity-0 group-hover:opacity-100 p-2.5 rounded-full hover:bg-zinc-700 disabled:opacity-0 text-zinc-400 hover:text-amber-400 transition-all active:scale-95 shrink-0 bg-zinc-800 shadow-sm md:block hidden"
                             title="Add to library"
                           >
@@ -392,4 +406,7 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
       )}
     </AnimatePresence>
   );
+
+  if (typeof document === 'undefined') return null;
+  return createPortal(modalContent, document.body);
 }

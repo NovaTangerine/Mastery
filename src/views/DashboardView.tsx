@@ -24,6 +24,7 @@ export default function DashboardView() {
   } = useGameContext();
 
   const [isAddingGame, setIsAddingGame] = useState(false);
+  const [justAddedGameId, setJustAddedGameId] = useState<string | null>(null);
   const [syncTargetGame, setSyncTargetGame] = useState<Game | null>(null);
   const [gameToDelete, setGameToDelete] = useState<Game | null>(null);
   const [deleteInfo, setDeleteInfo] = useState<{ sessions: number, notes: number } | null>(null);
@@ -135,7 +136,24 @@ export default function DashboardView() {
     await resumeOrCreateSession(game);
   };
 
-  const handleSelectGame = async (game: any) => {
+  const handleToggleBoxArt = async (e: React.MouseEvent, game: Game) => {
+    e.stopPropagation();
+    setOpenMenuId(null);
+    const dsCover = "https://images.igdb.com/igdb/image/upload/t_cover_big/cobksg.jpg";
+    const isSwapped = game.coverUrl === dsCover;
+    
+    if (isSwapped) {
+      const originalCover = localStorage.getItem(`originalCover_${game.id}`);
+      await handleUpdateGameDetails(game.id, game.title, originalCover || undefined);
+    } else {
+      if (game.coverUrl) {
+         localStorage.setItem(`originalCover_${game.id}`, game.coverUrl);
+      }
+      await handleUpdateGameDetails(game.id, game.title, dsCover);
+    }
+  };
+
+  const handleSelectGame = async (game: any, startPlaying: boolean = true) => {
     const coverUrl = game.cover?.image_id 
       ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${game.cover.image_id}.jpg`
       : undefined;
@@ -143,14 +161,19 @@ export default function DashboardView() {
     const newGameId = await handleAddGame(game.name, coverUrl);
     
     if (newGameId) {
-      await resumeOrCreateSession({ id: newGameId, title: game.name } as Game);
+      if (startPlaying) {
+        await resumeOrCreateSession({ id: newGameId, title: game.name } as Game);
+      } else {
+        setJustAddedGameId(newGameId);
+        setTimeout(() => setJustAddedGameId(null), 3000);
+      }
     }
     
     setIsAddingGame(false);
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 relative z-10">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
       <GameSearchModal  
         isOpen={isAddingGame}
         onClose={() => setIsAddingGame(false)}
@@ -216,13 +239,13 @@ export default function DashboardView() {
         </div>
       </div>
 
-      <div className={`grid ${layout === '3col-art' ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-6' : `grid-cols-1 sm:grid-cols-2 ${layout.startsWith('3col') ? 'lg:grid-cols-3' : 'lg:grid-cols-2'} gap-3 sm:gap-4 lg:gap-6`}`}>
+      <div className={`grid ${layout === '3col-art' ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-2 sm:gap-x-3 gap-y-3 sm:gap-y-4' : `grid-cols-1 sm:grid-cols-2 ${layout.startsWith('3col') ? 'lg:grid-cols-3' : 'lg:grid-cols-2'} gap-3 sm:gap-4 lg:gap-6`}`}>
         {games.map(game => (
           layout === '3col-art' ? (
             <div 
               key={game.id}
               onClick={() => resumeOrCreateSession(game)}
-              className="relative group aspect-[3/4] bg-zinc-900 rounded-md overflow-hidden cursor-pointer transition-all hover:scale-105 block shadow-[0_1px_3px_rgba(0,0,0,0.35)]"
+              className={`relative group aspect-[3/4] bg-zinc-900 rounded-md overflow-hidden cursor-pointer transition-all hover:scale-105 block shadow-[0_1px_3px_rgba(0,0,0,0.35)] ${justAddedGameId === game.id ? 'ring-2 ring-amber-400 animate-pulse shadow-[0_0_15px_rgba(251,191,36,0.3)]' : ''}`}
             >
               <div className="absolute inset-0 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.15)] rounded-md z-20 pointer-events-none" />
               {game.coverUrl ? (
@@ -276,6 +299,15 @@ export default function DashboardView() {
                       <RefreshCw className="w-4 h-4" />
                       Sync with IGDB
                     </button>
+                    {game.title === 'Zero Parades: For Dead Spies' && (
+                      <button
+                        onClick={(e) => handleToggleBoxArt(e, game)}
+                        className="w-full text-left px-4 py-3 text-zinc-300 hover:bg-zinc-700/50 flex items-center gap-2 transition-colors font-semibold text-sm border-b border-zinc-700/50"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                        Swap Box Art
+                      </button>
+                    )}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -295,7 +327,7 @@ export default function DashboardView() {
             <div 
               key={game.id}
               onClick={() => resumeOrCreateSession(game)}
-              className="relative group bg-zinc-900 border border-zinc-800 rounded-3xl p-6 text-left hover:border-zinc-700 transition-all hover:shadow-xl flex flex-col cursor-pointer hover:-translate-y-1 h-full"
+              className={`relative group bg-zinc-900 border ${justAddedGameId === game.id ? 'border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.2)] animate-pulse' : 'border-zinc-800 hover:border-zinc-700 hover:shadow-xl'} rounded-3xl p-6 text-left transition-all flex flex-col cursor-pointer hover:-translate-y-1 h-full`}
             >
               <div className="flex justify-between items-start mb-4">
                 <div className="w-12 h-12 bg-zinc-800 rounded-2xl flex items-center justify-center group-hover:bg-zinc-700 transition-colors duration-500 group-hover:delay-[150ms]">
@@ -340,6 +372,15 @@ export default function DashboardView() {
                         <RefreshCw className="w-4 h-4" />
                         Sync with IGDB
                       </button>
+                    {game.title === 'Zero Parades: For Dead Spies' && (
+                      <button
+                        onClick={(e) => handleToggleBoxArt(e, game)}
+                        className="w-full text-left px-4 py-3 text-zinc-300 hover:bg-zinc-700/50 flex items-center gap-2 transition-colors font-semibold text-sm border-b border-zinc-700/50"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                        Swap Box Art
+                      </button>
+                    )}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();

@@ -272,7 +272,7 @@ function MainApp() {
           ref={mainRef}
           className={`flex-1 min-h-0 w-full relative ${['session-view', 'note-editor'].includes(view) ? 'flex flex-col' : 'overflow-y-auto'}`}
         >
-          <div className={`mx-auto w-full relative z-10 ${['session-view', 'note-editor'].includes(view) ? (view === 'note-editor' ? 'p-0 flex-1 min-h-0 flex flex-col' : 'p-2 sm:p-6 flex-1 min-h-0 flex flex-col max-w-[1440px]') : 'p-4 sm:p-6 max-w-6xl'}`}>
+          <div className={`mx-auto w-full relative ${['session-view', 'note-editor'].includes(view) ? (view === 'note-editor' ? 'p-0 flex-1 min-h-0 flex flex-col' : 'p-2 sm:p-6 flex-1 min-h-0 flex flex-col max-w-[1440px]') : 'p-4 sm:p-6 max-w-6xl'}`}>
             {view === 'home' && <HomeView />}
             {view === 'dashboard' && <DashboardView />}
             {view === 'all-insights' && <AllInsightsView />}

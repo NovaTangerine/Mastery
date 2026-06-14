@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Search, X, Loader2, Image as ImageIcon, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Game as StoreGame } from '../types';
@@ -90,7 +91,7 @@ export default function GameSyncModal({ gameToSync, onClose, onConfirmSync }: Ga
     }
   };
 
-  return (
+  const modalContent = (
     <AnimatePresence>
       {gameToSync && (
         <>
@@ -103,6 +104,8 @@ export default function GameSyncModal({ gameToSync, onClose, onConfirmSync }: Ga
           />
           <div className="fixed inset-0 z-[101] flex items-start justify-center pt-[10vh] px-4 sm:px-6 pointer-events-none">
             <motion.div 
+              layout
+              transition={{ layout: { duration: 0.5, ease: [0.32, 0.72, 0, 1] } }}
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -243,4 +246,7 @@ export default function GameSyncModal({ gameToSync, onClose, onConfirmSync }: Ga
       )}
     </AnimatePresence>
   );
+
+  if (typeof document === 'undefined') return null;
+  return createPortal(modalContent, document.body);
 }
