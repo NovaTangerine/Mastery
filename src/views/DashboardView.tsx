@@ -13,8 +13,8 @@ import GameSyncModal from '../components/GameSyncModal';
 export default function DashboardView() {
   const { user } = useAuth();
   const { navigateTo } = useUI();
-  const [layout, setLayout] = useState<'3col' | '2col' | '3col-art'>('3col');
-  const [displayLayout, setDisplayLayout] = useState<'3col' | '2col' | '3col-art'>('3col');
+  const [layout, setLayout] = useState<'3col' | '2col' | '3col-art'>('3col-art');
+  const [displayLayout, setDisplayLayout] = useState<'3col' | '2col' | '3col-art'>('3col-art');
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   const handleLayoutChange = (newLayout: '3col' | '2col' | '3col-art') => {
