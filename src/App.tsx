@@ -40,6 +40,7 @@ import IGDBGameView from './views/IGDBGameView';
 import PrototypeLandingView from './views/PrototypeLandingView';
 import TransitionMockupView from './views/TransitionMockupView';
 import ImageLoadingMockupView from './views/ImageLoadingMockupView';
+import HoverEffectMockupView from './views/HoverEffectMockupView';
 
 // --- Components ---
 
@@ -175,6 +176,12 @@ function MainApp() {
                           className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 ${view === 'image-loading-mockups' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
                         >
                           Box Art Mockups
+                        </button>
+                        <button 
+                          onClick={() => { clearHistory(); navigateTo('hover-effect-mockups', null, null); }}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 ${view === 'hover-effect-mockups' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                        >
+                          Hover Effect Mockups
                         </button>
                       </div>
                     </div>
@@ -315,6 +322,7 @@ function MainApp() {
             {view === 'igdb-game' && <IGDBGameView />}
             {view === 'transition-mockups' && <TransitionMockupView />}
             {view === 'image-loading-mockups' && <ImageLoadingMockupView />}
+            {view === 'hover-effect-mockups' && <HoverEffectMockupView />}
           </div>
         </main>
 

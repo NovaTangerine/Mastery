@@ -45,6 +45,41 @@ export default function DashboardView() {
   const [isCheckingDelete, setIsCheckingDelete] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
+  // --- Smart Tooltip State ---
+  const [hoveredGameId, setHoveredGameId] = useState<string | null>(null);
+  const [isRapidTooltip, setIsRapidTooltip] = useState(false);
+  const tooltipEnterTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tooltipLeaveTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleMouseEnterTooltip = (gameId: string) => {
+    if (tooltipLeaveTimeoutRef.current) {
+        clearTimeout(tooltipLeaveTimeoutRef.current);
+        tooltipLeaveTimeoutRef.current = null;
+    }
+    
+    if (isRapidTooltip) {
+      setHoveredGameId(gameId);
+    } else {
+      tooltipEnterTimeoutRef.current = setTimeout(() => {
+        setIsRapidTooltip(true);
+        setHoveredGameId(gameId);
+      }, 500); // Wait 500ms before initial pop
+    }
+  };
+
+  const handleMouseLeaveTooltip = () => {
+    if (tooltipEnterTimeoutRef.current) {
+      clearTimeout(tooltipEnterTimeoutRef.current);
+      tooltipEnterTimeoutRef.current = null;
+    }
+    setHoveredGameId(null);
+    
+    tooltipLeaveTimeoutRef.current = setTimeout(() => {
+      setIsRapidTooltip(false);
+    }, 300); // 300ms window to move to another poster without losing rapid state
+  };
+  // ---------------------------
+
   React.useEffect(() => {
     const handleClickOutside = () => {
       setOpenMenuId(null);
@@ -267,10 +302,14 @@ export default function DashboardView() {
             <div 
               key={game.id}
               onClick={() => resumeOrCreateSession(game)}
+              onMouseEnter={() => handleMouseEnterTooltip(game.id)}
+              onMouseLeave={handleMouseLeaveTooltip}
               className={`relative group aspect-[264/374] rounded-md cursor-pointer transition-all block shadow-[0_1px_3px_rgba(0,0,0,0.35)] animate-in fade-in duration-300 ${justAddedGameId === game.id ? 'ring-2 ring-amber-400 animate-pulse shadow-[0_0_15px_rgba(251,191,36,0.3)]' : ''}`}
             >
               {/* Tooltip */}
-              <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity duration-200 delay-[500ms] group-hover:delay-[500ms] bottom-full mb-3 left-1/2 -translate-x-1/2 z-[100] pointer-events-none whitespace-nowrap">
+              <div 
+                className={`absolute bottom-full mb-3 left-1/2 -translate-x-1/2 z-[100] pointer-events-none whitespace-nowrap transition-opacity duration-150 ${hoveredGameId === game.id ? 'opacity-100' : 'opacity-0'}`}
+              >
                 <div className="relative bg-[#1f2326] text-zinc-100 text-xs font-semibold px-2.5 py-1.5 rounded shadow-xl border border-zinc-700/50">
                   {game.title}
                   <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-[5px] border-transparent border-t-zinc-700/50">
@@ -279,19 +318,22 @@ export default function DashboardView() {
                 </div>
               </div>
 
-              <div className="absolute inset-0 bg-zinc-900 rounded-md overflow-hidden transition-transform duration-300 group-hover:scale-105">
+              <div className="absolute inset-0 bg-zinc-900 rounded-md overflow-hidden">
                 <div className="absolute inset-0 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.15)] rounded-md z-20 pointer-events-none" />
                 {game.coverUrl ? (
-                  <BlurRevealImage url={game.coverUrl.replace('t_cover_big', 't_720p')} alt={game.title} className="w-full h-full object-cover transition-all duration-700 hover:scale-105" />
+                  <BlurRevealImage url={game.coverUrl.replace('t_cover_big', 't_720p')} alt={game.title} className="w-full h-full object-cover transition-all duration-700 ease-out group-hover:scale-[1.03]" />
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-800 text-zinc-500 font-bold p-4 text-center">
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-800 text-zinc-500 font-bold p-4 text-center transition-all duration-700 ease-out group-hover:scale-[1.03]">
                     <Gamepad2 className="w-8 h-8 mb-2 opacity-30" />
                     <span className="text-xs leading-tight opacity-70">{game.title}</span>
                   </div>
                 )}
               </div>
               
-              <div className="absolute top-3 right-3 z-30 transition-transform duration-300 group-hover:scale-105">
+              {/* Hover Border Effect */}
+              <div className="absolute inset-0 z-30 rounded-md pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-[inset_0_0_0_2px_rgba(255,255,255,1)]" />
+              
+              <div className="absolute top-3 right-3 z-30">
                 <div className={`transition-all duration-300 transform ${openMenuId === game.id ? 'opacity-100 scale-100' : 'opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100'}`}>
                   {game.status === 'completed' && (
                     <span className="flex items-center justify-center w-8 h-8 bg-black/50 backdrop-blur-md rounded-full border border-amber-400/30 text-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.3)]">
