@@ -139,7 +139,7 @@ export default function DashboardView() {
   const handleToggleBoxArt = async (e: React.MouseEvent, game: Game) => {
     e.stopPropagation();
     setOpenMenuId(null);
-    const dsCover = "https://images.igdb.com/igdb/image/upload/t_cover_big/cobksg.jpg";
+    const dsCover = "https://images.igdb.com/igdb/image/upload/t_720p/cobksg.jpg";
     const isSwapped = game.coverUrl === dsCover;
     
     if (isSwapped) {
@@ -155,7 +155,7 @@ export default function DashboardView() {
 
   const handleSelectGame = async (game: any, startPlaying: boolean = true) => {
     const coverUrl = game.cover?.image_id 
-      ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${game.cover.image_id}.jpg`
+      ? `https://images.igdb.com/igdb/image/upload/t_720p/${game.cover.image_id}.jpg`
       : undefined;
       
     const newGameId = await handleAddGame(game.name, coverUrl);
@@ -186,7 +186,7 @@ export default function DashboardView() {
         onClose={() => setSyncTargetGame(null)}
         onConfirmSync={async (gameId, igdbGame) => {
           const coverUrl = igdbGame.cover?.image_id 
-            ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${igdbGame.cover.image_id}.jpg`
+            ? `https://images.igdb.com/igdb/image/upload/t_720p/${igdbGame.cover.image_id}.jpg`
             : undefined;
           await handleUpdateGameDetails(gameId, igdbGame.name, coverUrl);
         }}
@@ -245,11 +245,11 @@ export default function DashboardView() {
             <div 
               key={game.id}
               onClick={() => resumeOrCreateSession(game)}
-              className={`relative group aspect-[3/4] bg-zinc-900 rounded-md overflow-hidden cursor-pointer transition-all hover:scale-105 block shadow-[0_1px_3px_rgba(0,0,0,0.35)] ${justAddedGameId === game.id ? 'ring-2 ring-amber-400 animate-pulse shadow-[0_0_15px_rgba(251,191,36,0.3)]' : ''}`}
+              className={`relative group aspect-[264/374] bg-zinc-900 rounded-md overflow-hidden cursor-pointer transition-all hover:scale-105 block shadow-[0_1px_3px_rgba(0,0,0,0.35)] ${justAddedGameId === game.id ? 'ring-2 ring-amber-400 animate-pulse shadow-[0_0_15px_rgba(251,191,36,0.3)]' : ''}`}
             >
               <div className="absolute inset-0 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.15)] rounded-md z-20 pointer-events-none" />
               {game.coverUrl ? (
-                <img src={game.coverUrl} alt={game.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                <img src={game.coverUrl.replace('t_cover_big', 't_720p')} alt={game.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-800 text-zinc-500 font-bold p-4 text-center">
                   <Gamepad2 className="w-8 h-8 mb-2 opacity-30" />

@@ -179,11 +179,11 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
                   className="p-5 flex flex-col max-w-[720px] mx-auto w-full h-full"
                 >
                   <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-5 sm:mb-6">
-                    <div className="w-full sm:w-48 aspect-[3/4] bg-zinc-800 rounded-md overflow-hidden shrink-0 shadow-[0_1px_3px_rgba(0,0,0,0.35)] relative mt-0 sm:mt-1.5">
+                    <div className="w-full max-w-[200px] sm:max-w-none sm:w-48 mx-auto sm:mx-0 aspect-[264/374] bg-zinc-800 rounded-md overflow-hidden shrink-0 shadow-[0_1px_3px_rgba(0,0,0,0.35)] relative mt-0 sm:mt-1.5 ">
                       <div className="absolute inset-0 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.15)] rounded-md z-20 pointer-events-none" />
                       {selectedPreviewGame.cover?.image_id ? (
                         <img 
-                          src={`https://images.igdb.com/igdb/image/upload/t_cover_big/${selectedPreviewGame.cover.image_id}.jpg`}
+                          src={`https://images.igdb.com/igdb/image/upload/t_720p/${selectedPreviewGame.cover.image_id}.jpg`}
                           alt={selectedPreviewGame.name}
                           className="w-full h-full object-cover"
                           crossOrigin="anonymous"
@@ -234,58 +234,59 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
                     </div>
                     
                     <div className="flex-1 min-w-0 flex flex-col">
-                      <div className="pl-[13px] sm:pl-[11px] sm:ml-2 pt-2 text-zinc-100">
-                        <h3 className="text-2xl sm:text-3xl font-medium tracking-tight leading-tight">
-                          {selectedPreviewGame.name}
-                        </h3>
-                      </div>
-
-                      <div className="mt-3 sm:mt-4 ml-0 sm:ml-2 bg-zinc-900/40 border border-zinc-800/60 pr-3 pl-3 sm:pl-2.5 py-2 sm:py-4 flex flex-col gap-4 sm:gap-5">
-                        <div className="grid grid-cols-2 gap-y-4 gap-x-6">
-                          <div className="space-y-0.5">
-                            <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">Developer</p>
-                            <p className="text-sm text-zinc-300">
-                              {selectedPreviewGame.involved_companies?.find(c => c.developer)?.company.name || 'Unknown'}
-                            </p>
-                          </div>
-                          <div className="space-y-0.5">
-                            <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">Publisher</p>
-                            <p className="text-sm text-zinc-300">
-                              {selectedPreviewGame.involved_companies?.find(c => c.publisher)?.company.name || 'Unknown'}
-                            </p>
-                          </div>
-                          <div className="space-y-0.5">
-                            <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">Release Date</p>
-                            <p className="text-sm text-zinc-300">
-                              {selectedPreviewGame.first_release_date 
-                                ? new Date(selectedPreviewGame.first_release_date * 1000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
-                                : 'Unknown'}
-                            </p>
-                          </div>
+                      {isLoadingDetails ? (
+                        <div className="flex-1 flex flex-col items-center justify-center min-h-[300px] bg-zinc-900/20 border border-zinc-800/30 rounded-xl ml-0 sm:ml-4 sm:mt-1.5 mt-4">
+                          <Loader2 className="w-8 h-8 text-amber-400 animate-spin mb-4" />
+                          <p className="text-zinc-500 font-bold tracking-widest text-xs uppercase">Loading Details...</p>
                         </div>
+                      ) : (
+                        <>
+                          <div className="pl-[13px] sm:pl-[11px] sm:ml-2 pt-2 text-zinc-100">
+                            <h3 className="text-2xl sm:text-3xl font-medium tracking-tight leading-tight">
+                              {selectedPreviewGame.name}
+                            </h3>
+                          </div>
 
-                        <div className="space-y-2">
-                          <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">About this game</p>
-                          {isLoadingDetails ? (
-                            <div className="space-y-2 animate-pulse">
-                              <div className="h-3.5 bg-zinc-800 rounded w-full" />
-                              <div className="h-3.5 bg-zinc-800 rounded w-[90%]" />
-                              <div className="h-3.5 bg-zinc-800 rounded w-[95%]" />
+                          <div className="mt-3 sm:mt-4 ml-0 sm:ml-2 bg-zinc-900/40 border border-zinc-800/60 pr-3 pl-3 sm:pl-2.5 py-2 sm:py-4 flex flex-col gap-4 sm:gap-5">
+                            <div className="grid grid-cols-2 gap-y-4 gap-x-6">
+                              <div className="space-y-0.5">
+                                <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">Developer</p>
+                                <p className="text-sm text-zinc-300">
+                                  {selectedPreviewGame.involved_companies?.find(c => c.developer)?.company.name || 'Unknown'}
+                                </p>
+                              </div>
+                              <div className="space-y-0.5">
+                                <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">Publisher</p>
+                                <p className="text-sm text-zinc-300">
+                                  {selectedPreviewGame.involved_companies?.find(c => c.publisher)?.company.name || 'Unknown'}
+                                </p>
+                              </div>
+                              <div className="space-y-0.5">
+                                <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">Release Date</p>
+                                <p className="text-sm text-zinc-300">
+                                  {selectedPreviewGame.first_release_date 
+                                    ? new Date(selectedPreviewGame.first_release_date * 1000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+                                    : 'Unknown'}
+                                </p>
+                              </div>
                             </div>
-                          ) : (
-                            <p className="text-zinc-400 text-sm leading-relaxed font-normal line-clamp-4">
-                              {selectedPreviewGame.summary || "No description available for this title."}
-                            </p>
-                          )}
-                        </div>
-                      </div>
+
+                            <div className="space-y-2">
+                              <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">About this game</p>
+                              <p className="text-zinc-400 text-sm leading-relaxed font-normal line-clamp-4">
+                                {selectedPreviewGame.summary || "No description available for this title."}
+                              </p>
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
 
                   <div className="mt-auto pt-6 border-t border-zinc-800 flex flex-col sm:flex-row gap-3 pb-1 sm:pb-2.5">
                     <button
                       onClick={() => handleAddGame(selectedPreviewGame, false)}
-                      disabled={addingState !== 'idle'}
+                      disabled={addingState !== 'idle' || isLoadingDetails}
                       className="flex-1 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-zinc-300 font-semibold py-3 rounded-xl transition-all active:scale-95 text-sm order-2 sm:order-1 flex items-center justify-center gap-2"
                     >
                       {addingState === 'adding' ? (
@@ -299,7 +300,7 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
                     </button>
                     <button
                       onClick={() => handleAddGame(selectedPreviewGame, true)}
-                      disabled={addingState !== 'idle'}
+                      disabled={addingState !== 'idle' || isLoadingDetails}
                       style={{ 
                         background: buttonGradient || undefined,
                         color: buttonTextColor || undefined
@@ -361,7 +362,7 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
                           onClick={() => addingState === 'idle' && handlePreviewGame(game)}
                           className="w-full flex items-center gap-4 p-3 sm:p-4 hover:bg-zinc-800/80 rounded-2xl transition-colors text-left group cursor-pointer border border-transparent hover:border-zinc-700/50"
                         >
-                          <div className="w-14 sm:w-16 aspect-[3/4] bg-zinc-800 rounded-md overflow-hidden shrink-0 flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.35)] relative">
+                          <div className="w-14 sm:w-16 aspect-[264/374] bg-zinc-800 rounded-md overflow-hidden shrink-0 flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.35)] relative">
                             <div className="absolute inset-0 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.15)] rounded-md z-20 pointer-events-none" />
                             {game.cover?.image_id ? (
                               <img 

@@ -212,13 +212,13 @@ export default function HomeView() {
                   <div 
                     key={slot}
                     onClick={() => setActiveSlot(slot)}
-                    className="relative aspect-[3/4] rounded-2xl border-2 border-dashed border-zinc-800 bg-zinc-950/50 flex flex-col items-center justify-center cursor-pointer group/slot transition-all duration-300 hover:-translate-y-2 hover:border-amber-400/50 hover:bg-amber-400/5 hover:shadow-[0_8px_30px_rgb(251,191,36,0.1)] overflow-hidden"
+                    className="relative aspect-[264/374] rounded-2xl border-2 border-dashed border-zinc-800 bg-zinc-950/50 flex flex-col items-center justify-center cursor-pointer group/slot transition-all duration-300 hover:-translate-y-2 hover:border-amber-400/50 hover:bg-amber-400/5 hover:shadow-[0_8px_30px_rgb(251,191,36,0.1)] overflow-hidden"
                   >
                     {game ? (
                       <>
                         {game.coverId ? (
                           <img 
-                            src={`https://images.igdb.com/igdb/image/upload/t_cover_big/${game.coverId}.jpg`}
+                            src={`https://images.igdb.com/igdb/image/upload/t_720p/${game.coverId}.jpg`}
                             alt={game.name}
                             className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/slot:scale-110"
                           />

@@ -111,7 +111,7 @@ export default function IGDBGameView() {
   const onAddGame = async () => {
     if (!game) return;
     const coverUrl = game.cover?.image_id 
-      ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${game.cover.image_id}.jpg`
+      ? `https://images.igdb.com/igdb/image/upload/t_720p/${game.cover.image_id}.jpg`
       : undefined;
     
     // We navigate to dashboard so the user can easily click the game from there, 
@@ -155,7 +155,7 @@ export default function IGDBGameView() {
     ? `https://images.igdb.com/igdb/image/upload/t_1080p/${game.screenshots[0].image_id}.jpg`
     : null;
   const coverImage = game.cover?.image_id
-    ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${game.cover.image_id}.jpg`
+    ? `https://images.igdb.com/igdb/image/upload/t_720p/${game.cover.image_id}.jpg`
     : null;
 
   return (
@@ -195,7 +195,7 @@ export default function IGDBGameView() {
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="w-48 md:w-full aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl border border-zinc-800 bg-zinc-900 mb-6"
+              className="w-48 md:w-full aspect-[264/374] rounded-2xl overflow-hidden shadow-2xl border border-zinc-800 bg-zinc-900 mb-6"
             >
               {coverImage ? (
                 <img src={coverImage} alt={game.name} className="w-full h-full object-cover" />

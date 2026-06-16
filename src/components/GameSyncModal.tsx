@@ -122,11 +122,11 @@ export default function GameSyncModal({ gameToSync, onClose, onConfirmSync }: Ga
                   
                   <div className="p-6 flex-1 overflow-y-auto">
                     <div className="flex flex-col sm:flex-row gap-6">
-                      <div className="w-full sm:w-48 aspect-[3/4] bg-zinc-800 rounded-md overflow-hidden shrink-0 shadow-[0_1px_3px_rgba(0,0,0,0.35)] relative mt-0">
+                      <div className="w-full sm:w-48 aspect-[264/374] bg-zinc-800 rounded-md overflow-hidden shrink-0 shadow-[0_1px_3px_rgba(0,0,0,0.35)] relative mt-0">
                         <div className="absolute inset-0 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.15)] rounded-md z-20 pointer-events-none" />
                         {selectedGameForSync.cover?.image_id ? (
                           <img 
-                            src={`https://images.igdb.com/igdb/image/upload/t_cover_big/${selectedGameForSync.cover.image_id}.jpg`}
+                            src={`https://images.igdb.com/igdb/image/upload/t_720p/${selectedGameForSync.cover.image_id}.jpg`}
                             alt={selectedGameForSync.name}
                             className="w-full h-full object-cover"
                           />
@@ -210,7 +210,7 @@ export default function GameSyncModal({ gameToSync, onClose, onConfirmSync }: Ga
                             onClick={() => setSelectedGameForSync(game)}
                             className="w-full flex items-center gap-4 p-3 sm:p-4 hover:bg-zinc-800/80 rounded-2xl transition-colors text-left group cursor-pointer border border-transparent hover:border-zinc-700/50"
                           >
-                            <div className="w-14 sm:w-16 aspect-[3/4] bg-zinc-800 rounded-md overflow-hidden shrink-0 flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.35)] relative">
+                            <div className="w-14 sm:w-16 aspect-[264/374] bg-zinc-800 rounded-md overflow-hidden shrink-0 flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.35)] relative">
                               <div className="absolute inset-0 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.15)] rounded-md z-20 pointer-events-none" />
                               {game.cover?.image_id ? (
                                 <img 
