@@ -14,6 +14,20 @@ export default function DashboardView() {
   const { user } = useAuth();
   const { navigateTo } = useUI();
   const [layout, setLayout] = useState<'3col' | '2col' | '3col-art'>('3col');
+  const [displayLayout, setDisplayLayout] = useState<'3col' | '2col' | '3col-art'>('3col');
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  const handleLayoutChange = (newLayout: '3col' | '2col' | '3col-art') => {
+    if (layout === newLayout || isTransitioning) return;
+    setIsTransitioning(true);
+    setLayout(newLayout);
+    
+    setTimeout(() => {
+      setDisplayLayout(newLayout);
+      setIsTransitioning(false);
+    }, 400);
+  };
+
   const {
     games,
     gamesLimit,
@@ -197,7 +211,7 @@ export default function DashboardView() {
         <div className="flex gap-3">
           <div className="flex bg-zinc-900 border border-zinc-800 rounded-full p-1 self-center hidden sm:flex">
             <button
-              onClick={() => setLayout('2col')}
+              onClick={() => handleLayoutChange('2col')}
               className={`p-1.5 rounded-full transition-all ${layout === '2col' ? 'bg-zinc-800 text-amber-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
               title="2 Column Layout"
             >
@@ -207,7 +221,7 @@ export default function DashboardView() {
               </div>
             </button>
             <button
-              onClick={() => setLayout('3col')}
+              onClick={() => handleLayoutChange('3col')}
               className={`p-1.5 rounded-full transition-all ${layout === '3col' ? 'bg-zinc-800 text-amber-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
               title="3 Column Layout"
             >
@@ -218,7 +232,7 @@ export default function DashboardView() {
               </div>
             </button>
             <button
-              onClick={() => setLayout('3col-art')}
+              onClick={() => handleLayoutChange('3col-art')}
               className={`p-1.5 rounded-full transition-all ${layout === '3col-art' ? 'bg-zinc-800 text-amber-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
               title="3 Column Layout with Art"
             >
@@ -240,24 +254,44 @@ export default function DashboardView() {
       </div>
 
       <div className={`grid ${layout === '3col-art' ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-2 sm:gap-x-3 gap-y-3 sm:gap-y-4' : `grid-cols-1 sm:grid-cols-2 ${layout.startsWith('3col') ? 'lg:grid-cols-3' : 'lg:grid-cols-2'} gap-3 sm:gap-4 lg:gap-6`}`}>
-        {games.map(game => (
-          layout === '3col-art' ? (
+        {isTransitioning ? (
+          games.map(game => (
+            <div 
+              key={`skeleton-${game.id}`} 
+              className={`bg-zinc-800/50 animate-pulse ${layout === '3col-art' ? 'aspect-[264/374] rounded-md' : 'h-[160px] rounded-3xl'}`}
+            />
+          ))
+        ) : (
+          games.map(game => (
+            displayLayout === '3col-art' ? (
             <div 
               key={game.id}
               onClick={() => resumeOrCreateSession(game)}
-              className={`relative group aspect-[264/374] bg-zinc-900 rounded-md overflow-hidden cursor-pointer transition-all hover:scale-105 block shadow-[0_1px_3px_rgba(0,0,0,0.35)] ${justAddedGameId === game.id ? 'ring-2 ring-amber-400 animate-pulse shadow-[0_0_15px_rgba(251,191,36,0.3)]' : ''}`}
+              className={`relative group aspect-[264/374] rounded-md cursor-pointer transition-all block shadow-[0_1px_3px_rgba(0,0,0,0.35)] animate-in fade-in duration-300 ${justAddedGameId === game.id ? 'ring-2 ring-amber-400 animate-pulse shadow-[0_0_15px_rgba(251,191,36,0.3)]' : ''}`}
             >
-              <div className="absolute inset-0 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.15)] rounded-md z-20 pointer-events-none" />
-              {game.coverUrl ? (
-                <img src={game.coverUrl.replace('t_cover_big', 't_720p')} alt={game.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-800 text-zinc-500 font-bold p-4 text-center">
-                  <Gamepad2 className="w-8 h-8 mb-2 opacity-30" />
-                  <span className="text-xs leading-tight opacity-70">{game.title}</span>
+              {/* Tooltip */}
+              <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity duration-200 delay-[500ms] group-hover:delay-[500ms] bottom-full mb-3 left-1/2 -translate-x-1/2 z-[100] pointer-events-none whitespace-nowrap">
+                <div className="relative bg-[#1f2326] text-zinc-100 text-xs font-semibold px-2.5 py-1.5 rounded shadow-xl border border-zinc-700/50">
+                  {game.title}
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-[5px] border-transparent border-t-zinc-700/50">
+                    <div className="absolute -top-[6px] -left-[4px] border-[4px] border-transparent border-t-[#1f2326]" />
+                  </div>
                 </div>
-              )}
+              </div>
+
+              <div className="absolute inset-0 bg-zinc-900 rounded-md overflow-hidden transition-transform duration-300 group-hover:scale-105">
+                <div className="absolute inset-0 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.15)] rounded-md z-20 pointer-events-none" />
+                {game.coverUrl ? (
+                  <BlurRevealImage url={game.coverUrl.replace('t_cover_big', 't_720p')} alt={game.title} className="w-full h-full object-cover transition-all duration-700 hover:scale-105" />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-800 text-zinc-500 font-bold p-4 text-center">
+                    <Gamepad2 className="w-8 h-8 mb-2 opacity-30" />
+                    <span className="text-xs leading-tight opacity-70">{game.title}</span>
+                  </div>
+                )}
+              </div>
               
-              <div className="absolute top-3 right-3 z-30">
+              <div className="absolute top-3 right-3 z-30 transition-transform duration-300 group-hover:scale-105">
                 <div className={`transition-all duration-300 transform ${openMenuId === game.id ? 'opacity-100 scale-100' : 'opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100'}`}>
                   {game.status === 'completed' && (
                     <span className="flex items-center justify-center w-8 h-8 bg-black/50 backdrop-blur-md rounded-full border border-amber-400/30 text-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.3)]">
@@ -267,18 +301,8 @@ export default function DashboardView() {
                 </div>
               </div>
 
-              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20 flex flex-col justify-end p-4">
-                <div className="translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                  <h3 className="text-white font-bold text-sm sm:text-base line-clamp-2 mb-1">{game.title}</h3>
-                  <p className="text-zinc-400 text-xs flex items-center gap-1">
-                    <Clock className="w-3 h-3 flex-shrink-0" />
-                    <span className="truncate">{format(game.updatedAt, 'MMM d')}</span>
-                  </p>
-                </div>
-              </div>
-              
               {/* Ellipse Menu triggered on hover */}
-              <div className={`absolute top-2 left-2 z-30 flex items-center justify-center transition-opacity duration-300 ${openMenuId === game.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+              <div className={`absolute top-2 left-2 z-30 flex items-center justify-center transition-all duration-300 group-hover:scale-105 ${openMenuId === game.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                 <button
                   onClick={(e) => toggleMenu(e, game.id)}
                   className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-md hover:bg-black/80 flex items-center justify-center text-white transition-colors border border-white/10"
@@ -327,7 +351,7 @@ export default function DashboardView() {
             <div 
               key={game.id}
               onClick={() => resumeOrCreateSession(game)}
-              className={`relative group bg-zinc-900 border ${justAddedGameId === game.id ? 'border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.2)] animate-pulse' : 'border-zinc-800 hover:border-zinc-700 hover:shadow-xl'} rounded-3xl p-6 text-left transition-all flex flex-col cursor-pointer hover:-translate-y-1 h-full`}
+              className={`relative group bg-zinc-900 border ${justAddedGameId === game.id ? 'border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.2)] animate-pulse' : 'border-zinc-800 hover:border-zinc-700 hover:shadow-xl'} rounded-3xl p-6 text-left transition-all flex flex-col cursor-pointer hover:-translate-y-1 h-full animate-in fade-in duration-300`}
             >
               <div className="flex justify-between items-start mb-4">
                 <div className="w-12 h-12 bg-zinc-800 rounded-2xl flex items-center justify-center group-hover:bg-zinc-700 transition-colors duration-500 group-hover:delay-[150ms]">
@@ -415,7 +439,7 @@ export default function DashboardView() {
               </button>
             </div>
           )
-        ))}
+        )))}
         
         {games.length === 0 && !isAddingGame && (
           <div className="col-span-full py-32 text-center border-2 border-dashed border-zinc-800 rounded-3xl flex flex-col items-center justify-center gap-4">
@@ -480,5 +504,55 @@ export default function DashboardView() {
         </div>
       )}
     </div>
+  );
+}
+
+function BlurRevealImage({ url, alt, className }: { url: string, alt: string, className?: string }) {
+  const [loaded, setLoaded] = useState(false);
+  const imgRef = React.useRef<HTMLImageElement>(null);
+  
+  // Random delay between 0 and 600ms
+  const [delay] = useState(() => Math.floor(Math.random() * 600));
+  const [transitionDone, setTransitionDone] = useState(false);
+
+  const handleImageLoaded = () => {
+    // Wait a tiny bit before triggering the transition to ensure the initial blurry state has rendered
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setLoaded(true);
+      });
+    });
+  };
+
+  React.useEffect(() => {
+    if (imgRef.current?.complete) {
+      handleImageLoaded();
+    }
+  }, [url]);
+
+  React.useEffect(() => {
+    if (loaded) {
+      const timer = setTimeout(() => {
+        setTransitionDone(true);
+      }, delay + 700); // Wait for delay + transition duration
+      return () => clearTimeout(timer);
+    }
+  }, [loaded, delay]);
+  
+  return (
+    <>
+      <div 
+        className={`absolute inset-0 bg-zinc-800 transition-opacity duration-700 z-10 pointer-events-none ${loaded ? 'opacity-0' : 'animate-pulse'}`} 
+        style={{ transitionDelay: loaded ? `${delay}ms` : '0ms' }}
+      />
+      <img
+        ref={imgRef}
+        src={url}
+        alt={alt}
+        onLoad={handleImageLoaded}
+        className={`${className || ''} ${loaded ? 'opacity-100 blur-none' : 'opacity-0 blur-md'}`}
+        style={{ transitionDelay: transitionDone ? '0ms' : `${loaded ? delay : 0}ms` }}
+      />
+    </>
   );
 }

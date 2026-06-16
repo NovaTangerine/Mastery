@@ -38,6 +38,8 @@ import ProfileView from './views/ProfileView';
 import IGDBGameView from './views/IGDBGameView';
 
 import PrototypeLandingView from './views/PrototypeLandingView';
+import TransitionMockupView from './views/TransitionMockupView';
+import ImageLoadingMockupView from './views/ImageLoadingMockupView';
 
 // --- Components ---
 
@@ -144,14 +146,38 @@ function MainApp() {
                   </button>
 
                   {cartridgeUnlocked && (
-                    <button 
-                      onClick={() => { clearHistory(); navigateTo('home', null, null); }}
-                      className={`flex items-center gap-2 transition-colors ${view === 'home' ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
-                      title="Cartridge"
-                    >
-                      <Archive className="w-5 h-5" />
-                      <span className="hidden sm:block font-medium text-sm">Cartridge</span>
-                    </button>
+                    <div className="relative group">
+                      <button 
+                        className="flex items-center gap-2 text-amber-500 hover:text-amber-400 transition-colors"
+                        title="Dev Tools"
+                      >
+                        <Archive className="w-5 h-5" />
+                        <span className="hidden sm:block font-medium text-sm">Dev Tools</span>
+                        <ChevronDown className="w-4 h-4 opacity-70" />
+                      </button>
+                      
+                      {/* Dropdown Menu */}
+                      <div className="absolute top-full left-0 mt-2 w-48 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all flex flex-col overflow-hidden z-50">
+                        <button 
+                          onClick={() => { clearHistory(); navigateTo('home', null, null); }}
+                          className={`px-4 py-2 text-left text-sm transition-colors ${view === 'home' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                        >
+                          Cartridge Home
+                        </button>
+                        <button 
+                          onClick={() => { clearHistory(); navigateTo('transition-mockups', null, null); }}
+                          className={`px-4 py-2 text-left text-sm transition-colors ${view === 'transition-mockups' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                        >
+                          Transition Mockups
+                        </button>
+                        <button 
+                          onClick={() => { clearHistory(); navigateTo('image-loading-mockups', null, null); }}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 ${view === 'image-loading-mockups' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                        >
+                          Box Art Mockups
+                        </button>
+                      </div>
+                    </div>
                   )}
                   
                   {selectedGame && (
@@ -171,7 +197,13 @@ function MainApp() {
                   className="flex-1 self-stretch cursor-default"
                   onClick={() => {
                     const newCount = cartridgeClickCount + 1;
-                    if (newCount >= 4) setCartridgeUnlocked(true);
+                    if (newCount === 5) {
+                      setCartridgeUnlocked(true);
+                    } else if (newCount >= 10) {
+                      setCartridgeUnlocked(false);
+                      setCartridgeClickCount(0);
+                      return;
+                    }
                     setCartridgeClickCount(newCount);
                   }}
                 />
@@ -281,6 +313,8 @@ function MainApp() {
             {view === 'note-editor' && <NoteEditorView />}
             {view === 'profile' && <ProfileView />}
             {view === 'igdb-game' && <IGDBGameView />}
+            {view === 'transition-mockups' && <TransitionMockupView />}
+            {view === 'image-loading-mockups' && <ImageLoadingMockupView />}
           </div>
         </main>
 
