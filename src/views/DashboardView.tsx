@@ -331,7 +331,7 @@ export default function DashboardView() {
               </div>
               
               {/* Hover Border Effect */}
-              <div className="absolute inset-0 z-30 rounded-md pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-[inset_0_0_0_2px_rgba(255,255,255,1)]" />
+              <div className="absolute inset-0 z-30 rounded-md pointer-events-none transition-all duration-[150ms] ease-out shadow-[inset_0_0_0_0px_rgba(255,255,255,1)] group-hover:shadow-[inset_0_0_0_2.5px_rgba(255,255,255,1)]" />
               
               <div className="absolute top-3 right-3 z-30">
                 <div className={`transition-all duration-300 transform ${openMenuId === game.id ? 'opacity-100 scale-100' : 'opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100'}`}>

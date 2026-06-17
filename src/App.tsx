@@ -41,6 +41,7 @@ import PrototypeLandingView from './views/PrototypeLandingView';
 import TransitionMockupView from './views/TransitionMockupView';
 import ImageLoadingMockupView from './views/ImageLoadingMockupView';
 import HoverEffectMockupView from './views/HoverEffectMockupView';
+import BackgroundTextureMockupView from './views/BackgroundTextureMockupView';
 
 // --- Components ---
 
@@ -183,6 +184,12 @@ function MainApp() {
                         >
                           Hover Effect Mockups
                         </button>
+                        <button 
+                          onClick={() => { clearHistory(); navigateTo('texture-mockups', null, null); }}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 rounded-b-xl ${view === 'texture-mockups' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                        >
+                          Background Textures
+                        </button>
                       </div>
                     </div>
                   )}
@@ -323,6 +330,7 @@ function MainApp() {
             {view === 'transition-mockups' && <TransitionMockupView />}
             {view === 'image-loading-mockups' && <ImageLoadingMockupView />}
             {view === 'hover-effect-mockups' && <HoverEffectMockupView />}
+            {view === 'texture-mockups' && <BackgroundTextureMockupView />}
           </div>
         </main>
 
