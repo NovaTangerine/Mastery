@@ -42,6 +42,7 @@ import TransitionMockupView from './views/TransitionMockupView';
 import ImageLoadingMockupView from './views/ImageLoadingMockupView';
 import HoverEffectMockupView from './views/HoverEffectMockupView';
 import BackgroundTextureMockupView from './views/BackgroundTextureMockupView';
+import PillNavMockupView from './views/PillNavMockupView';
 
 // --- Components ---
 
@@ -119,8 +120,7 @@ function MainApp() {
         {view !== 'note-editor' && (
           <div className="shrink-0 z-50 flex flex-col relative">
             <header 
-              className={`bg-zinc-950/10 border-b ${view === 'dashboard' ? 'border-transparent' : 'border-zinc-900'} px-4 sm:px-6 py-4 relative flex items-center min-h-[73px] transition-all duration-300 ease-out`}
-              style={{ backdropFilter: `blur(${headerBlur})`, WebkitBackdropFilter: `blur(${headerBlur})` }}
+              className={`border-b ${view === 'dashboard' ? 'border-transparent' : 'border-zinc-900'} px-4 sm:px-6 py-4 relative flex items-center min-h-[73px] transition-all duration-300 ease-out`}
             >
               
               {/* Standard Navbar (Hidden on mobile/tablet in session-view) */}
@@ -186,9 +186,15 @@ function MainApp() {
                         </button>
                         <button 
                           onClick={() => { clearHistory(); navigateTo('texture-mockups', null, null); }}
-                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 rounded-b-xl ${view === 'texture-mockups' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 ${view === 'texture-mockups' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
                         >
                           Background Textures
+                        </button>
+                        <button 
+                          onClick={() => { clearHistory(); navigateTo('pill-nav-mockups', null, null); }}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 rounded-b-xl ${view === 'pill-nav-mockups' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                        >
+                          Pill Nav Bar
                         </button>
                       </div>
                     </div>
@@ -293,8 +299,7 @@ function MainApp() {
           {/* Back Bar */}
           {view === 'profile' && (
             <div 
-              className={`w-full bg-zinc-950/10 transition-all duration-300 ease-in-out overflow-hidden ${isBackBarVisible ? 'max-h-16 border-b border-zinc-900 opacity-100' : 'max-h-0 border-transparent opacity-0'}`}
-              style={{ backdropFilter: `blur(${headerBlur})`, WebkitBackdropFilter: `blur(${headerBlur})` }}
+              className={`w-full transition-all duration-300 ease-in-out overflow-hidden ${isBackBarVisible ? 'max-h-16 border-b border-zinc-900 opacity-100' : 'max-h-0 border-transparent opacity-0'}`}
             >
               <div className="px-6 py-2">
                 <div className="mx-auto flex items-center justify-between max-w-6xl">
@@ -331,6 +336,7 @@ function MainApp() {
             {view === 'image-loading-mockups' && <ImageLoadingMockupView />}
             {view === 'hover-effect-mockups' && <HoverEffectMockupView />}
             {view === 'texture-mockups' && <BackgroundTextureMockupView />}
+            {view === 'pill-nav-mockups' && <PillNavMockupView />}
           </div>
         </main>
 

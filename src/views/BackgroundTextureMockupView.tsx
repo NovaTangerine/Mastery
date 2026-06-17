@@ -59,6 +59,14 @@ const TEXTURES = [
     style: {
       backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h40v40H0V0zm20 20c-5.52 0-10-4.48-10-10S14.48 0 20 0s10 4.48 10 10-4.48 10-10 10zm0 20c-5.52 0-10-4.48-10-10s4.48-10 10-10 10 4.48 10 10-4.48 10-10 10zM20 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm0 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z' fill='%23ffffff' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E")`
     }
+  },
+  {
+    id: 'dense-contours',
+    name: 'Dense Contours / Fingerprint',
+    description: 'Organic, close topographic lines',
+    style: {
+      backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='fingerprint'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.007' numOctaves='3' stitchTiles='stitch' result='noise'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='noise' scale='120' xChannelSelector='R' yChannelSelector='G'/%3E%3C/filter%3E%3Cpattern id='lines' width='12' height='12' patternUnits='userSpaceOnUse'%3E%3Cpath d='M0,6 H12' stroke='%23ffffff' stroke-width='1'/%3E%3C/pattern%3E%3Crect width='400' height='400' fill='url(%23lines)' filter='url(%23fingerprint)'/%3E%3C/svg%3E")`
+    }
   }
 ];
 
