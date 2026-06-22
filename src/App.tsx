@@ -43,6 +43,9 @@ import ImageLoadingMockupView from './views/ImageLoadingMockupView';
 import HoverEffectMockupView from './views/HoverEffectMockupView';
 import BackgroundTextureMockupView from './views/BackgroundTextureMockupView';
 import PillNavMockupView from './views/PillNavMockupView';
+import ImageRevealLogicMockupView from './views/ImageRevealLogicMockupView';
+import LightModeLibraryMockupView from './views/LightModeLibraryMockupView';
+import SessionListMockupView from './views/SessionListMockupView';
 
 // --- Components ---
 
@@ -104,7 +107,7 @@ function MainApp() {
   return (
     <ErrorBoundary>
       <div className="h-[100dvh] flex flex-col bg-zinc-950 text-zinc-100 font-sans selection:bg-zinc-100 selection:text-zinc-950 relative">
-        {view === 'dashboard' && (
+        {(view === 'dashboard' || view === 'session-view') && (
           <div className="absolute inset-x-0 top-0 h-[800px] pointer-events-none bg-[radial-gradient(ellipse_150%_100%_at_50%_0%,rgba(39,39,42,0.5)_0%,rgba(9,9,11,0)_100%)] z-0" />
         )}
         <Toaster position="top-center" theme="dark" />
@@ -192,9 +195,27 @@ function MainApp() {
                         </button>
                         <button 
                           onClick={() => { clearHistory(); navigateTo('pill-nav-mockups', null, null); }}
-                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 rounded-b-xl ${view === 'pill-nav-mockups' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 ${view === 'pill-nav-mockups' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
                         >
                           Pill Nav Bar
+                        </button>
+                        <button 
+                          onClick={() => { clearHistory(); navigateTo('image-reveal-logic', null, null); }}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 ${view === 'image-reveal-logic' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                        >
+                          Image Reveal Logic
+                        </button>
+                        <button 
+                          onClick={() => { clearHistory(); navigateTo('light-mode-library-mockup', null, null); }}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 ${view === 'light-mode-library-mockup' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                        >
+                          Light Theme Library
+                        </button>
+                        <button 
+                          onClick={() => { clearHistory(); navigateTo('session-list-mockup', null, null); }}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 rounded-b-xl ${view === 'session-list-mockup' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                        >
+                          Session List UI
                         </button>
                       </div>
                     </div>
@@ -337,6 +358,9 @@ function MainApp() {
             {view === 'hover-effect-mockups' && <HoverEffectMockupView />}
             {view === 'texture-mockups' && <BackgroundTextureMockupView />}
             {view === 'pill-nav-mockups' && <PillNavMockupView />}
+            {view === 'image-reveal-logic' && <ImageRevealLogicMockupView />}
+            {view === 'light-mode-library-mockup' && <LightModeLibraryMockupView />}
+            {view === 'session-list-mockup' && <SessionListMockupView />}
           </div>
         </main>
 
