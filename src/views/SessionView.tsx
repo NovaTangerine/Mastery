@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Plus, BookOpen, Clock, PenLine, X, Send, ChevronRight, Trash2, List, LayoutDashboard, ChevronUp, ChevronDown, Tag as TagIcon, MoreVertical, ArrowUpDown } from 'lucide-react';
+import { Plus, Minus, BookOpen, Clock, PenLine, X, Send, ChevronRight, Trash2, List, LayoutDashboard, ChevronUp, ChevronDown, Tag as TagIcon, MoreVertical, ArrowUpDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence, LayoutGroup } from 'motion/react';
 import {
@@ -268,6 +268,27 @@ function SidebarSessionItem({ session, ctx }: any) {
   );
 }
 
+const decimalToHoursStr = (decimalVal?: number | null | string): string => {
+  if (decimalVal === undefined || decimalVal === null || decimalVal === '') return '';
+  const val = typeof decimalVal === 'string' ? parseFloat(decimalVal) : decimalVal;
+  if (isNaN(val)) return '';
+  const h = Math.floor(val);
+  const m = Math.round((val - h) * 60);
+  return `${h}:${m.toString().padStart(2, '0')}`;
+};
+
+const hoursStrToDecimalStr = (valStr: string): string => {
+  if (!valStr) return '';
+  if (valStr.includes(':')) {
+    const [hStr, mStr] = valStr.split(':');
+    const h = parseInt(hStr) || 0;
+    const m = parseInt(mStr) || 0;
+    return (h + (m / 60)).toString();
+  }
+  const parsed = parseFloat(valStr);
+  return isNaN(parsed) ? '' : parsed.toString();
+};
+
 export default function SessionView() {
   const { goBack, navigateTo } = useUI();
   const { 
@@ -521,7 +542,7 @@ export default function SessionView() {
       if (activeSession) {
         setSessionNameInput(activeSession.name || '');
         setSessionChapterInput(activeSession.chapter || '');
-        setSessionHoursInput(activeSession.hoursPlayed ? activeSession.hoursPlayed.toString() : '');
+        setSessionHoursInput(decimalToHoursStr(activeSession.hoursPlayed));
         setSessionGroupIdInput(activeSession.groupId);
         setIsEditingSessionDetails(true);
         // Switch to the notes tab so the details form is visible on mobile
@@ -721,7 +742,7 @@ export default function SessionView() {
       }
     }
 
-    await handleUpdateSessionDetails(sessionNameInput, sessionChapterInput, sessionHoursInput, finalGroupId === undefined ? '' : finalGroupId);
+    await handleUpdateSessionDetails(sessionNameInput, sessionChapterInput, hoursStrToDecimalStr(sessionHoursInput), finalGroupId === undefined ? '' : finalGroupId);
     setIsEditingSessionDetails(false);
     setIsCreatingNewGroup(false);
     setNewGroupNameInput('');
@@ -1374,7 +1395,7 @@ export default function SessionView() {
                   {activeSession.hoursPlayed && (
                     <div className="flex items-center gap-1.5 shrink-0">
                       <Clock className="w-3.5 h-3.5 text-zinc-500" />
-                      {activeSession.hoursPlayed} hrs
+                      {decimalToHoursStr(activeSession.hoursPlayed)} hrs
                     </div>
                   )}
                 </div>
@@ -1388,7 +1409,7 @@ export default function SessionView() {
                     } else {
                       setSessionNameInput(activeSession.name || '');
                       setSessionChapterInput(activeSession.chapter || '');
-                      setSessionHoursInput(activeSession.hoursPlayed ? activeSession.hoursPlayed.toString() : '');
+                      setSessionHoursInput(decimalToHoursStr(activeSession.hoursPlayed));
                       setSessionGroupIdInput(activeSession.groupId);
                       setIsEditingSessionDetails(true);
                     }
@@ -1436,14 +1457,37 @@ export default function SessionView() {
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Hours Played</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={sessionHoursInput}
-                    onChange={(e) => setSessionHoursInput(e.target.value)}
-                    placeholder="e.g. 2.5"
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-zinc-600 transition-colors"
-                  />
+                  <div className="flex items-center gap-2">
+                    <button 
+                      type="button"
+                      onClick={() => setSessionHoursInput(prev => {
+                         const current = parseFloat(hoursStrToDecimalStr(prev || '0')) || 0;
+                         const next = Math.max(0, current - 0.25);
+                         return decimalToHoursStr(next);
+                      })}
+                      className="w-10 h-10 shrink-0 bg-zinc-950 border border-zinc-800 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+                    <input
+                      type="text"
+                      value={sessionHoursInput}
+                      onChange={(e) => setSessionHoursInput(e.target.value)}
+                      placeholder="H:MM"
+                      className="w-full text-center bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-zinc-600 transition-colors"
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setSessionHoursInput(prev => {
+                         const current = parseFloat(hoursStrToDecimalStr(prev || '0')) || 0;
+                         const next = current + 0.25;
+                         return decimalToHoursStr(next);
+                      })}
+                      className="w-10 h-10 shrink-0 bg-zinc-950 border border-zinc-800 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Session Group</label>

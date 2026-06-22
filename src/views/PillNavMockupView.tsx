@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { useUI } from '../contexts/UIContext';
-import { useGameContext } from '../contexts/GameContext';
 import { ArrowLeft, Search, User, Gamepad2, Bell, Library, LayoutGrid, Rows3, GalleryHorizontal, Plus, Filter, SortDesc } from 'lucide-react';
 import DashboardView from './DashboardView';
 
 export default function PillNavMockupView() {
   const { navigateTo } = useUI();
-  const { isAddingGame, setIsAddingGame } = useGameContext();
+  const [isAddingGame, setIsAddingGame] = useState(false);
   const [activeTab, setActiveTab] = useState('library');
   const [viewLayout, setViewLayout] = useState<'grid' | 'list' | 'gallery'>('grid');
   const [isLayoutDropdownOpen, setIsLayoutDropdownOpen] = useState(false);

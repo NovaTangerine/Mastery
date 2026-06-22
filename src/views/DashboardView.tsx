@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Gamepad2, Clock, Play, X, Trophy, MoreVertical, Trash2, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
@@ -44,6 +44,15 @@ export default function DashboardView() {
   const [deleteInfo, setDeleteInfo] = useState<{ sessions: number, notes: number } | null>(null);
   const [isCheckingDelete, setIsCheckingDelete] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  const shuffledIndices = React.useMemo(() => {
+    const indices = Array.from({ length: games.length }).map((_, i) => i);
+    for (let i = indices.length - 1; i > 0; i--) {
+       const j = Math.floor(Math.random() * (i + 1));
+       [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    return indices;
+  }, [games.length]);
 
   // --- Smart Tooltip State ---
   const [hoveredGameId, setHoveredGameId] = useState<string | null>(null);
@@ -297,7 +306,7 @@ export default function DashboardView() {
             />
           ))
         ) : (
-          games.map(game => (
+          games.map((game, index) => (
             displayLayout === '3col-art' ? (
             <div 
               key={game.id}
@@ -321,7 +330,12 @@ export default function DashboardView() {
               <div className="absolute inset-0 bg-zinc-900 rounded-md overflow-hidden">
                 <div className="absolute inset-0 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.15)] rounded-md z-20 pointer-events-none" />
                 {game.coverUrl ? (
-                  <BlurRevealImage url={game.coverUrl.replace('t_cover_big', 't_720p')} alt={game.title} className="w-full h-full object-cover transition-all duration-700 ease-out group-hover:scale-[1.03]" />
+                  <BlurRevealImage 
+                    url={game.coverUrl.replace('t_cover_big', 't_720p')} 
+                    alt={game.title} 
+                    className="w-full h-full object-cover transition-all duration-700 ease-out group-hover:scale-[1.03]" 
+                    revealDelay={(shuffledIndices[index] || 0) * 40}
+                  />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-800 text-zinc-500 font-bold p-4 text-center transition-all duration-700 ease-out group-hover:scale-[1.03]">
                     <Gamepad2 className="w-8 h-8 mb-2 opacity-30" />
@@ -549,12 +563,13 @@ export default function DashboardView() {
   );
 }
 
-function BlurRevealImage({ url, alt, className }: { url: string, alt: string, className?: string }) {
+function BlurRevealImage({ url, alt, className, revealDelay }: { url: string, alt: string, className?: string, revealDelay?: number }) {
   const [loaded, setLoaded] = useState(false);
   const imgRef = React.useRef<HTMLImageElement>(null);
   
-  // Random delay between 0 and 600ms
-  const [delay] = useState(() => Math.floor(Math.random() * 600));
+  // Use passed delay or fallback to random
+  const fallbackDelay = React.useMemo(() => Math.floor(Math.random() * 600), []);
+  const delay = revealDelay !== undefined ? revealDelay : fallbackDelay;
   const [transitionDone, setTransitionDone] = useState(false);
 
   const handleImageLoaded = () => {

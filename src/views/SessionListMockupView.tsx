@@ -4,7 +4,6 @@ import {
   ArrowLeft, Clock, CalendarDays, Plus, Play, MoreHorizontal, ChevronRight, List,
   TagIcon, Target, LayoutDashboard
 } from 'lucide-react';
-import { cn } from '../lib/utils';
 import { motion } from 'framer-motion';
 
 export default function SessionListMockupView() {
@@ -12,7 +11,7 @@ export default function SessionListMockupView() {
   const [activeTab, setActiveTab] = useState<'component' | 'full-page'>('component');
   
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans p-4 sm:p-8 pt-6 relative overflow-hidden flex flex-col">
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans p-4 sm:p-8 pt-6 relative overflow-x-hidden flex flex-col">
       <div className="absolute inset-x-0 top-0 h-[800px] pointer-events-none bg-[radial-gradient(ellipse_150%_100%_at_50%_0%,rgba(39,39,42,0.5)_0%,rgba(9,9,11,0)_100%)] z-0" />
       
       {/* Header and Tabs */}
@@ -206,11 +205,10 @@ export default function SessionListMockupView() {
       )}
 
       {activeTab === 'full-page' && (
-        <div className="flex flex-1 gap-4 max-w-[1600px] mx-auto w-full relative z-10 font-sans h-[calc(100vh-140px)] min-h-0">
-          
+        <div className="flex flex-1 gap-6 max-w-[1600px] mx-auto w-full relative z-10 font-sans h-[calc(100vh-140px)] min-h-0">
           {/* Left Sidebar: Session List Wrapper */}
-          <div className="hidden lg:flex flex-col w-[380px] shrink-0 bg-zinc-900/60 backdrop-blur-md border border-zinc-800/80 rounded-[32px] p-2 sm:p-4 shadow-2xl overflow-y-auto custom-scrollbar">
-            
+          <div className="hidden lg:flex flex-col w-[380px] shrink-0 bg-zinc-900/60 backdrop-blur-md border border-zinc-800/80 rounded-[32px] p-2 sm:p-4 shadow-2xl h-full flex flex-col">
+
             {/* Outer Header */}
             <div className="px-4 py-4 mb-4 flex py-2 items-center justify-between border-b border-zinc-800/50">
               <div className="flex items-center gap-3 text-zinc-100">
@@ -229,7 +227,7 @@ export default function SessionListMockupView() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 pb-8">
+            <div className="flex flex-col gap-3 pb-8 flex-1 overflow-y-auto custom-scrollbar min-h-0 pr-1">
               {/* Group 1 container */}
               <div className="bg-zinc-950/50 border border-zinc-800/80 rounded-[24px] p-2">
                 <div className="px-4 py-3 flex items-center justify-between mb-1">
@@ -243,7 +241,6 @@ export default function SessionListMockupView() {
                     <MoreHorizontal className="w-4 h-4" />
                   </button>
                 </div>
-                
                 <div className="space-y-1">
                   {[
                     { time: 'Today', duration: '2h 15m', title: 'Explored the Northern Wastes', notes: 3, isActive: true },
@@ -283,7 +280,6 @@ export default function SessionListMockupView() {
                     <MoreHorizontal className="w-4 h-4" />
                   </button>
                 </div>
-                
                 <div className="space-y-1">
                   {[
                     { time: 'Apr 24', duration: '1h 30m', title: 'Boss fight attempts at the Great Citadel', notes: 5 },
@@ -324,7 +320,6 @@ export default function SessionListMockupView() {
                     <MoreHorizontal className="w-4 h-4" />
                   </button>
                 </div>
-                
                 <div className="space-y-1">
                   {[
                     { time: 'Mar 28', duration: '2h 45m', title: 'Farming materials in the Dark Woods', notes: 2 }
@@ -349,17 +344,14 @@ export default function SessionListMockupView() {
                   ))}
                 </div>
               </div>
-
             </div>
           </div>
 
           {/* Main Content Area: Active Session Mockup */}
-          <div className="flex-1 flex flex-col bg-zinc-950/80 border border-zinc-800/80 rounded-[32px] overflow-hidden shadow-2xl relative h-full">
-            
-            <div className="absolute inset-0 overflow-y-auto p-6 md:p-8 custom-scrollbar">
-              
+          <div className="flex-1 bg-zinc-950/80 border border-zinc-800/80 rounded-[32px] overflow-hidden shadow-2xl relative">
+            <div className="p-6 md:p-8">
               {/* Main Header inside Active Session */}
-              <div className="flex items-center justify-between mb-8 pb-6 border-b border-zinc-800/50">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 pb-6 border-b border-zinc-800/50 gap-6">
                  <div>
                     <div className="flex items-center gap-3 mb-2">
                       <span className="px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-full text-xs font-bold uppercase tracking-widest shadow-[0_0_10px_rgba(251,191,36,0.1)]">
@@ -371,17 +363,15 @@ export default function SessionListMockupView() {
                     </div>
                     <h1 className="text-3xl font-bold text-white tracking-tight">Explored the Northern Wastes</h1>
                  </div>
-                 <button className="h-12 px-6 rounded-full bg-zinc-100 text-zinc-950 font-bold hover:bg-white inline-flex items-center justify-center transition-transform active:scale-95 shadow-xl">
+                 <button className="h-12 px-6 rounded-full bg-zinc-100 text-zinc-950 font-bold hover:bg-white inline-flex items-center justify-center transition-transform active:scale-95 shadow-xl shrink-0">
                    End Session
                  </button>
               </div>
 
               {/* Session Workspace */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-8">
-                
                 {/* Left Col: Notes */}
                 <div className="lg:col-span-2 space-y-6">
-                   
                    <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-inner relative overflow-hidden">
                      <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
                        <List className="w-32 h-32" />
@@ -407,7 +397,6 @@ export default function SessionListMockupView() {
 
                    <div className="space-y-4">
                       <h3 className="font-bold text-zinc-500 uppercase tracking-widest text-xs px-2">Session Notes</h3>
-                      
                       <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-3xl p-5 hover:bg-zinc-900 transition-colors cursor-text group">
                         <p className="text-zinc-300 leading-relaxed text-[15px]">
                           Found a hidden cave behind the waterfall in the Northern Wastes. Inside, there's a mini-boss that drops the <span className="text-amber-400 font-semibold px-1 bg-amber-400/10 rounded">Frostbite Dagger</span>. Need to come back when I'm level 25.
@@ -418,7 +407,6 @@ export default function SessionListMockupView() {
                           <span className="px-2 py-1 bg-zinc-800 text-zinc-400 rounded-md text-xs font-semibold">#loot</span>
                         </div>
                       </div>
-                      
                       <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-3xl p-5 hover:bg-zinc-900 transition-colors cursor-text group">
                         <p className="text-zinc-300 leading-relaxed text-[15px]">
                           Upgraded the main armor set to Tier 3. Cost 5000 gold and 10 Iron Ore.
@@ -428,12 +416,10 @@ export default function SessionListMockupView() {
                         </div>
                       </div>
                    </div>
-
                 </div>
                 
                 {/* Right Col: Trackers & Tags */}
                 <div className="space-y-6">
-                  
                   {/* Trackers */}
                   <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-5 w-full">
                     <div className="flex items-center justify-between mb-4">
@@ -445,7 +431,6 @@ export default function SessionListMockupView() {
                         <Plus className="w-4 h-4" />
                       </button>
                     </div>
-                    
                     <div className="space-y-3">
                       <div className="bg-zinc-950/50 border border-zinc-800/80 rounded-2xl p-4 flex items-center justify-between">
                         <div>
@@ -494,16 +479,12 @@ export default function SessionListMockupView() {
                        </span>
                     </div>
                   </div>
-
                 </div>
               </div>
-
             </div>
           </div>
-
         </div>
       )}
     </div>
   );
 }
-

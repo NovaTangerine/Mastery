@@ -194,6 +194,12 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
 
       const sessionName = `${format(now, 'MMM d')}, ${timeOfDay} Session`;
 
+      let initialHoursPlayed = undefined;
+      const sortedSessions = [...sessions].sort((a, b) => b.startTime - a.startTime);
+      if (sortedSessions.length > 0 && sortedSessions[0].hoursPlayed) {
+        initialHoursPlayed = sortedSessions[0].hoursPlayed;
+      }
+
       const sessionData: any = {
         name: sessionName,
         gameId: selectedGame.id,
@@ -201,6 +207,9 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
         startTime: now.getTime(),
         progressMarker: 'Starting session'
       };
+      if (initialHoursPlayed !== undefined) {
+        sessionData.hoursPlayed = initialHoursPlayed;
+      }
       if (groupId) {
         sessionData.groupId = groupId;
       }
