@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Plus, Minus, BookOpen, Clock, PenLine, X, Send, ChevronRight, Trash2, List, LayoutDashboard, ChevronUp, ChevronDown, Tag as TagIcon, MoreVertical, ArrowUpDown } from 'lucide-react';
+import { Plus, Minus, BookOpen, Clock, PenLine, X, Send, ChevronRight, Trash2, List, LayoutDashboard, ChevronUp, ChevronDown, Tag as TagIcon, MoreVertical, ArrowUpDown, Play } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence, LayoutGroup } from 'motion/react';
 import {
@@ -192,75 +192,93 @@ function SidebarSessionItem({ session, ctx }: any) {
           className={`flex-1 bg-zinc-950 border border-zinc-800 rounded px-2 py-2 text-sm font-bold focus:outline-none focus:border-zinc-600 min-w-0 ${activeSession?.id === session.id ? 'text-zinc-100' : 'text-zinc-400'}`}
         />
       ) : (
-        <button
+        <div
           onClick={() => {
             handleResumeSession(session);
             scrollToTab('notes');
           }}
-          className={`flex-1 text-left p-3 rounded-xl transition-all min-w-0 h-full flex flex-col justify-center border ${
+          className={`flex-1 p-3 sm:p-4 rounded-2xl transition-all duration-300 flex items-center justify-between cursor-pointer border ${
             activeSession?.id === session.id 
-              ? 'bg-zinc-800 border-zinc-600 shadow-sm' 
-              : activeMenuId === session.id && activeMenuType === 'session'
-                ? 'bg-zinc-900/80 border-zinc-700'
-                : 'bg-zinc-900/40 border-zinc-800/50 hover:bg-zinc-900/80 hover:border-zinc-700'
+              ? 'bg-zinc-800/50 border-zinc-700 shadow-sm'
+              : 'hover:bg-zinc-800/30 border-transparent hover:border-zinc-700/50 lg:opacity-50 lg:group-hover/sidebar:opacity-100'
           }`}
         >
-          <p className={`font-bold text-sm truncate pr-14 ${activeSession?.id === session.id ? 'text-zinc-100' : 'text-zinc-400'}`}>{session.name || session.progressMarker}</p>
-          <p className={`text-[10px] mt-1 ${activeSession?.id === session.id ? 'text-zinc-400' : 'text-zinc-500'}`}>{format(session.startTime, 'MMM d, yyyy')}</p>
-        </button>
-      )}
-      
-      {editingSidebarSessionId !== session.id && editingGroupId === null && (
-        <div className={`absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 transition-opacity bg-zinc-900/90 rounded px-1 ${
-          session.id === activeSession?.id || (activeMenuId === session.id && activeMenuType === 'session')
-            ? 'opacity-100 visible'
-            : 'opacity-0 invisible lg:group-hover/session:opacity-100 lg:group-hover/session:visible'
-        }`}>
-          <div className="relative flex items-center">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (activeMenuId === session.id && activeMenuType === 'session') {
-                  setActiveMenuId(null);
-                  setActiveMenuType(null);
-                } else {
-                  setActiveMenuId(session.id);
-                  setActiveMenuType('session');
-                }
-              }}
-              className={`p-1 rounded ${activeMenuId === session.id && activeMenuType === 'session' ? 'text-zinc-100 bg-zinc-800' : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'}`}
-              title="More Options"
-            >
-              <MoreVertical className="w-3.5 h-3.5" />
-            </button>
-            {activeMenuId === session.id && activeMenuType === 'session' && (
-              <div className="absolute right-0 top-full mt-1 w-32 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl overflow-hidden z-50 py-1" onClick={(e) => e.stopPropagation()}>
+          <div className="flex-1 min-w-0 pr-4">
+            <div className="flex items-center gap-3 mb-1">
+              <span className={`font-semibold text-sm ${activeSession?.id === session.id ? 'text-amber-400' : 'text-zinc-300'}`}>
+                {format(session.startTime, 'MMM d, yyyy')}
+              </span>
+              {(session.hoursPlayed !== undefined && session.hoursPlayed !== null) && (
+                <span className="text-zinc-600 text-xs font-medium">
+                  {decimalToHoursStr(session.hoursPlayed)}
+                </span>
+              )}
+            </div>
+            <p className={`text-sm line-clamp-1 ${activeSession?.id === session.id ? 'text-zinc-300' : 'text-zinc-500'}`}>
+              {session.name || session.progressMarker || 'Unnamed Session'}
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-2 shrink-0">
+            {editingGroupId === null && (
+              <div className={`relative flex items-center transition-opacity bg-zinc-900/90 rounded px-1 ${
+                session.id === activeSession?.id || (activeMenuId === session.id && activeMenuType === 'session')
+                  ? 'opacity-100 visible'
+                  : 'opacity-0 invisible lg:group-hover/session:opacity-100 lg:group-hover/session:visible'
+              }`}>
                 <button
-                  onClick={async (e) => {
+                  onClick={(e) => {
                     e.stopPropagation();
-                    setEditingSidebarSessionId(session.id);
-                    setEditingSidebarSessionName(session.name || session.progressMarker);
-                    setActiveMenuId(null);
-                    setActiveMenuType(null);
+                    if (activeMenuId === session.id && activeMenuType === 'session') {
+                      setActiveMenuId(null);
+                      setActiveMenuType(null);
+                    } else {
+                      setActiveMenuId(session.id);
+                      setActiveMenuType('session');
+                    }
                   }}
-                  className="w-full text-left px-3 py-1.5 text-xs text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 flex items-center gap-2"
+                  className={`p-1.5 rounded-full ${activeMenuId === session.id && activeMenuType === 'session' ? 'text-zinc-100 bg-zinc-700/50' : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700/50'}`}
+                  title="More Options"
                 >
-                  <PenLine className="w-3.5 h-3.5" /> Rename
+                  <MoreVertical className="w-3.5 h-3.5" />
                 </button>
-                <button
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    const notesCount = await getSessionNotesCount(session.id);
-                    setSessionToDelete({ id: session.id, name: session.name || session.progressMarker, notesCount });
-                    setActiveMenuId(null);
-                    setActiveMenuType(null);
-                  }}
-                  className="w-full text-left px-3 py-1.5 text-xs text-red-500 hover:text-red-400 hover:bg-zinc-800 flex items-center gap-2 border-t border-zinc-800/50 mt-1 pt-1.5"
-                >
-                  <Trash2 className="w-3.5 h-3.5" /> Delete
-                </button>
+                {activeMenuId === session.id && activeMenuType === 'session' && (
+                  <div className="absolute right-0 top-full mt-1 w-32 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl overflow-hidden z-[100] py-1" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        setEditingSidebarSessionId(session.id);
+                        setEditingSidebarSessionName(session.name || session.progressMarker);
+                        setActiveMenuId(null);
+                        setActiveMenuType(null);
+                      }}
+                      className="w-full text-left px-3 py-1.5 text-xs text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 flex items-center gap-2"
+                    >
+                      <PenLine className="w-3.5 h-3.5" /> Rename
+                    </button>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        const notesCount = await getSessionNotesCount(session.id);
+                        setSessionToDelete({ id: session.id, name: session.name || session.progressMarker, notesCount });
+                        setActiveMenuId(null);
+                        setActiveMenuType(null);
+                      }}
+                      className="w-full text-left px-3 py-1.5 text-xs text-red-500 hover:text-red-400 hover:bg-zinc-800 flex items-center gap-2 border-t border-zinc-800/50 mt-1 pt-1.5"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Delete
+                    </button>
+                  </div>
+                )}
               </div>
             )}
+            
+            {/* Play button or Chevron replacement that fits the mockup */}
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+              activeSession?.id === session.id ? 'bg-zinc-700/50' : 'bg-zinc-800/50 group-hover/session:bg-zinc-700'
+            }`}>
+              <ChevronRight className={`w-4 h-4 ${activeSession?.id === session.id ? 'text-zinc-300' : 'text-zinc-500 group-hover/session:text-zinc-300'}`} />
+            </div>
           </div>
         </div>
       )}
@@ -878,31 +896,41 @@ export default function SessionView() {
       )}
 
       {/* Sidebar for Sessions */}
-      <div id="mobile-tab-sessions" className="w-full shrink-0 snap-center snap-always lg:w-72 flex-col lg:border-r border-zinc-800/50 lg:pr-6 min-h-0 flex">
-        <div className="w-full md:max-w-2xl lg:max-w-none mx-auto flex flex-col h-full min-h-0 flex-1 pl-4 sm:pl-6 lg:pl-0">
-        <div className="flex items-center justify-between mb-6 pr-4 sm:pr-6 lg:pr-0">
-          <h3 className="font-bold uppercase tracking-widest text-xs text-zinc-400">Sessions</h3>
-          <div className="flex items-center gap-2">
+      <div id="mobile-tab-sessions" className="group/sidebar w-full shrink-0 snap-center snap-always lg:w-[340px] flex-col h-full min-h-0 flex relative lg:pt-4 lg:pb-4 lg:pl-4 lg:pr-2">
+        {/* Decorative Background & Border */}
+        <div className="hidden lg:block absolute inset-0 bg-zinc-900/60 backdrop-blur-md rounded-[32px] border border-zinc-800/80 pointer-events-none [-webkit-mask-image:linear-gradient(to_bottom,black_10%,transparent_50%)] [mask-image:linear-gradient(to_bottom,black_10%,transparent_50%)] -z-10" />
+        
+        <div className="w-full md:max-w-2xl lg:max-w-none mx-auto flex flex-col h-full min-h-0 flex-1 pl-4 sm:pl-6 lg:pl-0 relative z-10">
+        <div className="flex items-center justify-between mb-4 lg:mb-6 pr-4 sm:pr-6 lg:pr-0 lg:border-b lg:border-zinc-800/50 lg:pb-4">
+          <div className="flex items-center gap-3 text-zinc-100 hidden lg:flex">
+            <div className="w-10 h-10 bg-zinc-800 rounded-xl flex items-center justify-center border border-zinc-700/50">
+              <List className="w-5 h-5 text-zinc-300" />
+            </div>
+            <h2 className="text-xl font-bold tracking-tight">Play Sessions</h2>
+          </div>
+          <h3 className="font-bold uppercase tracking-widest text-xs text-zinc-400 lg:hidden">Sessions</h3>
+          <div className="flex items-center gap-2 lg:gap-1 lg:bg-zinc-800/40 lg:border lg:border-zinc-700/50 lg:rounded-xl lg:p-1">
             <button 
               onClick={() => setSessionSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-              className={`p-1.5 rounded-lg transition-colors ${sessionSortOrder === 'asc' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900'}`}
+              className={`lg:w-8 lg:h-8 p-1.5 lg:p-0 rounded-lg transition-all flex items-center justify-center ${sessionSortOrder === 'asc' ? 'bg-zinc-700 text-zinc-100 lg:shadow-sm' : 'text-zinc-500 hover:text-white bg-zinc-900 lg:bg-transparent hover:bg-zinc-800 lg:hover:bg-zinc-700/50'} focus:scale-95`}
               title={sessionSortOrder === 'desc' ? 'Sorting Newest First' : 'Sorting Oldest First'}
             >
               <ArrowUpDown className="w-4 h-4" />
             </button>
             <button 
               onClick={() => setIsCreatingGroupFromList(true)}
-              className="p-1.5 bg-zinc-900 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-zinc-100 transition-colors"
+              className="lg:w-8 lg:h-8 p-1.5 lg:p-0 bg-zinc-900 hover:bg-zinc-800 lg:bg-transparent lg:hover:bg-zinc-700/50 rounded-lg text-zinc-400 hover:text-white transition-all flex items-center justify-center focus:scale-95"
               title="New Group"
             >
               <LayoutDashboard className="w-4 h-4" />
             </button>
+            <div className="hidden lg:block w-[1px] h-4 bg-zinc-700/50 mx-0.5" />
             <button 
               onClick={() => {
                 handleStartSession();
                 scrollToTab('notes');
               }}
-              className="p-1.5 bg-zinc-900 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-zinc-100 transition-colors"
+              className="lg:w-8 lg:h-8 p-1.5 lg:p-0 bg-zinc-900 hover:bg-zinc-800 lg:bg-zinc-700/80 lg:hover:bg-zinc-600 rounded-lg text-zinc-300 hover:text-white transition-all flex items-center justify-center focus:scale-95 lg:shadow-sm lg:border lg:border-zinc-600/50"
               title="New Session"
             >
               <Plus className="w-4 h-4" />
@@ -946,7 +974,7 @@ export default function SessionView() {
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-4 sm:pr-6 lg:pr-2 pb-24 lg:pb-0">
+        <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-4 sm:pr-6 lg:pr-0 pb-24 lg:pb-0">
           {sessions.length === 1 && sessions[0].id === activeSession?.id && (
             <div className="px-2 py-4 mb-2 bg-indigo-500/5 border border-indigo-500/10 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-700">
               <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Getting Started</p>
@@ -959,9 +987,9 @@ export default function SessionView() {
             const isCollapsed = collapsedGroups.has(group.id);
             const isGroupTapped = activeTappedId === group.id;
             return (
-            <div key={group.id} className={`space-y-2 group relative ${(activeMenuId === group.id && activeMenuType === 'group') || (activeMenuType === 'session' && group.sessions.some(s => s.id === activeMenuId)) ? 'z-50' : 'z-10'}`}>
+            <div key={group.id} className={`bg-zinc-950/50 border border-zinc-800/80 rounded-[24px] p-2 space-y-2 group relative ${(activeMenuId === group.id && activeMenuType === 'group') || (activeMenuType === 'session' && group.sessions.some(s => s.id === activeMenuId)) ? 'z-50' : 'z-10'}`}>
               <div 
-                className={`flex items-center justify-between px-2 cursor-pointer rounded py-1 -mx-2 transition-colors ${activeMenuId === group.id && activeMenuType === 'group' ? 'bg-zinc-900/50' : 'hover:bg-zinc-900/50'}`}
+                className={`flex items-center justify-between px-2 cursor-pointer transition-colors ${activeMenuId === group.id && activeMenuType === 'group' ? 'bg-zinc-900/50 rounded' : 'hover:bg-zinc-900/50 rounded'}`}
                 onClick={(e) => {
                   // Don't toggle if clicking on buttons or inputs
                   const target = e.target as HTMLElement;
@@ -970,12 +998,14 @@ export default function SessionView() {
                   toggleGroupCollapse(group.id);
                 }}
               >
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  {isCollapsed ? (
-                    <ChevronRight className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-                  ) : (
-                    <ChevronDown className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-                  )}
+                <div className="flex items-center gap-2.5 text-zinc-400 py-1 flex-1 min-w-0">
+                  <div className="w-6 h-6 rounded flex items-center justify-center bg-zinc-800/80 text-zinc-300 shrink-0">
+                    {isCollapsed ? (
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    ) : (
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    )}
+                  </div>
                   {editingGroupId === group.id ? (
                     <input
                       type="text"
@@ -994,7 +1024,7 @@ export default function SessionView() {
                       autoFocus
                     />
                   ) : (
-                    <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-wider truncate">{group.title}</h4>
+                    <h4 className="text-xs font-bold uppercase tracking-widest truncate">{group.title}</h4>
                   )}
                 </div>
                 
@@ -1100,10 +1130,9 @@ export default function SessionView() {
                 className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${isCollapsed ? 'grid-rows-[0fr] opacity-0 pointer-events-none' : 'grid-rows-[1fr] opacity-100'}`}
               >
                 <div className={cn(
-                  (activeMenuType === 'session' && group.sessions.some(s => s.id === activeMenuId)) ? "overflow-visible" : "overflow-hidden",
-                  "p-2 -m-2"
+                  (activeMenuType === 'session' && group.sessions.some(s => s.id === activeMenuId)) ? "overflow-visible" : "overflow-hidden"
                 )}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-2 pt-1 items-start content-start">
+                  <div className="grid grid-cols-1 gap-1 mt-1">
                     {group.sessions.map(session => {
                       const sessionContext = {
                         activeMenuId, activeMenuType, setActiveMenuId, setActiveMenuType,
@@ -1139,11 +1168,12 @@ export default function SessionView() {
 
           {ungroupedSessions.length > 0 && (() => {
             const isGroupTapped = activeTappedId === 'ungrouped';
+            const isWrapped = groupedSessions.length > 0;
             return (
-            <div className="space-y-2 group">
+            <div className={`space-y-2 group relative ${isWrapped ? 'bg-zinc-950/50 border border-zinc-800/80 rounded-[24px] p-2' : ''} ${(activeMenuType === 'session' && ungroupedSessions.some(s => s.id === activeMenuId)) ? 'z-50' : 'z-10'}`}>
               {groupedSessions.length > 0 && (
                 <div 
-                  className="flex items-center justify-between px-2 mt-4 cursor-pointer hover:bg-zinc-900/50 rounded py-1 -mx-2 group/ungrouped"
+                  className={`flex items-center justify-between px-2 cursor-pointer transition-colors ${activeMenuType === 'session' && activeMenuId === 'ungrouped' ? 'bg-zinc-900/50 rounded' : 'hover:bg-zinc-900/50 rounded'}`}
                   onClick={(e) => {
                     const target = e.target as HTMLElement;
                     if (target.closest('button') || target.closest('input')) return;
@@ -1151,13 +1181,15 @@ export default function SessionView() {
                     toggleGroupCollapse('ungrouped');
                   }}
                 >
-                  <div className="flex items-center gap-2">
-                    {collapsedGroups.has('ungrouped') ? (
-                      <ChevronRight className="w-3.5 h-3.5 text-zinc-500" />
-                    ) : (
-                      <ChevronDown className="w-3.5 h-3.5 text-zinc-500" />
-                    )}
-                    <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Ungrouped</h4>
+                  <div className="flex items-center gap-2.5 text-zinc-400 py-1 flex-1 min-w-0">
+                    <div className="w-6 h-6 rounded flex items-center justify-center bg-zinc-800/80 text-zinc-300 shrink-0">
+                      {collapsedGroups.has('ungrouped') ? (
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      ) : (
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      )}
+                    </div>
+                    <h4 className="text-xs font-bold uppercase tracking-widest truncate">Ungrouped</h4>
                   </div>
                   <div className={`flex items-center gap-0.5 transition-opacity shrink-0 bg-zinc-950/80 rounded-md px-1 ${isGroupTapped ? 'opacity-100' : 'opacity-0 lg:group-hover/ungrouped:opacity-100'}`}>
                     <button
@@ -1177,10 +1209,9 @@ export default function SessionView() {
                 className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${collapsedGroups.has('ungrouped') ? 'grid-rows-[0fr] opacity-0 pointer-events-none' : 'grid-rows-[1fr] opacity-100'}`}
               >
                 <div className={cn(
-                  (activeMenuType === 'session' && ungroupedSessions.some(s => s.id === activeMenuId)) ? "overflow-visible" : "overflow-hidden",
-                  "p-2 -m-2"
+                  (activeMenuType === 'session' && ungroupedSessions.some(s => s.id === activeMenuId)) ? "overflow-visible" : "overflow-hidden"
                 )}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-2 pt-1 items-start content-start">
+                  <div className="grid grid-cols-1 gap-1 mt-1">
                     {ungroupedSessions.map(session => {
                       const sessionContext = {
                         activeMenuId, activeMenuType, setActiveMenuId, setActiveMenuType,
