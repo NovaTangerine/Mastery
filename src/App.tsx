@@ -46,6 +46,7 @@ import PillNavMockupView from './views/PillNavMockupView';
 import ImageRevealLogicMockupView from './views/ImageRevealLogicMockupView';
 import LightModeLibraryMockupView from './views/LightModeLibraryMockupView';
 import SessionListMockupView from './views/SessionListMockupView';
+import TrackersSidebarMockupView from './views/TrackersSidebarMockupView';
 
 // --- Components ---
 
@@ -213,9 +214,15 @@ function MainApp() {
                         </button>
                         <button 
                           onClick={() => { clearHistory(); navigateTo('session-list-mockup', null, null); }}
-                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 rounded-b-xl ${view === 'session-list-mockup' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 ${view === 'session-list-mockup' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
                         >
                           Session List UI
+                        </button>
+                        <button 
+                          onClick={() => { clearHistory(); navigateTo('trackers-sidebar-mockup', null, null); }}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 rounded-b-xl ${view === 'trackers-sidebar-mockup' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                        >
+                          Trackers UI
                         </button>
                       </div>
                     </div>
@@ -361,6 +368,7 @@ function MainApp() {
             {view === 'image-reveal-logic' && <ImageRevealLogicMockupView />}
             {view === 'light-mode-library-mockup' && <LightModeLibraryMockupView />}
             {view === 'session-list-mockup' && <SessionListMockupView />}
+            {view === 'trackers-sidebar-mockup' && <TrackersSidebarMockupView />}
           </div>
         </main>
 
