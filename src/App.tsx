@@ -47,6 +47,8 @@ import ImageRevealLogicMockupView from './views/ImageRevealLogicMockupView';
 import LightModeLibraryMockupView from './views/LightModeLibraryMockupView';
 import SessionListMockupView from './views/SessionListMockupView';
 import TrackersSidebarMockupView from './views/TrackersSidebarMockupView';
+import TrackerModalMockupView from './views/TrackerModalMockupView';
+import TrackerSyncMockupView from './views/TrackerSyncMockupView';
 
 // --- Components ---
 
@@ -220,9 +222,21 @@ function MainApp() {
                         </button>
                         <button 
                           onClick={() => { clearHistory(); navigateTo('trackers-sidebar-mockup', null, null); }}
-                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 rounded-b-xl ${view === 'trackers-sidebar-mockup' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 ${view === 'trackers-sidebar-mockup' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
                         >
                           Trackers UI
+                        </button>
+                        <button 
+                          onClick={() => { clearHistory(); navigateTo('tracker-modal-mockup', null, null); }}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 ${view === 'tracker-modal-mockup' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                        >
+                          Tracker Modal UI
+                        </button>
+                        <button 
+                          onClick={() => { clearHistory(); navigateTo('tracker-sync-mockup', null, null); }}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 rounded-b-xl ${view === 'tracker-sync-mockup' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                        >
+                          Tracker Sync UI
                         </button>
                       </div>
                     </div>
@@ -369,6 +383,8 @@ function MainApp() {
             {view === 'light-mode-library-mockup' && <LightModeLibraryMockupView />}
             {view === 'session-list-mockup' && <SessionListMockupView />}
             {view === 'trackers-sidebar-mockup' && <TrackersSidebarMockupView />}
+            {view === 'tracker-modal-mockup' && <TrackerModalMockupView />}
+            {view === 'tracker-sync-mockup' && <TrackerSyncMockupView />}
           </div>
         </main>
 
