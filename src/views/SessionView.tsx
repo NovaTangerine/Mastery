@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Plus, Minus, BookOpen, Clock, PenLine, X, Send, ChevronRight, Trash2, List, LayoutDashboard, ChevronUp, ChevronDown, Tag as TagIcon, MoreVertical, ArrowUpDown, Play } from 'lucide-react';
+import { Plus, Minus, BookOpen, Clock, PenLine, X, Send, ChevronRight, Trash2, List, LayoutDashboard, ChevronUp, ChevronDown, Tag as TagIcon, MoreVertical, ArrowUpDown, Play, Target } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence, LayoutGroup } from 'motion/react';
 import {
@@ -896,9 +896,7 @@ export default function SessionView() {
       )}
 
       {/* Sidebar for Sessions */}
-      <div id="mobile-tab-sessions" className="group/sidebar w-full shrink-0 snap-center snap-always lg:w-[340px] flex-col h-full min-h-0 flex relative lg:pt-4 lg:pb-4 lg:pl-4 lg:pr-2">
-        {/* Decorative Background & Border */}
-        <div className="hidden lg:block absolute inset-0 bg-zinc-900/60 backdrop-blur-md rounded-[32px] border border-zinc-800/80 pointer-events-none [-webkit-mask-image:linear-gradient(to_bottom,black_10%,transparent_50%)] [mask-image:linear-gradient(to_bottom,black_10%,transparent_50%)] -z-10" />
+      <div id="mobile-tab-sessions" className="group/sidebar w-full shrink-0 snap-center snap-always lg:w-[340px] flex-col h-full min-h-0 flex relative lg:pt-4 lg:pb-4 lg:pl-4 lg:pr-4 lg:border-r lg:border-zinc-800/50">
         
         <div className="w-full md:max-w-2xl lg:max-w-none mx-auto flex flex-col h-full min-h-0 flex-1 pl-4 sm:pl-6 lg:pl-0 relative z-10">
         <div className="flex items-center justify-between mb-4 lg:mb-6 pr-4 sm:pr-6 lg:pr-0 lg:border-b lg:border-zinc-800/50 lg:pb-4">
@@ -1798,28 +1796,32 @@ export default function SessionView() {
       </div>
 
       {/* Right Column: Trackers */}
-      <div id="mobile-tab-trackers" className="w-full shrink-0 snap-center snap-always lg:w-80 flex-col lg:border-l border-zinc-800/50 lg:pl-6 min-h-0 flex">
-        <div className="w-full md:max-w-2xl lg:max-w-none mx-auto flex flex-col h-full min-h-0 flex-1 pl-4 sm:pl-6 lg:pl-0">
-        <div 
-          onClick={() => {
+      <div id="mobile-tab-trackers" className="w-full shrink-0 snap-center snap-always lg:w-80 flex-col lg:border-l border-zinc-800/50 min-h-0 flex">
+        <div className="w-full md:max-w-2xl lg:max-w-none mx-auto flex flex-col h-full min-h-0 flex-1 relative z-10">
+        <div className="flex items-center justify-between px-4 sm:px-6 lg:px-5 pt-4 lg:pt-5 pb-5 z-10">
+          <div className="flex items-center gap-3 text-zinc-100 cursor-pointer group" onClick={() => {
             setIsTrackersCollapsed(!isTrackersCollapsed);
             if (isTrackersCollapsed) {
               setCollapsedTrackerGroups(new Set());
             }
-          }}
-          className="flex items-center justify-between mb-6 pr-4 sm:pr-6 lg:pr-0 cursor-pointer group"
-        >
-          <h3 className="font-bold uppercase tracking-widest text-xs text-zinc-400 transition-colors group-hover:text-zinc-300">Trackers</h3>
-          {isTrackersCollapsed ? (
-            <ChevronRight className="w-4 h-4 text-zinc-600 transition-colors group-hover:text-zinc-400" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-zinc-600 transition-colors group-hover:text-zinc-400" />
-          )}
+          }}>
+            <div className="w-8 h-8 bg-indigo-500/10 rounded-lg flex items-center justify-center border border-indigo-500/20">
+              <Target className="w-4 h-4 text-indigo-400" />
+            </div>
+            <h2 className="text-lg font-bold tracking-tight group-hover:text-zinc-300 transition-colors">Trackers</h2>
+          </div>
+          <button 
+            onClick={(e) => { e.stopPropagation(); setIsAddingMetric(true); setIsTrackersCollapsed(false); }}
+            className="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-all focus:scale-95 border border-zinc-800/50"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
         </div>
-        <div className="flex-1 overflow-y-auto custom-scrollbar pr-4 sm:pr-6 lg:pr-2 flex flex-col pt-2 -mt-1 pb-24 lg:pb-0">
+        
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-3 lg:px-3 flex flex-col pb-24 lg:pb-0">
           <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${isTrackersCollapsed ? 'grid-rows-[0fr] opacity-0 pointer-events-none' : 'grid-rows-[1fr] opacity-100'}`}>
             <div className="overflow-hidden min-h-0 p-2 -m-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:flex lg:flex-col gap-2 items-start lg:items-stretch content-start mb-12">
+              <div className="space-y-6 pb-20">
           {(() => {
             const metrics = activeSession.metrics || [];
             
