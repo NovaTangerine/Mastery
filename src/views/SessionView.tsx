@@ -197,10 +197,10 @@ function SidebarSessionItem({ session, ctx }: any) {
             handleResumeSession(session);
             scrollToTab('notes');
           }}
-          className={`flex-1 p-3 sm:p-4 rounded-2xl transition-all duration-300 flex items-center justify-between cursor-pointer border ${
+          className={`flex-1 p-3 rounded-xl transition-all duration-300 flex items-center justify-between cursor-pointer border ${
             activeSession?.id === session.id 
-              ? 'bg-zinc-800/50 border-zinc-700 shadow-sm'
-              : 'hover:bg-zinc-800/30 border-transparent hover:border-zinc-700/50 lg:opacity-50 lg:group-hover/sidebar:opacity-100'
+              ? 'bg-zinc-800/60 border-zinc-700/50 shadow-sm'
+              : 'bg-zinc-900/40 border-zinc-800/30 hover:bg-zinc-800/60 hover:border-zinc-700/50 lg:opacity-50 lg:group-hover/sidebar:opacity-100'
           }`}
         >
           <div className="flex-1 min-w-0 pr-4">
@@ -896,48 +896,48 @@ export default function SessionView() {
       )}
 
       {/* Sidebar for Sessions */}
-      <div id="mobile-tab-sessions" className="group/sidebar w-full shrink-0 snap-center snap-always lg:w-[340px] flex-col h-full min-h-0 flex relative lg:pt-4 lg:pb-4 lg:pl-4 lg:pr-4 lg:border-r lg:border-zinc-800/50">
+      <div id="mobile-tab-sessions" className="group/sidebar w-full shrink-0 snap-center snap-always lg:w-[320px] flex-col lg:border-r border-zinc-800/50 min-h-0 flex relative">
         
-        <div className="w-full md:max-w-2xl lg:max-w-none mx-auto flex flex-col h-full min-h-0 flex-1 pl-4 sm:pl-6 lg:pl-0 relative z-10">
-        <div className="flex items-center justify-between mb-4 lg:mb-6 pr-4 sm:pr-6 lg:pr-0 lg:border-b lg:border-zinc-800/50 lg:pb-4">
+        <div className="w-full flex flex-col h-full min-h-0 flex-1 relative z-10">
+        <div className="flex items-center justify-between px-5 pt-5 pb-5 z-10">
           <div className="flex items-center gap-3 text-zinc-100 hidden lg:flex">
-            <div className="w-10 h-10 bg-zinc-800 rounded-xl flex items-center justify-center border border-zinc-700/50">
-              <List className="w-5 h-5 text-zinc-300" />
+            <div className="w-8 h-8 bg-indigo-500/10 rounded-lg flex items-center justify-center border border-indigo-500/20">
+              <List className="w-4 h-4 text-indigo-400" />
             </div>
-            <h2 className="text-xl font-bold tracking-tight">Play Sessions</h2>
+            <h2 className="text-lg font-bold tracking-tight">Sessions</h2>
           </div>
           <h3 className="font-bold uppercase tracking-widest text-xs text-zinc-400 lg:hidden">Sessions</h3>
-          <div className="flex items-center gap-2 lg:gap-1 lg:bg-zinc-800/40 lg:border lg:border-zinc-700/50 lg:rounded-xl lg:p-1">
+          <div className="flex items-center gap-1.5 lg:bg-zinc-800/40 lg:border lg:border-zinc-700/50 lg:rounded-xl lg:p-1">
             <button 
               onClick={() => setSessionSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-              className={`lg:w-8 lg:h-8 p-1.5 lg:p-0 rounded-lg transition-all flex items-center justify-center ${sessionSortOrder === 'asc' ? 'bg-zinc-700 text-zinc-100 lg:shadow-sm' : 'text-zinc-500 hover:text-white bg-zinc-900 lg:bg-transparent hover:bg-zinc-800 lg:hover:bg-zinc-700/50'} focus:scale-95`}
+              className={`lg:w-7 lg:h-7 p-1.5 lg:p-0 rounded-lg transition-all flex items-center justify-center ${sessionSortOrder === 'asc' ? 'bg-zinc-700 text-zinc-100 lg:shadow-sm' : 'text-zinc-500 hover:text-white bg-zinc-900 lg:bg-transparent hover:bg-zinc-800 lg:hover:bg-zinc-700/50'} focus:scale-95`}
               title={sessionSortOrder === 'desc' ? 'Sorting Newest First' : 'Sorting Oldest First'}
             >
-              <ArrowUpDown className="w-4 h-4" />
+              <ArrowUpDown className="w-3.5 h-3.5" />
             </button>
             <button 
               onClick={() => setIsCreatingGroupFromList(true)}
-              className="lg:w-8 lg:h-8 p-1.5 lg:p-0 bg-zinc-900 hover:bg-zinc-800 lg:bg-transparent lg:hover:bg-zinc-700/50 rounded-lg text-zinc-400 hover:text-white transition-all flex items-center justify-center focus:scale-95"
+              className="lg:w-7 lg:h-7 p-1.5 lg:p-0 bg-zinc-900 hover:bg-zinc-800 lg:bg-transparent lg:hover:bg-zinc-700/50 rounded-lg text-zinc-400 hover:text-white transition-all flex items-center justify-center focus:scale-95"
               title="New Group"
             >
-              <LayoutDashboard className="w-4 h-4" />
+              <LayoutDashboard className="w-3.5 h-3.5" />
             </button>
-            <div className="hidden lg:block w-[1px] h-4 bg-zinc-700/50 mx-0.5" />
+            <div className="hidden lg:block w-[1px] h-3.5 bg-zinc-700/50 mx-0.5" />
             <button 
               onClick={() => {
                 handleStartSession();
                 scrollToTab('notes');
               }}
-              className="lg:w-8 lg:h-8 p-1.5 lg:p-0 bg-zinc-900 hover:bg-zinc-800 lg:bg-zinc-700/80 lg:hover:bg-zinc-600 rounded-lg text-zinc-300 hover:text-white transition-all flex items-center justify-center focus:scale-95 lg:shadow-sm lg:border lg:border-zinc-600/50"
+              className="lg:w-7 lg:h-7 p-1.5 lg:p-0 bg-zinc-900 hover:bg-zinc-800 lg:bg-zinc-700/80 lg:hover:bg-zinc-600 rounded-lg text-zinc-300 hover:text-white transition-all flex items-center justify-center focus:scale-95 lg:shadow-sm lg:border lg:border-zinc-600/50"
               title="New Session"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
         {isCreatingGroupFromList && (
-          <div className="mb-4 p-3 bg-zinc-900/50 border border-zinc-800 rounded-xl space-y-3 mr-4 sm:mr-6 lg:mr-0">
+          <div className="mb-4 mx-3 p-3 bg-zinc-900/50 border border-zinc-800 rounded-xl space-y-3">
             <input
               type="text"
               value={newGroupNameInput}
@@ -972,7 +972,8 @@ export default function SessionView() {
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-4 sm:pr-6 lg:pr-0 pb-24 lg:pb-0">
+        <div className="flex-1 overflow-y-auto px-3 custom-scrollbar">
+          <div className="space-y-6 pb-24 lg:pb-20">
           {sessions.length === 1 && sessions[0].id === activeSession?.id && (
             <div className="px-2 py-4 mb-2 bg-indigo-500/5 border border-indigo-500/10 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-700">
               <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Getting Started</p>
@@ -985,9 +986,9 @@ export default function SessionView() {
             const isCollapsed = collapsedGroups.has(group.id);
             const isGroupTapped = activeTappedId === group.id;
             return (
-            <div key={group.id} className={`bg-zinc-950/50 border border-zinc-800/80 rounded-[24px] p-2 space-y-2 group relative ${(activeMenuId === group.id && activeMenuType === 'group') || (activeMenuType === 'session' && group.sessions.some(s => s.id === activeMenuId)) ? 'z-50' : 'z-10'}`}>
+            <div key={group.id} className={`bg-zinc-950/30 border border-zinc-800/50 rounded-2xl p-2 space-y-1 group relative ${(activeMenuId === group.id && activeMenuType === 'group') || (activeMenuType === 'session' && group.sessions.some(s => s.id === activeMenuId)) ? 'z-50' : 'z-10'}`}>
               <div 
-                className={`flex items-center justify-between px-2 cursor-pointer transition-colors ${activeMenuId === group.id && activeMenuType === 'group' ? 'bg-zinc-900/50 rounded' : 'hover:bg-zinc-900/50 rounded'}`}
+                className={`flex items-center justify-between px-2 py-1.5 cursor-pointer transition-colors group/header ${activeMenuId === group.id && activeMenuType === 'group' ? 'bg-zinc-900/30 rounded-lg' : 'hover:bg-zinc-900/30 rounded-lg'}`}
                 onClick={(e) => {
                   // Don't toggle if clicking on buttons or inputs
                   const target = e.target as HTMLElement;
@@ -996,14 +997,13 @@ export default function SessionView() {
                   toggleGroupCollapse(group.id);
                 }}
               >
-                <div className="flex items-center gap-2.5 text-zinc-400 py-1 flex-1 min-w-0">
-                  <div className="w-6 h-6 rounded flex items-center justify-center bg-zinc-800/80 text-zinc-300 shrink-0">
-                    {isCollapsed ? (
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    ) : (
-                      <ChevronDown className="w-3.5 h-3.5" />
-                    )}
-                  </div>
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  {isCollapsed ? (
+                    <ChevronRight className="w-3.5 h-3.5 text-zinc-600 transition-colors group-hover/header:text-zinc-500 shrink-0" />
+                  ) : (
+                    <ChevronDown className="w-3.5 h-3.5 text-zinc-600 transition-colors group-hover/header:text-zinc-500 shrink-0" />
+                  )}
+                  
                   {editingGroupId === group.id ? (
                     <input
                       type="text"
@@ -1022,11 +1022,11 @@ export default function SessionView() {
                       autoFocus
                     />
                   ) : (
-                    <h4 className="text-xs font-bold uppercase tracking-widest truncate">{group.title}</h4>
+                    <h4 className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest transition-colors group-hover/header:text-zinc-300 truncate">{group.title}</h4>
                   )}
                 </div>
                 
-                <div className={`flex items-center gap-0.5 transition-opacity shrink-0 bg-zinc-950/80 rounded-md px-1 ${(activeMenuId === group.id && activeMenuType === 'group') || isGroupTapped ? 'opacity-100' : 'opacity-0 lg:group-hover:opacity-100'}`}>
+                <div className={`flex items-center gap-0.5 transition-opacity shrink-0 bg-zinc-950/80 rounded-md px-1 ${(activeMenuId === group.id && activeMenuType === 'group') || isGroupTapped ? 'opacity-100' : 'opacity-0 lg:group-hover/header:opacity-100'}`}>
                   {editingGroupId === group.id ? (
                     <>
                       <button
@@ -1143,7 +1143,7 @@ export default function SessionView() {
                       return <SidebarSessionItem key={session.id} session={session} ctx={sessionContext} />;
                     })}
                   {group.sessions.length > 0 && (
-                    <div className={`md:col-span-2 lg:col-span-1 grid transition-all duration-200 ease-in-out ${isGroupTapped ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] lg:group-hover:grid-rows-[1fr]'}`}>
+                    <div className={`grid transition-all duration-200 ease-in-out ${isGroupTapped ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] lg:group-hover:grid-rows-[1fr]'}`}>
                       <div className="overflow-hidden">
                         <button
                           onClick={() => handleStartSession(group.id)}
@@ -1156,7 +1156,7 @@ export default function SessionView() {
                     </div>
                   )}
                   {group.sessions.length === 0 && (
-                    <p className="text-xs text-zinc-600 italic px-2 md:col-span-2 lg:col-span-1">No sessions in this group</p>
+                    <p className="text-xs text-zinc-600 italic px-2">No sessions in this group</p>
                   )}
                   </div>
                 </div>
@@ -1168,10 +1168,10 @@ export default function SessionView() {
             const isGroupTapped = activeTappedId === 'ungrouped';
             const isWrapped = groupedSessions.length > 0;
             return (
-            <div className={`space-y-2 group relative ${isWrapped ? 'bg-zinc-950/50 border border-zinc-800/80 rounded-[24px] p-2' : ''} ${(activeMenuType === 'session' && ungroupedSessions.some(s => s.id === activeMenuId)) ? 'z-50' : 'z-10'}`}>
+            <div className={`space-y-1 group relative ${isWrapped ? 'bg-zinc-950/30 border border-zinc-800/50 rounded-2xl p-2' : ''} ${(activeMenuType === 'session' && ungroupedSessions.some(s => s.id === activeMenuId)) ? 'z-50' : 'z-10'}`}>
               {groupedSessions.length > 0 && (
                 <div 
-                  className={`flex items-center justify-between px-2 cursor-pointer transition-colors ${activeMenuType === 'session' && activeMenuId === 'ungrouped' ? 'bg-zinc-900/50 rounded' : 'hover:bg-zinc-900/50 rounded'}`}
+                  className={`flex items-center justify-between px-2 py-1.5 cursor-pointer transition-colors group/header ${activeMenuType === 'session' && activeMenuId === 'ungrouped' ? 'bg-zinc-900/30 rounded-lg' : 'hover:bg-zinc-900/30 rounded-lg'}`}
                   onClick={(e) => {
                     const target = e.target as HTMLElement;
                     if (target.closest('button') || target.closest('input')) return;
@@ -1179,17 +1179,15 @@ export default function SessionView() {
                     toggleGroupCollapse('ungrouped');
                   }}
                 >
-                  <div className="flex items-center gap-2.5 text-zinc-400 py-1 flex-1 min-w-0">
-                    <div className="w-6 h-6 rounded flex items-center justify-center bg-zinc-800/80 text-zinc-300 shrink-0">
-                      {collapsedGroups.has('ungrouped') ? (
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      ) : (
-                        <ChevronDown className="w-3.5 h-3.5" />
-                      )}
-                    </div>
-                    <h4 className="text-xs font-bold uppercase tracking-widest truncate">Ungrouped</h4>
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    {collapsedGroups.has('ungrouped') ? (
+                      <ChevronRight className="w-3.5 h-3.5 text-zinc-600 transition-colors group-hover/header:text-zinc-500 shrink-0" />
+                    ) : (
+                      <ChevronDown className="w-3.5 h-3.5 text-zinc-600 transition-colors group-hover/header:text-zinc-500 shrink-0" />
+                    )}
+                    <h4 className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest transition-colors group-hover/header:text-zinc-300 truncate">Ungrouped</h4>
                   </div>
-                  <div className={`flex items-center gap-0.5 transition-opacity shrink-0 bg-zinc-950/80 rounded-md px-1 ${isGroupTapped ? 'opacity-100' : 'opacity-0 lg:group-hover/ungrouped:opacity-100'}`}>
+                  <div className={`flex items-center gap-0.5 transition-opacity shrink-0 bg-zinc-950/80 rounded-md px-1 ${isGroupTapped ? 'opacity-100' : 'opacity-0 lg:group-hover/header:opacity-100'}`}>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -1222,7 +1220,7 @@ export default function SessionView() {
                       return <SidebarSessionItem key={session.id} session={session} ctx={sessionContext} />;
                     })}
                   {ungroupedSessions.length > 0 && groupedSessions.length > 0 && (
-                     <div className={`md:col-span-2 lg:col-span-1 grid transition-all duration-200 ease-in-out ${isGroupTapped ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] lg:group-hover:grid-rows-[1fr]'}`}>
+                     <div className={`grid transition-all duration-200 ease-in-out ${isGroupTapped ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] lg:group-hover:grid-rows-[1fr]'}`}>
                        <div className="overflow-hidden">
                          <button
                            onClick={() => handleStartSession()}
@@ -1242,14 +1240,15 @@ export default function SessionView() {
           })()}
         </div>
         </div>
+        </div>
       </div>
 
       {/* Main Session View or Filtered View */}
-      <div id="mobile-tab-notes" className="w-full shrink-0 snap-center snap-always lg:flex-1 lg:max-w-2xl flex-col min-w-0 min-h-0 flex">
-        <div className="w-full md:max-w-2xl lg:max-w-none mx-auto flex flex-col h-full min-h-0 flex-1 pl-4 sm:pl-6 lg:pl-0">
+      <div id="mobile-tab-notes" className="w-full shrink-0 snap-center snap-always lg:flex-1 lg:max-w-3xl xl:max-w-4xl flex-col min-w-0 min-h-0 flex lg:px-8">
+        <div className="w-full md:max-w-2xl lg:max-w-none mx-auto flex flex-col h-full min-h-0 flex-1 pl-4 pr-4 sm:pl-6 sm:pr-6 lg:pl-0 lg:pr-0 pt-4 lg:pt-6">
         {filteredTag ? (
           <>
-            <div className="mb-3 sm:mb-6 bg-zinc-900 border border-zinc-700/50 rounded-2xl p-4 shrink-0 flex items-center justify-between shadow-lg mr-4 sm:mr-6 lg:mr-0">
+            <div className="mb-3 sm:mb-6 bg-zinc-900 border border-zinc-700/50 rounded-2xl p-4 shrink-0 flex items-center justify-between shadow-lg">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center shrink-0">
                   <TagIcon className="w-5 h-5 text-zinc-400" />
@@ -1297,7 +1296,7 @@ export default function SessionView() {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto pr-4 sm:pr-6 lg:pr-2 custom-scrollbar space-y-8">
+            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-8 pr-2">
               {Object.entries(filteredNotesBySession)
                 .filter(([sid]) => filterScope === 'global' ? true : sid === (activeSession?.id || 'global'))
                 .map(([sessionId, groupNotes]) => (
@@ -1342,7 +1341,7 @@ export default function SessionView() {
           <>
             {/* Compact Session Header */}
             <div 
-          className={`mb-3 sm:mb-6 mr-4 sm:mr-6 lg:mr-0 bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-3 sm:p-4 shrink-0 flex-col transition-all duration-300 ${isEditingSessionDetails ? 'flex' : 'hidden lg:flex'}`}
+          className={`mb-3 sm:mb-6 bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-3 sm:p-4 shrink-0 flex-col transition-all duration-300 ${isEditingSessionDetails ? 'flex' : 'hidden lg:flex'}`}
           onMouseEnter={() => setIsHeaderCollapsed(false)}
         >
           <div className="hidden lg:flex items-center justify-between gap-4">
@@ -1587,7 +1586,7 @@ export default function SessionView() {
         {/* Notes Feed */}
         <div 
           ref={parentRef} 
-          className="flex-1 overflow-y-auto pr-4 sm:pr-6 lg:pr-2 custom-scrollbar"
+          className="flex-1 overflow-y-auto pr-2 custom-scrollbar"
           onScroll={handleScroll}
           onMouseEnter={() => {
             if (parentRef.current && parentRef.current.scrollTop > 20) {
@@ -1796,9 +1795,9 @@ export default function SessionView() {
       </div>
 
       {/* Right Column: Trackers */}
-      <div id="mobile-tab-trackers" className="w-full shrink-0 snap-center snap-always lg:w-80 flex-col lg:border-l border-zinc-800/50 min-h-0 flex">
-        <div className="w-full md:max-w-2xl lg:max-w-none mx-auto flex flex-col h-full min-h-0 flex-1 relative z-10">
-        <div className="flex items-center justify-between px-4 sm:px-6 lg:px-5 pt-4 lg:pt-5 pb-5 z-10">
+      <div id="mobile-tab-trackers" className="w-full shrink-0 snap-center snap-always lg:w-[320px] flex-col lg:border-l border-zinc-800/50 min-h-0 flex relative">
+        <div className="w-full flex flex-col h-full min-h-0 flex-1 relative z-10">
+        <div className="flex items-center justify-between px-5 pt-5 pb-5 z-10">
           <div className="flex items-center gap-3 text-zinc-100 cursor-pointer group" onClick={() => {
             setIsTrackersCollapsed(!isTrackersCollapsed);
             if (isTrackersCollapsed) {
@@ -1877,21 +1876,23 @@ export default function SessionView() {
                   .map(([groupName, groupMetrics]) => {
                   const isGroupCollapsed = collapsedTrackerGroups.has(groupName);
                   return (
-                  <div key={groupName} className="space-y-2 md:col-span-full xl:col-auto">
+                  <div key={groupName} className="bg-zinc-950/30 border border-zinc-800/50 rounded-2xl p-2 space-y-1 md:col-span-full xl:col-auto">
                     <div 
                       onClick={(e) => toggleTrackerGroup(groupName, e)}
-                      className={`flex items-center justify-between gap-1 mt-2 cursor-pointer group/header ${isGroupCollapsed ? 'mb-2' : ''}`}
+                      className={`flex items-center justify-between px-2 py-1.5 cursor-pointer hover:bg-zinc-900/30 rounded-lg transition-colors group/header ${isGroupCollapsed ? 'mb-0' : ''}`}
                     >
-                      <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1 transition-colors group-hover/header:text-zinc-400">{groupName}</h4>
-                      {isGroupCollapsed ? (
-                        <ChevronRight className="w-3 h-3 text-zinc-600 transition-colors group-hover/header:text-zinc-500" />
-                      ) : (
-                        <ChevronDown className="w-3 h-3 text-zinc-600 transition-colors group-hover/header:text-zinc-500" />
-                      )}
+                      <div className="flex items-center gap-2">
+                        {isGroupCollapsed ? (
+                          <ChevronRight className="w-3.5 h-3.5 text-zinc-600 transition-colors group-hover/header:text-zinc-500" />
+                        ) : (
+                          <ChevronDown className="w-3.5 h-3.5 text-zinc-600 transition-colors group-hover/header:text-zinc-500" />
+                        )}
+                        <h4 className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest transition-colors group-hover/header:text-zinc-300">{groupName}</h4>
+                      </div>
                     </div>
                     <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${isGroupCollapsed ? 'grid-rows-[0fr] opacity-0 pointer-events-none' : 'grid-rows-[1fr] opacity-100'}`}>
-                      <div className="overflow-hidden min-h-0 p-2 -m-2">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-2 lg:flex lg:flex-col lg:space-y-2 lg:gap-0 lg:pt-0">
+                      <div className="overflow-hidden min-h-0">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-2 lg:flex lg:flex-col lg:space-y-1 lg:gap-0 lg:pt-1">
                           {groupMetrics.map(metric => (
                             <MetricCard 
                               key={metric.id}
