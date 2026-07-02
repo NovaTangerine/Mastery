@@ -44,7 +44,10 @@ function findSimilarTracker(input: string, existingTrackers: string[]) {
 export default function TrackerModalMockupView() {
   const { navigateTo } = useUI();
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<'v1' | 'v2'>('v2');
   const [isOpen, setIsOpen] = useState(true);
+  
+  // V1 State
   const [step, setStep] = useState<'details' | 'category-select' | 'category-config' | 'sync-explanation'>('details');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
@@ -61,7 +64,6 @@ export default function TrackerModalMockupView() {
   const [returnalTrackerNames, setReturnalTrackerNames] = useState<string[]>([]);
   const [returnalGroups, setReturnalGroups] = useState<string[]>([]);
 
-  // Mock data for groups
   const defaultGroups = ['Combat', 'Exploration', 'Story'];
   const commonGroups = ['Objectives', 'Weapons', 'Equipment', 'Bosses', 'Collectibles', 'Points of Interest'];
   
@@ -120,7 +122,7 @@ export default function TrackerModalMockupView() {
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans p-4 sm:p-8 pt-6 flex flex-col relative overflow-hidden">
       <div className="absolute inset-x-0 top-0 h-[800px] pointer-events-none bg-[radial-gradient(ellipse_150%_100%_at_50%_0%,rgba(39,39,42,0.5)_0%,rgba(9,9,11,0)_100%)] z-0" />
       
-      <div className="relative z-10 flex items-center justify-between mb-8 max-w-[1600px] mx-auto w-full">
+      <div className="relative z-10 flex items-center justify-between mb-4 max-w-[1600px] mx-auto w-full">
         <div className="flex items-center gap-3">
           <button 
             onClick={() => navigateTo('dashboard')}
@@ -149,7 +151,22 @@ export default function TrackerModalMockupView() {
         </div>
       </div>
 
-      {isOpen && (
+      <div className="relative z-10 flex border-b border-zinc-800/50 mb-8 max-w-[1600px] mx-auto w-full">
+        <button
+          onClick={() => { setActiveTab('v1'); setIsOpen(true); }}
+          className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'v1' ? 'border-zinc-100 text-zinc-100' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+        >
+          Trackers V1 (Current)
+        </button>
+        <button
+          onClick={() => { setActiveTab('v2'); setIsOpen(true); }}
+          className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'v2' ? 'border-zinc-100 text-zinc-100' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+        >
+          Trackers V2 (Flexible Data)
+        </button>
+      </div>
+
+      {isOpen && activeTab === 'v1' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-zinc-900 border border-zinc-800 rounded-[24px] w-full max-w-md overflow-hidden shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
             
@@ -456,6 +473,225 @@ export default function TrackerModalMockupView() {
           </div>
         </div>
       )}
+
+      {isOpen && activeTab === 'v2' && <TrackerModalV2 onClose={() => setIsOpen(false)} />}
+    </div>
+  );
+}
+
+function TrackerModalV2({ onClose }: { onClose: () => void }) {
+  const [step, setStep] = useState<'details' | 'category-config'>('details');
+  const [trackerName, setTrackerName] = useState('');
+  const [groupName, setGroupName] = useState('');
+  
+  // V2 Specific State
+  const [dataPoints, setDataPoints] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  const categories = [
+    { id: 'objective', name: 'Objectives', icon: <Crosshair className="w-5 h-5 text-rose-400" />, desc: 'Track progress toward a specific number' },
+    { id: 'collectibles', name: 'Collectibles', icon: <Package className="w-5 h-5 text-amber-400" />, desc: 'Track items with an optional maximum' },
+    { id: 'equipment', name: 'Equipment', icon: <Shield className="w-5 h-5 text-blue-400" />, desc: 'Track durability or level' },
+    { id: 'codes', name: 'Codes', icon: <Key className="w-5 h-5 text-emerald-400" />, desc: 'Store alphanumeric secrets' }
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-[24px] w-full max-w-md overflow-hidden shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
+        
+        {/* Modal Header */}
+        <div className="flex items-center justify-between p-4 border-b border-zinc-800/50">
+          <h2 className="text-lg font-bold">
+            {step === 'details' && 'Create Tracker'}
+            {step === 'category-config' && 'Configure Data Point'}
+          </h2>
+          <button 
+            onClick={onClose}
+            className="p-1 text-zinc-500 hover:text-zinc-300 rounded-lg hover:bg-zinc-800 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Modal Body */}
+        <div className="p-4 overflow-y-auto custom-scrollbar flex-1">
+          {step === 'details' && (
+            <div className="space-y-6">
+              {/* Core Details */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-zinc-400">Tracker Name</label>
+                  <input 
+                    type="text" 
+                    value={trackerName}
+                    onChange={(e) => setTrackerName(e.target.value)}
+                    placeholder="e.g., Hidden Shrines" 
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 focus:outline-none focus:border-zinc-600 transition-colors"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-zinc-400">Group (Optional)</label>
+                  <input 
+                    type="text" 
+                    value={groupName}
+                    onChange={(e) => setGroupName(e.target.value)}
+                    placeholder="e.g., Exploration" 
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 focus:outline-none focus:border-zinc-600 transition-colors"
+                  />
+                </div>
+              </div>
+
+              {/* Data Points Section */}
+              <div className="space-y-3 pt-4 border-t border-zinc-800/50">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-zinc-400">Data Points</label>
+                  <span className="text-[10px] text-zinc-500 font-medium bg-zinc-800/50 px-2 py-0.5 rounded-full">{dataPoints.length} / 1 (MVP)</span>
+                </div>
+                
+                {dataPoints.length > 0 ? (
+                  <div className="space-y-2">
+                    {dataPoints.map((dp, idx) => (
+                      <div key={idx} className="p-4 rounded-xl border border-zinc-700 bg-zinc-800/50 flex items-center justify-between group relative overflow-hidden">
+                        {idx === 0 && (
+                          <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500" />
+                        )}
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-zinc-900 rounded-lg border border-zinc-800/50">
+                            {categories.find(c => c.id === dp.category)?.icon}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-bold text-zinc-100 text-sm">{categories.find(c => c.id === dp.category)?.name}</h3>
+                              {idx === 0 && (
+                                <span className="text-[9px] font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20">Primary</span>
+                              )}
+                            </div>
+                            <p className="text-xs text-zinc-400 mt-0.5">Configured successfully</p>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            // MVP: just remove it so they can add another
+                            setDataPoints([]);
+                          }}
+                          className="px-2 py-1 text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-400/10 rounded transition-colors"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    {categories.map(cat => (
+                      <button
+                        key={cat.id}
+                        onClick={() => { setSelectedCategory(cat.id); setStep('category-config'); }}
+                        className="p-3 rounded-xl border border-zinc-800 bg-zinc-950/30 hover:bg-zinc-800/50 hover:border-zinc-700 transition-all flex items-start text-left gap-3 group"
+                      >
+                        <div className="p-2 bg-zinc-900 rounded-lg group-hover:bg-zinc-950 border border-zinc-800/50 transition-all duration-200 shadow-sm shrink-0">
+                          {cat.icon}
+                        </div>
+                        <div className="space-y-0.5 mt-0.5">
+                          <h3 className="font-bold text-zinc-100 text-xs">{cat.name}</h3>
+                          <p className="text-[10px] text-zinc-500 leading-tight">{cat.desc}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {step === 'category-config' && (
+            <div className="space-y-6">
+              <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-950/50 flex gap-4 items-center">
+                 <div className="p-2 bg-zinc-900 rounded-lg border border-zinc-800/50">
+                   {categories.find(c => c.id === selectedCategory)?.icon}
+                 </div>
+                 <div>
+                   <h3 className="font-bold text-zinc-100">{categories.find(c => c.id === selectedCategory)?.name}</h3>
+                 </div>
+              </div>
+
+              {selectedCategory === 'objective' && (
+                <div className="space-y-4">
+                   <div className="space-y-2">
+                     <label className="text-[11px] font-bold uppercase tracking-widest text-zinc-400">Target Value</label>
+                     <input type="number" placeholder="e.g., 100" className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 focus:outline-none focus:border-zinc-600 transition-colors" />
+                   </div>
+                </div>
+              )}
+
+              {selectedCategory === 'collectibles' && (
+                <div className="space-y-4">
+                   <div className="space-y-2">
+                     <label className="text-[11px] font-bold uppercase tracking-widest text-zinc-400">Unit Name</label>
+                     <input type="text" placeholder="e.g., Coins, Fragments" className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 focus:outline-none focus:border-zinc-600 transition-colors" />
+                   </div>
+                   <label className="flex items-center gap-3 p-3 rounded-xl border border-zinc-800 hover:bg-zinc-800/50 cursor-pointer transition-colors">
+                      <input type="checkbox" className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-zinc-900" />
+                      <span className="text-sm font-medium text-zinc-300">Has maximum capacity</span>
+                   </label>
+                </div>
+              )}
+
+              {selectedCategory === 'equipment' && (
+                <div className="space-y-4">
+                   <label className="flex items-center gap-3 p-3 rounded-xl border border-zinc-800 hover:bg-zinc-800/50 cursor-pointer transition-colors">
+                      <input type="radio" name="equip_type" className="w-4 h-4 border-zinc-700 bg-zinc-900 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-zinc-900" defaultChecked />
+                      <span className="text-sm font-medium text-zinc-300">Durability (Percentage)</span>
+                   </label>
+                   <label className="flex items-center gap-3 p-3 rounded-xl border border-zinc-800 hover:bg-zinc-800/50 cursor-pointer transition-colors">
+                      <input type="radio" name="equip_type" className="w-4 h-4 border-zinc-700 bg-zinc-900 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-zinc-900" />
+                      <span className="text-sm font-medium text-zinc-300">Level/Rank (Numeric)</span>
+                   </label>
+                </div>
+              )}
+
+              {selectedCategory === 'codes' && (
+                <div className="space-y-4">
+                   <p className="text-sm text-zinc-400">Stores alphanumeric values with an option to hide/reveal.</p>
+                   <label className="flex items-center gap-3 p-3 rounded-xl border border-zinc-800 hover:bg-zinc-800/50 cursor-pointer transition-colors">
+                      <input type="checkbox" className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-zinc-900" defaultChecked />
+                      <span className="text-sm font-medium text-zinc-300">Hide value by default</span>
+                   </label>
+                </div>
+              )}
+            </div>
+          )}
+
+        </div>
+
+        {/* Modal Footer */}
+        <div className="p-4 border-t border-zinc-800/50 flex items-center justify-between bg-zinc-950/50">
+          {step !== 'details' ? (
+             <button 
+               onClick={() => setStep('details')}
+               className="px-4 py-2 text-zinc-400 hover:text-zinc-100 font-medium text-sm transition-colors"
+             >
+               Back
+             </button>
+          ) : <div></div>}
+
+          <button 
+            onClick={() => {
+              if (step === 'details') {
+                onClose();
+              } else if (step === 'category-config') {
+                setDataPoints([...dataPoints, { category: selectedCategory }]);
+                setStep('details');
+              }
+            }}
+            className="px-6 py-2 bg-zinc-100 hover:bg-white text-zinc-900 rounded-lg text-sm font-bold transition-colors ml-auto"
+          >
+            {step === 'details' ? 'Save Tracker' : 'Confirm & Add'}
+          </button>
+        </div>
+        
+      </div>
     </div>
   );
 }

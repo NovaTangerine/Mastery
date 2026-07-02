@@ -49,6 +49,7 @@ import SessionListMockupView from './views/SessionListMockupView';
 import TrackersSidebarMockupView from './views/TrackersSidebarMockupView';
 import TrackerModalMockupView from './views/TrackerModalMockupView';
 import TrackerSyncMockupView from './views/TrackerSyncMockupView';
+import NoteVisualsMockupView from './views/NoteVisualsMockupView';
 
 // --- Components ---
 
@@ -109,7 +110,7 @@ function MainApp() {
 
   return (
     <ErrorBoundary>
-      <div className="h-[100dvh] flex flex-col bg-zinc-950 text-zinc-100 font-sans selection:bg-zinc-100 selection:text-zinc-950 relative">
+      <div className="h-[100dvh] overflow-hidden flex flex-col bg-zinc-950 text-zinc-100 font-sans selection:bg-zinc-100 selection:text-zinc-950 relative">
         {(view === 'dashboard' || view === 'session-view') && (
           <div className="absolute inset-x-0 top-0 h-[800px] pointer-events-none bg-[radial-gradient(ellipse_150%_100%_at_50%_0%,rgba(39,39,42,0.5)_0%,rgba(9,9,11,0)_100%)] z-0" />
         )}
@@ -234,9 +235,15 @@ function MainApp() {
                         </button>
                         <button 
                           onClick={() => { clearHistory(); navigateTo('tracker-sync-mockup', null, null); }}
-                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 rounded-b-xl ${view === 'tracker-sync-mockup' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 ${view === 'tracker-sync-mockup' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
                         >
                           Tracker Sync UI
+                        </button>
+                        <button 
+                          onClick={() => { clearHistory(); navigateTo('note-visuals-mockup', null, null); }}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 rounded-b-xl ${view === 'note-visuals-mockup' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                        >
+                          Note Visuals UI
                         </button>
                       </div>
                     </div>
@@ -385,6 +392,7 @@ function MainApp() {
             {view === 'trackers-sidebar-mockup' && <TrackersSidebarMockupView />}
             {view === 'tracker-modal-mockup' && <TrackerModalMockupView />}
             {view === 'tracker-sync-mockup' && <TrackerSyncMockupView />}
+            {view === 'note-visuals-mockup' && <NoteVisualsMockupView />}
           </div>
         </main>
 
