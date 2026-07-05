@@ -640,6 +640,46 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     if (!user || !activeSession) return undefined;
     try {
       const newId = crypto.randomUUID();
+      
+      const game = games.find(g => g.id === activeSession.gameId);
+      if (game?.title === 'Acme Gaming') {
+        const trackers = activeSession.trackers || [];
+        const groupTitle = metric.group || 'General';
+        const existingTrackerIndex = trackers.findIndex(t => t.title === groupTitle);
+        
+        let newTrackers = [...trackers];
+        const trackerItem: TrackerItem = {
+          id: newId,
+          title: metric.title,
+          description: metric.description,
+          quantifierType: metric.measurementType === 'visual_counter' || metric.measurementType === 'numeric_counter' ? 'stepper' :
+                          metric.measurementType === 'progress' ? 'progress' :
+                          metric.measurementType === 'checkbox' ? 'checkbox' : 'none',
+          currentValue: metric.currentCount ?? metric.currentValue ?? 0,
+          maxValue: metric.targetCount ?? metric.maxValue ?? 10,
+          completed: metric.completed ?? false
+        };
+
+        if (existingTrackerIndex >= 0) {
+          const tracker = { ...newTrackers[existingTrackerIndex] };
+          tracker.items = [...tracker.items, trackerItem];
+          newTrackers[existingTrackerIndex] = tracker;
+        } else {
+          newTrackers.push({
+            id: crypto.randomUUID(),
+            title: groupTitle,
+            items: [trackerItem],
+            order: ''
+          });
+        }
+        
+        const cleanedTrackers = JSON.parse(JSON.stringify(newTrackers));
+        await updateDoc(doc(db, 'sessions', activeSession.id), {
+          trackers: cleanedTrackers
+        });
+        return newId;
+      }
+      
       const updatedMetrics = [...(activeSession.metrics || []), { ...metric, id: newId }];
       const cleanedMetrics = JSON.parse(JSON.stringify(updatedMetrics));
       await updateDoc(doc(db, 'sessions', activeSession.id), {
@@ -655,6 +695,76 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
   const handleUpdateMetric = async (metricId: string, updates: Partial<SessionMetric>) => {
     if (!user || !activeSession) return;
     try {
+      const game = games.find(g => g.id === activeSession.gameId);
+      if (game?.title === 'Acme Gaming') {
+        let newTrackers = [...(activeSession.trackers || [])];
+        let oldTrackerIndex = -1;
+        let itemIndex = -1;
+        let foundItem: TrackerItem | null = null;
+        
+        for (let i = 0; i < newTrackers.length; i++) {
+          const idx = newTrackers[i].items.findIndex(it => typeof it !== 'string' && it.id === metricId);
+          if (idx >= 0) {
+            oldTrackerIndex = i;
+            itemIndex = idx;
+            foundItem = newTrackers[i].items[idx] as TrackerItem;
+            break;
+          }
+        }
+        
+        if (foundItem && oldTrackerIndex >= 0) {
+          // Update item properties
+          let newItem = { ...foundItem };
+          if (updates.title !== undefined) newItem.title = updates.title;
+          if (updates.description !== undefined) newItem.description = updates.description;
+          if (updates.measurementType !== undefined) {
+             newItem.quantifierType = updates.measurementType === 'visual_counter' || updates.measurementType === 'numeric_counter' ? 'stepper' :
+                                      updates.measurementType === 'progress' ? 'progress' :
+                                      updates.measurementType === 'checkbox' ? 'checkbox' : 'none';
+          }
+          if (updates.currentCount !== undefined) newItem.currentValue = updates.currentCount;
+          if (updates.currentValue !== undefined) newItem.currentValue = updates.currentValue;
+          if (updates.targetCount !== undefined) newItem.maxValue = updates.targetCount;
+          if (updates.maxValue !== undefined) newItem.maxValue = updates.maxValue;
+          if (updates.completed !== undefined) newItem.completed = updates.completed;
+          
+          const newGroupTitle = updates.group || 'General';
+          if (('group' in updates) && newGroupTitle !== newTrackers[oldTrackerIndex].title) {
+             // Group changed, move item to new tracker
+             newTrackers[oldTrackerIndex] = {
+               ...newTrackers[oldTrackerIndex],
+               items: newTrackers[oldTrackerIndex].items.filter((_, idx) => idx !== itemIndex)
+             };
+             
+             const newTrackerIndex = newTrackers.findIndex(t => t.title === newGroupTitle);
+             if (newTrackerIndex >= 0) {
+               newTrackers[newTrackerIndex] = {
+                 ...newTrackers[newTrackerIndex],
+                 items: [...newTrackers[newTrackerIndex].items, newItem]
+               };
+             } else {
+               newTrackers.push({
+                 id: crypto.randomUUID(),
+                 title: newGroupTitle,
+                 items: [newItem],
+                 order: ''
+               });
+             }
+          } else {
+             newTrackers[oldTrackerIndex] = {
+               ...newTrackers[oldTrackerIndex],
+               items: newTrackers[oldTrackerIndex].items.map((it, idx) => idx === itemIndex ? newItem : it)
+             };
+          }
+          
+          const cleanedTrackers = JSON.parse(JSON.stringify(newTrackers));
+          await updateDoc(doc(db, 'sessions', activeSession.id), {
+            trackers: cleanedTrackers
+          });
+        }
+        return;
+      }
+      
       const updatedMetrics = (activeSession.metrics || []).map(m => {
         if (m.id === metricId) {
           const newMetric = { ...m, ...updates };
@@ -691,6 +801,23 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
   const handleDeleteMetric = async (metricId: string) => {
     if (!user || !activeSession) return;
     try {
+      const game = games.find(g => g.id === activeSession.gameId);
+      if (game?.title === 'Acme Gaming') {
+        let newTrackers = [...(activeSession.trackers || [])];
+        for (let i = 0; i < newTrackers.length; i++) {
+          newTrackers[i] = {
+            ...newTrackers[i],
+            items: newTrackers[i].items.filter(it => typeof it !== 'string' ? it.id !== metricId : true)
+          };
+        }
+        
+        const cleanedTrackers = JSON.parse(JSON.stringify(newTrackers));
+        await updateDoc(doc(db, 'sessions', activeSession.id), {
+          trackers: cleanedTrackers
+        });
+        return;
+      }
+      
       const updatedMetrics = (activeSession.metrics || []).filter(m => m.id !== metricId);
       const cleanedMetrics = JSON.parse(JSON.stringify(updatedMetrics));
       await updateDoc(doc(db, 'sessions', activeSession.id), {

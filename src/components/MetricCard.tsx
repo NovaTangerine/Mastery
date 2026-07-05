@@ -9,14 +9,10 @@ interface MetricCardProps {
   onUpdate: (metricId: string, updates: Partial<SessionMetric>) => void;
   onDelete: (metricId: string) => void;
   onEdit: (metricId: string) => void;
-  activeTappedId?: string | null;
-  onTap?: (id: string) => void;
+  onView?: (metricId: string) => void;
 }
 
-export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDelete, onEdit, activeTappedId, onTap }) => {
-  const isTapped = activeTappedId === metric.id;
-  const handleTap = () => onTap?.(metric.id);
-
+export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDelete, onEdit, onView }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const { refs, floatingStyles } = useFloating({
@@ -52,8 +48,8 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
   if (metric.measurementType === 'checkbox') {
     return (
       <motion.div 
-        className={`relative border rounded-xl p-3 flex items-center justify-between gap-4 group/metric transition-colors cursor-default ${isMenuOpen ? 'z-50 bg-zinc-800/60 border-zinc-700/50' : 'z-auto bg-zinc-900/40 border-zinc-800/30 hover:border-zinc-700/50 hover:bg-zinc-800/60'}`}
-        onClick={handleTap}
+        className={`relative border rounded-xl p-3 flex items-center justify-between gap-4 group/metric transition-colors cursor-pointer ${isMenuOpen ? 'z-50 bg-zinc-800/60 border-zinc-700/50' : 'z-auto bg-zinc-900/40 border-zinc-800/30 hover:border-zinc-700/50 hover:bg-zinc-800/60'}`}
+        onClick={() => onView?.(metric.id)}
         onHoverStart={() => {
           if (!isBouncing) setIsBouncing(true);
         }}
@@ -80,7 +76,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
                 e.stopPropagation(); 
                 setIsMenuOpen(!isMenuOpen);
               }}
-              className={`p-1 rounded-md transition-all absolute -left-8 -top-3 ${isMenuOpen ? 'text-zinc-100 bg-zinc-800' : 'text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800'} ${isTapped || isMenuOpen ? 'opacity-100' : 'opacity-0 lg:group-hover/metric:opacity-100'}`}
+              className={`p-1 rounded-md transition-all absolute -left-8 -top-3 ${isMenuOpen ? 'text-zinc-100 bg-zinc-800' : 'text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800'} ${isMenuOpen ? 'opacity-100' : 'opacity-0 lg:group-hover/metric:opacity-100'}`}
               title="More Options"
             >
               <MoreVertical className="w-4 h-4" />
@@ -142,8 +138,8 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
 
   return (
     <motion.div 
-      className={`relative border rounded-xl p-3 flex flex-col gap-2 group/metric transition-colors cursor-default ${isMenuOpen ? 'z-50 bg-zinc-800/60 border-zinc-700/50' : 'z-auto bg-zinc-900/40 border-zinc-800/30 hover:border-zinc-700/50 hover:bg-zinc-800/60'}`}
-      onClick={handleTap}
+      className={`relative border rounded-xl p-3 flex flex-col gap-2 group/metric transition-colors cursor-pointer ${isMenuOpen ? 'z-50 bg-zinc-800/60 border-zinc-700/50' : 'z-auto bg-zinc-900/40 border-zinc-800/30 hover:border-zinc-700/50 hover:bg-zinc-800/60'}`}
+      onClick={() => onView?.(metric.id)}
       onHoverStart={() => {
         if (!isBouncing) setIsBouncing(true);
       }}
@@ -164,7 +160,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
         {metric.measurementType === 'numeric_counter' && (
           <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-lg shrink-0 border border-zinc-800/50">
             <button
-              onClick={() => onUpdate(metric.id, { currentCount: Math.max(0, (metric.currentCount ?? 0) - 1) })}
+              onClick={(e) => { e.stopPropagation(); onUpdate(metric.id, { currentCount: Math.max(0, (metric.currentCount ?? 0) - 1) })}}
               className="w-6 h-6 rounded bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center text-zinc-400 transition-colors"
             >
               <Minus className="w-3 h-3" />
@@ -173,7 +169,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
               {metric.currentCount ?? 0}
             </div>
             <button
-              onClick={() => onUpdate(metric.id, { currentCount: (metric.currentCount ?? 0) + 1 })}
+              onClick={(e) => { e.stopPropagation(); onUpdate(metric.id, { currentCount: (metric.currentCount ?? 0) + 1 })}}
               className="w-6 h-6 rounded bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center text-zinc-400 transition-colors"
             >
               <Plus className="w-3 h-3" />
@@ -181,7 +177,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
           </div>
         )}
 
-        <div className={`flex items-center gap-1 transition-opacity ${isTapped || isMenuOpen ? 'opacity-100' : 'opacity-0 lg:group-hover/metric:opacity-100'}`}>
+        <div className={`flex items-center gap-1 transition-opacity ${isMenuOpen ? 'opacity-100' : 'opacity-0 lg:group-hover/metric:opacity-100'}`}>
           <div className="relative">
             <button 
               ref={refs.setReference}
@@ -245,7 +241,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
               ))}
               <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-lg ml-auto shrink-0 border border-zinc-800/50">
                 <button
-                  onClick={() => onUpdate(metric.id, { currentCount: Math.max(0, (metric.currentCount ?? 0) - 1) })}
+                  onClick={(e) => { e.stopPropagation(); onUpdate(metric.id, { currentCount: Math.max(0, (metric.currentCount ?? 0) - 1) })}}
                   className="w-6 h-6 rounded bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center text-zinc-400 transition-colors"
                 >
                   <Minus className="w-3 h-3" />
@@ -255,7 +251,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
                   {metric.targetCount ? ` / ${metric.targetCount}` : ''}
                 </div>
                 <button
-                  onClick={() => onUpdate(metric.id, { currentCount: (metric.currentCount ?? 0) + 1 })}
+                  onClick={(e) => { e.stopPropagation(); onUpdate(metric.id, { currentCount: (metric.currentCount ?? 0) + 1 })}}
                   className="w-6 h-6 rounded bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center text-zinc-400 transition-colors"
                 >
                   <Plus className="w-3 h-3" />
@@ -267,7 +263,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
           {metric.measurementType === 'progress' && (
             <div className="w-full flex items-center gap-3">
               <button 
-                onClick={() => onUpdate(metric.id, { currentValue: Math.min(100, (metric.currentValue ?? 0) + 10) })}
+                onClick={(e) => { e.stopPropagation(); onUpdate(metric.id, { currentValue: Math.min(100, (metric.currentValue ?? 0) + 10) })}}
                 className="w-full relative h-6 bg-zinc-950 rounded-full overflow-hidden border border-zinc-800"
               >
                 <div 

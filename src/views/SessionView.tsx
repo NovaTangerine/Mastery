@@ -16,6 +16,8 @@ import {
   verticalListSortingStrategy
 } from '@dnd-kit/sortable';
 
+import { SessionMetric } from '../types';
+
 import { useGameContext } from '../contexts/GameContext';
 import { useUI } from '../contexts/UIContext';
 import { useNotes } from '../hooks/useNotes';
@@ -25,6 +27,8 @@ import { AddTrackerMenu } from '../components/AddTrackerMenu';
 import { MetricCard } from '../components/MetricCard';
 import { AddMetricForm } from '../components/AddMetricForm';
 import { EditMetricModal } from '../components/EditMetricModal';
+import { ViewTrackerItemModal } from '../components/ViewTrackerItemModal';
+import { ViewMetricModal } from '../components/ViewMetricModal';
 import { TagAutocompleteInput } from '../components/TagAutocompleteInput';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { cn } from '../lib/utils';
@@ -469,6 +473,8 @@ export default function SessionView() {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [activeMenuType, setActiveMenuType] = useState<'group' | 'session' | null>(null);
   const [activeTappedId, setActiveTappedId] = useState<string | null>(null);
+  const [viewingTrackerItem, setViewingTrackerItem] = useState<{ trackerId: string, trackerTitle: string, item: any } | null>(null);
+  const [viewingMetricId, setViewingMetricId] = useState<string | null>(null);
   const noteInputContainerRef = useRef<HTMLDivElement>(null);
   const [isTrackersCollapsed, setIsTrackersCollapsed] = useState(false);
   const [collapsedTrackerGroups, setCollapsedTrackerGroups] = useState<Set<string>>(new Set());
@@ -769,7 +775,7 @@ export default function SessionView() {
   return (
     <div 
       ref={scrollContainerRef}
-      className="flex-1 min-h-0 pb-[58px] sm:pb-[58px] lg:pb-0 flex flex-row overflow-x-auto snap-x snap-mandatory lg:overflow-x-visible lg:snap-none justify-start lg:justify-center gap-12 lg:gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500 relative scrollbar-hide"
+      className="flex-1 min-h-0 pb-[58px] sm:pb-[58px] lg:pb-0 flex flex-row overflow-x-auto snap-x snap-mandatory lg:overflow-x-visible lg:snap-none justify-start lg:justify-center gap-12 lg:gap-0 animate-in fade-in slide-in-from-bottom-4 duration-500 relative scrollbar-hide"
       style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
     >
       {groupToDelete && (
@@ -899,7 +905,7 @@ export default function SessionView() {
       <div id="mobile-tab-sessions" className="group/sidebar w-full shrink-0 snap-center snap-always lg:w-[320px] flex-col lg:border-r border-zinc-800/50 min-h-0 flex relative">
         
         <div className="w-full flex flex-col h-full min-h-0 flex-1 relative z-10">
-        <div className="flex items-center justify-between px-5 pt-5 pb-5 z-10">
+        <div className="flex items-center justify-between px-5 lg:px-6 pt-5 pb-5 z-10">
           <div className="flex items-center gap-3 text-zinc-100 hidden lg:flex">
             <div className="w-8 h-8 bg-indigo-500/10 rounded-lg flex items-center justify-center border border-indigo-500/20">
               <List className="w-4 h-4 text-indigo-400" />
@@ -937,7 +943,7 @@ export default function SessionView() {
         </div>
 
         {isCreatingGroupFromList && (
-          <div className="mb-4 mx-3 p-3 bg-zinc-900/50 border border-zinc-800 rounded-xl space-y-3">
+          <div className="mb-4 mx-3 lg:mx-6 p-3 bg-zinc-900/50 border border-zinc-800 rounded-xl space-y-3">
             <input
               type="text"
               value={newGroupNameInput}
@@ -972,7 +978,7 @@ export default function SessionView() {
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto px-3 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto px-3 lg:px-6 custom-scrollbar">
           <div className="space-y-6 pb-24 lg:pb-20">
           {sessions.length === 1 && sessions[0].id === activeSession?.id && (
             <div className="px-2 py-4 mb-2 bg-indigo-500/5 border border-indigo-500/10 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-700">
@@ -1244,7 +1250,7 @@ export default function SessionView() {
       </div>
 
       {/* Main Session View or Filtered View */}
-      <div id="mobile-tab-notes" className="w-full shrink-0 snap-center snap-always lg:flex-1 lg:max-w-3xl xl:max-w-4xl flex-col min-w-0 min-h-0 flex lg:px-8">
+      <div id="mobile-tab-notes" className="w-full shrink-0 snap-center snap-always lg:flex-1 lg:max-w-3xl xl:max-w-4xl flex-col min-w-0 min-h-0 flex lg:px-6">
         <div className="w-full md:max-w-2xl lg:max-w-none mx-auto flex flex-col h-full min-h-0 flex-1 pl-4 pr-4 sm:pl-6 sm:pr-6 lg:pl-0 lg:pr-0 pt-4 lg:pt-6">
         {filteredTag ? (
           <>
@@ -1797,7 +1803,7 @@ export default function SessionView() {
       {/* Right Column: Trackers */}
       <div id="mobile-tab-trackers" className="w-full shrink-0 snap-center snap-always lg:w-[320px] flex-col lg:border-l border-zinc-800/50 min-h-0 flex relative">
         <div className="w-full flex flex-col h-full min-h-0 flex-1 relative z-10">
-        <div className="flex items-center justify-between px-5 pt-5 pb-5 z-10">
+        <div className="flex items-center justify-between px-5 lg:px-6 pt-5 pb-5 z-10">
           <div className="flex items-center gap-3 text-zinc-100 cursor-pointer group" onClick={() => {
             setIsTrackersCollapsed(!isTrackersCollapsed);
             if (isTrackersCollapsed) {
@@ -1817,12 +1823,55 @@ export default function SessionView() {
           </button>
         </div>
         
-        <div className="flex-1 overflow-y-auto custom-scrollbar px-3 lg:px-3 flex flex-col pb-24 lg:pb-0">
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-3 lg:px-6 flex flex-col pb-24 lg:pb-0">
           <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${isTrackersCollapsed ? 'grid-rows-[0fr] opacity-0 pointer-events-none' : 'grid-rows-[1fr] opacity-100'}`}>
             <div className="overflow-hidden min-h-0 p-2 -m-2">
               <div className="space-y-6 pb-20">
           {(() => {
-            const metrics = activeSession.metrics || [];
+            let metrics = activeSession.metrics || [];
+            
+            // Backend migration test for Acme Gaming
+            if (selectedGame.title === 'Acme Gaming') {
+              const acmeMetrics: SessionMetric[] = [];
+              const trackers = activeSession.trackers || [];
+              
+              trackers.forEach(tracker => {
+                tracker.items.forEach(item => {
+                  if (typeof item === 'string') {
+                    acmeMetrics.push({
+                      id: `${tracker.id}::${item}`,
+                      title: item,
+                      group: tracker.title,
+                      measurementType: 'checkbox',
+                      completed: false
+                    });
+                  } else {
+                    let mt: any = 'checkbox';
+                    if (item.quantifierType === 'stepper') mt = 'visual_counter';
+                    if (item.quantifierType === 'progress') mt = 'progress';
+                    if (item.quantifierType === 'none') mt = 'none';
+                    
+                    acmeMetrics.push({
+                      id: item.id,
+                      title: item.title,
+                      description: item.description,
+                      group: tracker.title === 'General' ? undefined : tracker.title,
+                      measurementType: mt,
+                      currentCount: item.currentValue,
+                      targetCount: item.maxValue,
+                      currentValue: item.currentValue,
+                      maxValue: item.maxValue,
+                      completed: item.completed
+                    });
+                  }
+                });
+                
+                // Add an empty item if the tracker has no items so the group still exists?
+                // Actually the old UI didn't show empty groups unless there was a metric in it.
+              });
+              
+              metrics = acmeMetrics;
+            }
             
             // Group metrics
             const groupedMetrics: Record<string, typeof metrics> = {};
@@ -1860,8 +1909,7 @@ export default function SessionView() {
                     onUpdate={handleUpdateMetric}
                     onDelete={() => setMetricToDelete({ id: metric.id, title: metric.title, type: 'metric' })}
                     onEdit={setEditingMetricId}
-                    activeTappedId={activeTappedId}
-                    onTap={(id) => setActiveTappedId(activeTappedId === id ? null : id)}
+                    onView={setViewingMetricId}
                   />
                 ))}
                 
@@ -1900,8 +1948,7 @@ export default function SessionView() {
                               onUpdate={handleUpdateMetric}
                               onDelete={() => setMetricToDelete({ id: metric.id, title: metric.title, type: 'metric' })}
                               onEdit={setEditingMetricId}
-                              activeTappedId={activeTappedId}
-                              onTap={(id) => setActiveTappedId(activeTappedId === id ? null : id)}
+                              onView={setViewingMetricId}
                             />
                           ))}
                         </div>
@@ -1934,7 +1981,7 @@ export default function SessionView() {
             </button>
           )}
 
-          {activeSession.trackers?.length ? (
+          {activeSession.trackers?.length && selectedGame.title !== 'Acme Gaming' ? (
             <div className="md:col-span-full lg:col-auto mt-8 border-t border-zinc-800 pt-6 space-y-4 w-full">
               <div className="flex items-center justify-between px-1">
                 <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Legacy Trackers</h4>
@@ -1954,8 +2001,7 @@ export default function SessionView() {
                   onRemoveItem={handleRemoveTrackerItem}
                   onUpdateTracker={handleUpdateTracker}
                   onDeleteTracker={() => setMetricToDelete({ id: tracker.id, title: tracker.title, type: 'legacy' })}
-                  activeTappedId={activeTappedId}
-                  onTap={(id) => setActiveTappedId(activeTappedId === id ? null : id)}
+                  onViewItem={(trackerId, item) => setViewingTrackerItem({ trackerId, trackerTitle: tracker.title, item })}
                   itemSuggestions={trackerItemSuggestions[tracker.title] || []}
                 />
               ))}
@@ -2085,6 +2131,28 @@ export default function SessionView() {
           existingGroups={Array.from(new Set((activeSession.metrics || []).map(m => m.group).filter(Boolean) as string[]))}
           onUpdate={handleUpdateMetric}
           onClose={() => setEditingMetricId(null)}
+        />
+      )}
+
+      {viewingTrackerItem && (
+        <ViewTrackerItemModal
+          item={viewingTrackerItem.item}
+          trackerId={viewingTrackerItem.trackerId}
+          trackerTitle={viewingTrackerItem.trackerTitle}
+          onUpdateItem={handleUpdateTrackerItem}
+          onClose={() => setViewingTrackerItem(null)}
+        />
+      )}
+
+      {viewingMetricId && activeSession.metrics?.find(m => m.id === viewingMetricId) && (
+        <ViewMetricModal
+          metric={activeSession.metrics.find(m => m.id === viewingMetricId)!}
+          onClose={() => setViewingMetricId(null)}
+          onEdit={(id) => {
+            setViewingMetricId(null);
+            setEditingMetricId(id);
+          }}
+          onUpdate={handleUpdateMetric}
         />
       )}
 

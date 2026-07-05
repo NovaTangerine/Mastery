@@ -288,6 +288,17 @@ export default function DashboardView() {
             </button>
           </div>
           <button 
+            onClick={async () => {
+              const newGameId = await handleAddGame("Acme Gaming");
+              if (newGameId) {
+                await resumeOrCreateSession({ id: newGameId, title: "Acme Gaming" } as Game);
+              }
+            }}
+            className="bg-indigo-500/20 text-indigo-400 px-5 py-2 rounded-full font-bold flex items-center gap-2 hover:bg-indigo-500/30 transition-all active:scale-95 hidden lg:flex"
+          >
+            Acme Test
+          </button>
+          <button 
             onClick={() => setIsAddingGame(true)}
             className="bg-zinc-100 text-zinc-950 px-5 py-2 rounded-full font-bold flex items-center gap-2 hover:bg-white transition-all active:scale-95"
           >

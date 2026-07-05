@@ -12,8 +12,7 @@ interface TrackerCardProps {
   onRemoveItem: (trackerId: string, itemId: string | number) => void;
   onUpdateTracker: (trackerId: string, title: string) => void;
   onDeleteTracker: (trackerId: string) => void;
-  activeTappedId?: string | null;
-  onTap?: (id: string) => void;
+  onViewItem?: (trackerId: string, item: TrackerItem | string) => void;
   itemSuggestions?: string[];
 }
 
@@ -23,34 +22,30 @@ const TrackerItemRow = ({
   trackerId, 
   onUpdateItem, 
   onRemoveItem,
-  activeTappedId,
-  onTap
+  onViewItem
 }: { 
   item: TrackerItem | string, 
   index: number, 
   trackerId: string, 
   onUpdateItem: (trackerId: string, itemId: string, updates: Partial<TrackerItem>) => void,
   onRemoveItem: (trackerId: string, itemId: string | number) => void,
-  activeTappedId: string | null,
-  onTap: (id: string) => void
+  onViewItem: (trackerId: string, item: TrackerItem | string) => void
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   
   const itemIdString = typeof item === 'string' ? `${trackerId}-item-${index}` : item.id;
-  const isTapped = activeTappedId === itemIdString;
-  const handleTap = () => onTap(itemIdString);
 
   // Handle legacy string items
   if (typeof item === 'string') {
     return (
       <div 
-        className="group flex items-start justify-between bg-zinc-950/50 rounded-lg p-2 text-sm"
-        onClick={handleTap}
+        className="group flex items-start justify-between bg-zinc-950/50 rounded-lg p-2 text-sm cursor-pointer hover:bg-zinc-900/50 transition-colors"
+        onClick={() => onViewItem(trackerId, item)}
       >
         <span className="text-zinc-300 break-words pr-2">{item}</span>
         <button 
           onClick={(e) => { e.stopPropagation(); onRemoveItem(trackerId, index); }}
-          className={`text-zinc-600 hover:text-red-400 transition-colors shrink-0 mt-0.5 ${isTapped ? 'opacity-100' : 'opacity-0 lg:group-hover:opacity-100'}`}
+          className="text-zinc-600 hover:text-red-400 transition-colors shrink-0 mt-0.5 opacity-0 lg:group-hover:opacity-100"
         >
           <X className="w-3.5 h-3.5" />
         </button>
@@ -85,8 +80,8 @@ const TrackerItemRow = ({
 
   return (
     <div 
-      className="group flex flex-col bg-zinc-950/50 rounded-lg p-2 text-sm transition-all"
-      onClick={handleTap}
+      className="group flex flex-col bg-zinc-950/50 rounded-lg p-2 text-sm transition-all cursor-pointer hover:bg-zinc-900/50"
+      onClick={() => onViewItem(trackerId, item)}
     >
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-2 flex-1 min-w-0">
@@ -166,7 +161,7 @@ const TrackerItemRow = ({
 
         <button 
           onClick={(e) => { e.stopPropagation(); onRemoveItem(trackerId, item.id); }}
-          className={`text-zinc-600 hover:text-red-400 transition-colors shrink-0 mt-0.5 ml-2 ${isTapped ? 'opacity-100' : 'opacity-0 lg:group-hover:opacity-100'}`}
+          className="text-zinc-600 hover:text-red-400 transition-colors shrink-0 mt-0.5 ml-2 opacity-0 lg:group-hover:opacity-100"
         >
           <X className="w-3.5 h-3.5" />
         </button>
@@ -182,7 +177,7 @@ const TrackerItemRow = ({
   );
 };
 
-export const TrackerCard = React.memo(({ tracker, onAddItem, onUpdateItem, onRemoveItem, onUpdateTracker, onDeleteTracker, activeTappedId, onTap, itemSuggestions = [] }: TrackerCardProps) => {
+export const TrackerCard = React.memo(({ tracker, onAddItem, onUpdateItem, onRemoveItem, onUpdateTracker, onDeleteTracker, onViewItem, itemSuggestions = [] }: TrackerCardProps) => {
   const [isAdding, setIsAdding] = useState(false);
   const [newItemTitle, setNewItemTitle] = useState('');
   const [newItemDesc, setNewItemDesc] = useState('');
@@ -229,8 +224,6 @@ export const TrackerCard = React.memo(({ tracker, onAddItem, onUpdateItem, onRem
     setIsEditingTitle(false);
   };
   
-  const isTapped = activeTappedId === tracker.id;
-  const handleTap = () => onTap?.(tracker.id);
   const [isBouncing, setIsBouncing] = useState(false);
 
   const handleAddItem = (e: React.FormEvent) => {
@@ -270,7 +263,6 @@ export const TrackerCard = React.memo(({ tracker, onAddItem, onUpdateItem, onRem
     >
       <div 
         className="flex justify-between items-center mb-3 group cursor-default relative"
-        onClick={handleTap}
       >
         {isEditingTitle ? (
           <form onSubmit={handleTitleSubmit} className="flex-1 mr-2" onClick={(e) => e.stopPropagation()}>
@@ -304,7 +296,7 @@ export const TrackerCard = React.memo(({ tracker, onAddItem, onUpdateItem, onRem
                 e.stopPropagation(); 
                 setIsMenuOpen(!isMenuOpen);
               }}
-              className={`p-1 rounded-md transition-all ${isMenuOpen ? 'text-zinc-100 bg-zinc-800' : 'text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800'} ${isTapped || isMenuOpen ? 'opacity-100' : 'opacity-0 lg:group-hover:opacity-100'}`}
+              className={`p-1 rounded-md transition-all ${isMenuOpen ? 'text-zinc-100 bg-zinc-800' : 'text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800'} ${isMenuOpen ? 'opacity-100' : 'opacity-0 lg:group-hover:opacity-100'}`}
               title="More Options"
             >
               <MoreVertical className="w-4 h-4" />
@@ -357,8 +349,7 @@ export const TrackerCard = React.memo(({ tracker, onAddItem, onUpdateItem, onRem
             trackerId={tracker.id}
             onUpdateItem={onUpdateItem}
             onRemoveItem={onRemoveItem}
-            activeTappedId={activeTappedId || null}
-            onTap={onTap || (() => {})}
+            onViewItem={onViewItem || (() => {})}
           />
         ))}
         {tracker.items.length === 0 && (

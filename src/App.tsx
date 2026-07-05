@@ -51,6 +51,8 @@ import TrackerModalMockupView from './views/TrackerModalMockupView';
 import TrackerSyncMockupView from './views/TrackerSyncMockupView';
 import NoteVisualsMockupView from './views/NoteVisualsMockupView';
 
+import TrackersV2PostMortemView from './views/TrackersV2PostMortemView';
+
 // --- Components ---
 
 function MainApp() {
@@ -241,9 +243,15 @@ function MainApp() {
                         </button>
                         <button 
                           onClick={() => { clearHistory(); navigateTo('note-visuals-mockup', null, null); }}
-                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 rounded-b-xl ${view === 'note-visuals-mockup' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 ${view === 'note-visuals-mockup' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
                         >
                           Note Visuals UI
+                        </button>
+                        <button 
+                          onClick={() => { clearHistory(); navigateTo('trackers-v2-post-mortem', null, null); }}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 rounded-b-xl ${view === 'trackers-v2-post-mortem' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                        >
+                          Trackers V2 Post-Mortem
                         </button>
                       </div>
                     </div>
@@ -393,6 +401,7 @@ function MainApp() {
             {view === 'tracker-modal-mockup' && <TrackerModalMockupView />}
             {view === 'tracker-sync-mockup' && <TrackerSyncMockupView />}
             {view === 'note-visuals-mockup' && <NoteVisualsMockupView />}
+            {view === 'trackers-v2-post-mortem' && <TrackersV2PostMortemView />}
           </div>
         </main>
 
