@@ -208,7 +208,7 @@ function SidebarSessionItem({ session, ctx }: any) {
           }`}
         >
           <div className="flex-1 min-w-0 pr-4">
-            <p className={`font-semibold text-sm line-clamp-1 mb-0.5 ${activeSession?.id === session.id ? 'text-amber-400' : 'text-zinc-300'}`}>
+            <p className={`font-semibold text-sm line-clamp-1 mb-0.5 ${activeSession?.id === session.id ? 'bg-gradient-to-r from-white to-zinc-500 text-transparent bg-clip-text' : 'text-zinc-300'}`}>
               {session.name || session.progressMarker || 'Unnamed Session'}
             </p>
             <div className="flex items-center gap-3">
@@ -897,12 +897,12 @@ export default function SessionView() {
         <div className="w-full flex flex-col h-full min-h-0 flex-1 relative z-10">
         <div className="flex items-center justify-between px-5 lg:px-6 pt-5 pb-5 z-10">
           <div className="flex items-center gap-3 text-zinc-100 hidden lg:flex">
-            <div className="w-8 h-8 bg-indigo-500/10 rounded-lg flex items-center justify-center border border-indigo-500/20">
+            <div className="hidden w-8 h-8 bg-indigo-500/10 rounded-lg items-center justify-center border border-indigo-500/20">
               <List className="w-4 h-4 text-indigo-400" />
             </div>
             <h2 className="text-lg font-normal tracking-[.016em]">Sessions</h2>
           </div>
-          <h3 className="font-normal uppercase tracking-widest text-xs text-zinc-400 lg:hidden">Sessions</h3>
+          <h3 className="font-normal uppercase tracking-[.072em] text-xs text-zinc-400 lg:hidden">Sessions</h3>
           <div className="flex items-center gap-1.5 lg:bg-zinc-800/40 lg:border lg:border-zinc-700/50 lg:rounded-xl lg:p-1">
             <button 
               onClick={() => setSessionSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
@@ -972,7 +972,7 @@ export default function SessionView() {
           <div className="space-y-6 pb-24 lg:pb-20">
           {sessions.length === 1 && sessions[0].id === activeSession?.id && (
             <div className="px-2 py-4 mb-2 bg-indigo-500/5 border border-indigo-500/10 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-700">
-              <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Getting Started</p>
+              <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-[.072em] mb-1">Getting Started</p>
               <p className="text-xs text-zinc-400 leading-relaxed">
                 This is your first session! As you play more, your history will build up here.
               </p>
@@ -1018,7 +1018,7 @@ export default function SessionView() {
                       autoFocus
                     />
                   ) : (
-                    <h4 className="text-[11px] font-normal text-zinc-400 uppercase tracking-widest transition-colors group-hover/header:text-zinc-300 truncate">{group.title}</h4>
+                    <h4 className="text-[11px] font-normal text-zinc-400 uppercase tracking-[.072em] transition-colors group-hover/header:text-zinc-300 truncate">{group.title}</h4>
                   )}
                 </div>
                 
@@ -1181,7 +1181,7 @@ export default function SessionView() {
                     ) : (
                       <ChevronDown className="w-3.5 h-3.5 text-zinc-600 transition-colors group-hover/header:text-zinc-500 shrink-0" />
                     )}
-                    <h4 className="text-[11px] font-normal text-zinc-400 uppercase tracking-widest transition-colors group-hover/header:text-zinc-300 truncate">Ungrouped</h4>
+                    <h4 className="text-[11px] font-normal text-zinc-400 uppercase tracking-[.072em] transition-colors group-hover/header:text-zinc-300 truncate">Ungrouped</h4>
                   </div>
                   <div className={`flex items-center gap-0.5 transition-opacity shrink-0 bg-zinc-950/80 rounded-md px-1 ${isGroupTapped ? 'opacity-100' : 'opacity-0 lg:group-hover/header:opacity-100'}`}>
                     <button
@@ -1363,11 +1363,11 @@ export default function SessionView() {
                      }
                      setIsEditingTitleInline(false);
                   }}
-                  className="text-xl font-bold bg-zinc-950 border border-zinc-800 rounded px-2 py-0.5 focus:outline-none focus:border-zinc-600 w-full"
+                  className="text-xl font-medium bg-zinc-950 border border-zinc-800 rounded px-2 py-0.5 focus:outline-none focus:border-zinc-600 w-full"
                 />
               ) : (
                 <>
-                  <h2 className="text-xl font-bold truncate">
+                  <h2 className="text-xl font-medium truncate">
                     {activeSession.name || activeSession.progressMarker}
                   </h2>
                   <button
@@ -1764,7 +1764,7 @@ export default function SessionView() {
               setCollapsedTrackerGroups(new Set());
             }
           }}>
-            <div className="w-8 h-8 bg-indigo-500/10 rounded-lg flex items-center justify-center border border-indigo-500/20">
+            <div className="hidden w-8 h-8 bg-indigo-500/10 rounded-lg items-center justify-center border border-indigo-500/20">
               <Target className="w-4 h-4 text-indigo-400" />
             </div>
             <h2 className="text-lg font-normal tracking-[.016em] group-hover:text-zinc-300 transition-colors">Trackers</h2>
@@ -1780,7 +1780,7 @@ export default function SessionView() {
         <div className="flex-1 overflow-y-auto custom-scrollbar px-3 lg:px-6 flex flex-col pb-24 lg:pb-0">
           <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${isTrackersCollapsed ? 'grid-rows-[0fr] opacity-0 pointer-events-none' : 'grid-rows-[1fr] opacity-100'}`}>
             <div className="overflow-hidden min-h-0 p-2 -m-2">
-              <div className="space-y-6 pb-20">
+              <div className="space-y-6 lg:space-y-4 pb-20">
           {(() => {
             let metrics = activeSession.metrics || [];
             
@@ -1889,7 +1889,7 @@ export default function SessionView() {
                         ) : (
                           <ChevronDown className="w-3.5 h-3.5 text-zinc-600 transition-colors group-hover/header:text-zinc-500" />
                         )}
-                        <h4 className="text-[11px] font-normal text-zinc-400 uppercase tracking-widest transition-colors group-hover/header:text-zinc-300">{groupName}</h4>
+                        <h4 className="text-[11px] font-normal text-zinc-400 uppercase tracking-[.072em] transition-colors group-hover/header:text-zinc-300">{groupName}</h4>
                       </div>
                     </div>
                     <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${isGroupCollapsed ? 'grid-rows-[0fr] opacity-0 pointer-events-none' : 'grid-rows-[1fr] opacity-100'}`}>
@@ -1938,7 +1938,7 @@ export default function SessionView() {
           {activeSession.trackers?.length && selectedGame.title !== 'Acme Gaming' ? (
             <div className="md:col-span-full lg:col-auto mt-8 border-t border-zinc-800 pt-6 space-y-4 w-full">
               <div className="flex items-center justify-between px-1">
-                <h4 className="text-xs font-normal text-zinc-500 uppercase tracking-widest">Legacy Trackers</h4>
+                <h4 className="text-xs font-normal text-zinc-500 uppercase tracking-[.072em]">Legacy Trackers</h4>
                 <button
                   onClick={handleMigrateLegacyTrackers}
                   className="px-3 py-1.5 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors"
@@ -1971,7 +1971,7 @@ export default function SessionView() {
           <div className="space-y-4 w-full md:col-span-2 lg:col-span-1 border-zinc-800 lg:border-t-0 mt-6 lg:mt-auto">
             <div className="flex items-center gap-2 text-zinc-400">
               <TagIcon className="w-4 h-4 text-zinc-600" />
-              <h3 className="font-normal uppercase tracking-widest text-xs">Session Tags</h3>
+              <h3 className="font-normal uppercase tracking-[.072em] text-xs">Session Tags</h3>
             </div>
             
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl flex flex-col overflow-hidden">
@@ -2018,7 +2018,7 @@ export default function SessionView() {
                   </div>
                 ) : (
                   <div className="p-3 bg-zinc-900/30 border border-zinc-800/50 rounded-xl text-left">
-                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Pro Tip</p>
+                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[.072em] mb-1">Pro Tip</p>
                     <p className="text-[11px] text-zinc-400 italic">"Use tags like #boss or #quest to stay organized! Add them below and drag to notes."</p>
                   </div>
                 )}
@@ -2029,7 +2029,7 @@ export default function SessionView() {
                       onClick={() => setIsTagsExpanded(!isTagsExpanded)}
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/50 hover:border-zinc-700 rounded-full transition-all text-zinc-400 hover:text-zinc-300 group"
                     >
-                       <span className="text-[10px] font-bold uppercase tracking-widest">{isTagsExpanded ? 'Show Less' : `Show All (${allSessionTagsList.length})`}</span>
+                       <span className="text-[10px] font-bold uppercase tracking-[.072em]">{isTagsExpanded ? 'Show Less' : `Show All (${allSessionTagsList.length})`}</span>
                        <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-300", isTagsExpanded && "rotate-180")} />
                     </button>
                   </div>
