@@ -17,7 +17,6 @@
     "@floating-ui/react": "^0.27.19",
     "@google/genai": "^1.29.0",
     "@tailwindcss/vite": "^4.1.14",
-    "@tanstack/react-virtual": "^3.13.23",
     "@vitejs/plugin-react": "^5.0.4",
     "clsx": "^2.1.1",
     "colorthief": "^3.3.1",

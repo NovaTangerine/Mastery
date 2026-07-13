@@ -4,7 +4,6 @@ import { format } from 'date-fns';
 import { useGameContext } from '../contexts/GameContext';
 import { useUI } from '../contexts/UIContext';
 import { useNotes } from '../hooks/useNotes';
-import { useWindowVirtualizer } from '@tanstack/react-virtual';
 
 export default function AllNotesView() {
   const { goBack, viewState } = useUI();
@@ -19,12 +18,6 @@ export default function AllNotesView() {
   } = useNotes(selectedGame?.id || null, undefined, filteredTag);
 
   const reversedNotes = [...notes].reverse();
-
-  const rowVirtualizer = useWindowVirtualizer({
-    count: reversedNotes.length,
-    estimateSize: () => 150,
-    overscan: 5,
-  });
 
   if (!selectedGame) return null;
 
@@ -66,50 +59,35 @@ export default function AllNotesView() {
           </p>
         </div>
       ) : (
-        <div 
-          className="relative w-full"
-          style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
-        >
-          {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-            const note = reversedNotes[virtualRow.index];
-            return (
-              <div 
-                key={note.id} 
-                data-index={virtualRow.index}
-                ref={rowVirtualizer.measureElement}
-                className="absolute top-0 left-0 w-full"
-                style={{
-                  transform: `translateY(${virtualRow.start}px)`,
-                  paddingBottom: '16px',
-                }}
-              >
-                <div className="bg-zinc-900/50 border border-zinc-900 rounded-2xl p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex flex-wrap gap-2">
-                      {note.tags.map(tag => (
-                        <span 
-                          key={tag} 
-                          onClick={() => setFilteredTag(tag)}
-                          className="cursor-pointer hover:bg-zinc-700 hover:text-zinc-300 transition-colors px-2 py-0.5 bg-zinc-800 rounded text-[10px] font-bold text-zinc-400 uppercase tracking-tighter"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                      {note.isGlobal && (
-                        <span className="px-2 py-0.5 bg-zinc-100 text-zinc-950 rounded text-[10px] font-bold uppercase tracking-tighter">
-                          Global
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-[10px] font-mono text-zinc-600">
-                      {format(note.timestamp, 'MMM d, yyyy HH:mm')}
-                    </span>
+        <div className="w-full flex flex-col gap-4">
+          {reversedNotes.map((note) => (
+            <div key={note.id} className="w-full">
+              <div className="bg-zinc-900/50 border border-zinc-900 rounded-2xl p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex flex-wrap gap-2">
+                    {note.tags.map(tag => (
+                      <span 
+                        key={tag} 
+                        onClick={() => setFilteredTag(tag)}
+                        className="cursor-pointer hover:bg-zinc-700 hover:text-zinc-300 transition-colors px-2 py-0.5 bg-zinc-800 rounded text-[10px] font-bold text-zinc-400 uppercase tracking-tighter"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                    {note.isGlobal && (
+                      <span className="px-2 py-0.5 bg-zinc-100 text-zinc-950 rounded text-[10px] font-bold uppercase tracking-tighter">
+                        Global
+                      </span>
+                    )}
                   </div>
-                  <p className="text-zinc-300 text-base leading-relaxed">{note.content}</p>
+                  <span className="text-[10px] font-mono text-zinc-600">
+                    {format(note.timestamp, 'MMM d, yyyy HH:mm')}
+                  </span>
                 </div>
+                <p className="text-zinc-300 text-base leading-relaxed">{note.content}</p>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       )}
 

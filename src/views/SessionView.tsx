@@ -30,7 +30,6 @@ import { EditMetricModal } from '../components/EditMetricModal';
 import { ViewTrackerItemModal } from '../components/ViewTrackerItemModal';
 import { ViewMetricModal } from '../components/ViewMetricModal';
 import { TagAutocompleteInput } from '../components/TagAutocompleteInput';
-import { useVirtualizer } from '@tanstack/react-virtual';
 import { cn } from '../lib/utils';
 
 function SessionTagItem({ tag, count, setFilteredTag, scrollToTab, handleDeleteSessionTag }: { 
@@ -675,13 +674,6 @@ export default function SessionView() {
 
 
   const sessionNotes = notes.filter(n => n.sessionId === activeSession?.id);
-
-  const rowVirtualizer = useVirtualizer({
-    count: sessionNotes.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 120,
-    overscan: 5,
-  });
 
   const getSessionName = (sessionId: string | null) => {
     if (!sessionId) return 'Global Notes';
@@ -1636,45 +1628,23 @@ export default function SessionView() {
                 items={sessionNotes.map(n => n.id)}
                 strategy={verticalListSortingStrategy}
               >
-                <div
-                  style={{
-                    height: `${rowVirtualizer.getTotalSize()}px`,
-                    width: '100%',
-                    position: 'relative',
-                  }}
-                >
-                  {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                    const note = sessionNotes[virtualRow.index];
-                    return (
-                      <div
-                        key={note.id}
-                        data-index={virtualRow.index}
-                        ref={rowVirtualizer.measureElement}
-                        className=""
-                        style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          width: '100%',
-                          transform: `translateY(${virtualRow.start}px)`,
-                          paddingBottom: '16px', // space-y-4 equivalent
-                        }}
-                      >
-                        <SortableNote 
-                          note={note}
-                          onUpdate={handleUpdateNote}
-                          onDelete={handleDeleteNote}
-                          onAddTag={handleAddTag}
-                          onRemoveTag={handleRemoveTag}
-                          taggingStatus={taggingStatus[note.id]}
-                          onRetryTagging={handleRetryTagging}
-                          onTagClick={setFilteredTag}
-                          availableSessions={availableSessions}
-                          onMoveNote={(targetSessionId) => handleMoveNote(note.id, targetSessionId === 'global' ? null : targetSessionId)}
-                        />
-                      </div>
-                    );
-                  })}
+                <div className="w-full flex flex-col gap-4">
+                  {sessionNotes.map((note) => (
+                    <div key={note.id} className="w-full">
+                      <SortableNote 
+                        note={note}
+                        onUpdate={handleUpdateNote}
+                        onDelete={handleDeleteNote}
+                        onAddTag={handleAddTag}
+                        onRemoveTag={handleRemoveTag}
+                        taggingStatus={taggingStatus[note.id]}
+                        onRetryTagging={handleRetryTagging}
+                        onTagClick={setFilteredTag}
+                        availableSessions={availableSessions}
+                        onMoveNote={(targetSessionId) => handleMoveNote(note.id, targetSessionId === 'global' ? null : targetSessionId)}
+                      />
+                    </div>
+                  ))}
                 </div>
               </SortableContext>
             </DndContext>
