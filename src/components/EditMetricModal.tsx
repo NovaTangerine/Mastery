@@ -6,7 +6,7 @@ interface EditMetricModalProps {
   metric: SessionMetric;
   existingGroups?: string[];
   onUpdate: (metricId: string, updates: Partial<SessionMetric>) => void;
-  onClose: () => void;
+  onClose: (saved?: boolean) => void;
 }
 
 export const EditMetricModal: React.FC<EditMetricModalProps> = ({ metric, existingGroups = [], onUpdate, onClose }) => {
@@ -48,7 +48,7 @@ export const EditMetricModal: React.FC<EditMetricModalProps> = ({ metric, existi
     }
 
     onUpdate(metric.id, updates);
-    onClose();
+    onClose(true);
   };
 
   return (
@@ -61,8 +61,9 @@ export const EditMetricModal: React.FC<EditMetricModalProps> = ({ metric, existi
             onChange={(e) => setTitle(e.target.value)}
             className="text-xl font-bold text-zinc-100 bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 rounded-lg px-2 py-1 -ml-2 w-full"
             placeholder="Tracker Name"
+            autoFocus
           />
-          <button onClick={onClose} className="p-2 text-zinc-500 hover:text-zinc-300 transition-colors shrink-0">
+          <button onClick={() => onClose(false)} className="p-2 text-zinc-500 hover:text-zinc-300 transition-colors shrink-0">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -194,7 +195,7 @@ export const EditMetricModal: React.FC<EditMetricModalProps> = ({ metric, existi
 
         <div className="flex justify-end gap-3 pt-4 border-t border-zinc-800/50">
           <button
-            onClick={onClose}
+            onClick={() => onClose(false)}
             className="px-5 py-2.5 text-sm font-bold text-zinc-400 hover:text-zinc-200 transition-colors"
           >
             Cancel

@@ -447,8 +447,8 @@ export default function SessionView() {
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [editingGroupTitle, setEditingGroupTitle] = useState('');
   
-  const [isAddingMetric, setIsAddingMetric] = useState(false);
   const [editingMetricId, setEditingMetricId] = useState<string | null>(null);
+  const [isEditingNewMetric, setIsEditingNewMetric] = useState(false);
   const [selectedSessionIdsForGroup, setSelectedSessionIdsForGroup] = useState<Set<string>>(new Set());
   
   const [isTagsExpanded, setIsTagsExpanded] = useState(false);
@@ -476,7 +476,6 @@ export default function SessionView() {
   const [viewingTrackerItem, setViewingTrackerItem] = useState<{ trackerId: string, trackerTitle: string, item: any } | null>(null);
   const [viewingMetricId, setViewingMetricId] = useState<string | null>(null);
   const noteInputContainerRef = useRef<HTMLDivElement>(null);
-  const [isTrackersCollapsed, setIsTrackersCollapsed] = useState(false);
   const [collapsedTrackerGroups, setCollapsedTrackerGroups] = useState<Set<string>>(new Set());
 
   const toggleTrackerGroup = (groupName: string, e?: React.MouseEvent) => {
@@ -512,6 +511,19 @@ export default function SessionView() {
   };
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (window.innerWidth >= 1024) return;
+    const target = e.currentTarget;
+    const scrollLeft = target.scrollLeft;
+    const width = target.clientWidth;
+    // Mobile gap is 48px (gap-12)
+    const index = Math.round(scrollLeft / (width + 48));
+    const tabs = ['sessions', 'notes', 'trackers'] as const;
+    if (tabs[index]) {
+      setActiveMobileTab(prev => prev !== tabs[index] ? tabs[index] : prev);
+    }
+  };
 
   const scrollToTab = (tab: 'sessions' | 'notes' | 'trackers', behavior: ScrollBehavior = 'smooth') => {
     setActiveMobileTab(tab);
@@ -522,34 +534,6 @@ export default function SessionView() {
     }
   };
 
-  useEffect(() => {
-    if (window.innerWidth >= 1024) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            const tabId = entry.target.id;
-            if (tabId === 'mobile-tab-sessions') setActiveMobileTab(prev => prev !== 'sessions' ? 'sessions' : prev);
-            if (tabId === 'mobile-tab-notes') setActiveMobileTab(prev => prev !== 'notes' ? 'notes' : prev);
-            if (tabId === 'mobile-tab-trackers') setActiveMobileTab(prev => prev !== 'trackers' ? 'trackers' : prev);
-          }
-        });
-      },
-      {
-        root: scrollContainerRef.current,
-        threshold: 0.5
-      }
-    );
-
-    const tabs = ['sessions', 'notes', 'trackers'];
-    tabs.forEach(tab => {
-      const el = document.getElementById(`mobile-tab-${tab}`);
-      if (el) observer.observe(el);
-    });
-
-    return () => observer.disconnect();
-  }, []);
 
   useEffect(() => {
     if (window.innerWidth < 1024) {
@@ -765,6 +749,7 @@ export default function SessionView() {
   return (
     <div 
       ref={scrollContainerRef}
+      onScroll={handleScroll}
       className="flex-1 min-h-0 pb-[58px] sm:pb-[58px] lg:pb-0 flex flex-row overflow-x-auto snap-x snap-mandatory lg:overflow-x-visible lg:snap-none justify-start lg:justify-center gap-12 lg:gap-0 animate-in fade-in slide-in-from-bottom-4 duration-500 relative scrollbar-hide"
       style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
     >
@@ -897,8 +882,8 @@ export default function SessionView() {
         <div className="w-full flex flex-col h-full min-h-0 flex-1 relative z-10">
         <div className="flex items-center justify-between px-5 lg:px-6 pt-5 pb-5 z-10">
           <div className="flex items-center gap-3 text-zinc-100 hidden lg:flex">
-            <div className="hidden w-8 h-8 bg-indigo-500/10 rounded-lg items-center justify-center border border-indigo-500/20">
-              <List className="w-4 h-4 text-indigo-400" />
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-zinc-900 text-zinc-400 border border-zinc-800/50 shadow-sm">
+              <List className="w-4 h-4" />
             </div>
             <h2 className="text-lg font-normal tracking-[.016em]">Sessions</h2>
           </div>
@@ -1759,18 +1744,40 @@ export default function SessionView() {
         <div className="w-full flex flex-col h-full min-h-0 flex-1 relative z-10">
         <div className="flex items-center justify-between px-5 lg:px-6 pt-5 pb-5 z-10">
           <div className="flex items-center gap-3 text-zinc-100 cursor-pointer group" onClick={() => {
-            setIsTrackersCollapsed(!isTrackersCollapsed);
-            if (isTrackersCollapsed) {
+            const allGroups = new Set<string>();
+            if (activeSession.metrics) {
+              activeSession.metrics.forEach(m => allGroups.add(m.group || 'Ungrouped'));
+            }
+            if (activeSession.trackers) {
+              activeSession.trackers.forEach(t => allGroups.add(t.title || 'Ungrouped'));
+            }
+            let allCollapsed = true;
+            for (const group of allGroups) {
+              if (!collapsedTrackerGroups.has(group)) {
+                allCollapsed = false;
+                break;
+              }
+            }
+            if (allCollapsed && allGroups.size > 0) {
               setCollapsedTrackerGroups(new Set());
+            } else {
+              setCollapsedTrackerGroups(allGroups);
             }
           }}>
-            <div className="hidden w-8 h-8 bg-indigo-500/10 rounded-lg items-center justify-center border border-indigo-500/20">
-              <Target className="w-4 h-4 text-indigo-400" />
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-zinc-900 text-zinc-400 group-hover:text-zinc-300 transition-colors border border-zinc-800/50 shadow-sm">
+              <Target className="w-4 h-4" />
             </div>
             <h2 className="text-lg font-normal tracking-[.016em] group-hover:text-zinc-300 transition-colors">Trackers</h2>
           </div>
           <button 
-            onClick={(e) => { e.stopPropagation(); setIsAddingMetric(true); setIsTrackersCollapsed(false); }}
+            onClick={async (e) => { 
+              e.stopPropagation(); 
+              const newId = await handleAddMetric({ title: '', measurementType: 'none' });
+              if (newId) {
+                setEditingMetricId(newId);
+                setIsEditingNewMetric(true);
+              }
+            }}
             className="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-all focus:scale-95 border border-zinc-800/50"
           >
             <Plus className="w-4 h-4" />
@@ -1778,9 +1785,9 @@ export default function SessionView() {
         </div>
         
         <div className="flex-1 overflow-y-auto custom-scrollbar px-3 lg:px-6 flex flex-col pb-24 lg:pb-0">
-          <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${isTrackersCollapsed ? 'grid-rows-[0fr] opacity-0 pointer-events-none' : 'grid-rows-[1fr] opacity-100'}`}>
+          <div className="grid transition-[grid-template-rows,opacity] duration-300 ease-in-out grid-rows-[1fr] opacity-100">
             <div className="overflow-hidden min-h-0 p-2 -m-2">
-              <div className="space-y-6 lg:space-y-4 pb-20">
+              <div className="space-y-6 lg:space-y-2 pb-20">
           {(() => {
             let metrics = activeSession.metrics || [];
             
@@ -1878,10 +1885,10 @@ export default function SessionView() {
                   .map(([groupName, groupMetrics]) => {
                   const isGroupCollapsed = collapsedTrackerGroups.has(groupName);
                   return (
-                  <div key={groupName} className="bg-zinc-950/30 border border-zinc-800/50 rounded-2xl p-2 space-y-1 md:col-span-full xl:col-auto">
+                  <div key={groupName} className={`bg-zinc-950/30 border border-zinc-800/50 rounded-2xl p-2 md:col-span-full xl:col-auto ${!isGroupCollapsed ? 'lg:mb-4' : ''}`}>
                     <div 
                       onClick={(e) => toggleTrackerGroup(groupName, e)}
-                      className={`flex items-center justify-between px-2 py-1.5 cursor-pointer hover:bg-zinc-900/30 rounded-lg transition-colors group/header ${isGroupCollapsed ? 'mb-0' : ''}`}
+                      className={`flex items-center justify-between px-2 py-[2px] cursor-pointer hover:bg-zinc-900/30 rounded-lg transition-colors group/header ${isGroupCollapsed ? 'mb-0' : 'mb-[10px]'}`}
                     >
                       <div className="flex items-center gap-2">
                         {isGroupCollapsed ? (
@@ -1894,7 +1901,7 @@ export default function SessionView() {
                     </div>
                     <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${isGroupCollapsed ? 'grid-rows-[0fr] opacity-0 pointer-events-none' : 'grid-rows-[1fr] opacity-100'}`}>
                       <div className="overflow-hidden min-h-0">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-2 lg:flex lg:flex-col lg:space-y-1 lg:gap-0 lg:pt-1">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-2 lg:flex lg:flex-col lg:space-y-1 lg:gap-0">
                           {groupMetrics.map(metric => (
                             <MetricCard 
                               key={metric.id}
@@ -1914,26 +1921,19 @@ export default function SessionView() {
             );
           })()}
 
-          {isAddingMetric ? (
-            <div className="md:col-span-full lg:col-auto w-full mt-2 lg:mt-0">
-              <AddMetricForm 
-                onAddMetric={handleAddMetric}
-                onCancel={() => setIsAddingMetric(false)}
-                onSuccess={(id) => {
-                  setIsAddingMetric(false);
-                  setEditingMetricId(id);
-                }}
-              />
-            </div>
-          ) : (
             <button
-              onClick={() => setIsAddingMetric(true)}
+              onClick={async () => {
+                const newId = await handleAddMetric({ title: '', measurementType: 'none' });
+                if (newId) {
+                  setEditingMetricId(newId);
+                  setIsEditingNewMetric(true);
+                }
+              }}
               className="md:col-span-full lg:col-auto w-full py-3 px-4 rounded-xl border border-dashed border-zinc-700/50 text-zinc-500 hover:text-zinc-300 hover:border-zinc-500 hover:bg-zinc-900/50 transition-all flex items-center justify-center gap-2 mt-2 lg:mt-0"
             >
               <Plus className="w-4 h-4" />
               <span className="text-sm font-bold uppercase tracking-wider">New Tracker</span>
             </button>
-          )}
 
           {activeSession.trackers?.length && selectedGame.title !== 'Acme Gaming' ? (
             <div className="md:col-span-full lg:col-auto mt-8 border-t border-zinc-800 pt-6 space-y-4 w-full">
@@ -2084,7 +2084,14 @@ export default function SessionView() {
           metric={activeSession.metrics.find(m => m.id === editingMetricId)!}
           existingGroups={Array.from(new Set((activeSession.metrics || []).map(m => m.group).filter(Boolean) as string[]))}
           onUpdate={handleUpdateMetric}
-          onClose={() => setEditingMetricId(null)}
+          onClose={async (saved?: boolean) => {
+            const metric = activeSession.metrics?.find(m => m.id === editingMetricId);
+            if (!saved && metric && metric.title === '' && isEditingNewMetric) {
+              await handleDeleteMetric(metric.id);
+            }
+            setEditingMetricId(null);
+            setIsEditingNewMetric(false);
+          }}
         />
       )}
 
