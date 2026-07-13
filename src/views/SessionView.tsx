@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Plus, Minus, BookOpen, Clock, PenLine, X, Send, ChevronRight, Trash2, List, LayoutDashboard, ChevronUp, ChevronDown, Tag as TagIcon, MoreVertical, ArrowUpDown, Play, Target } from 'lucide-react';
+import { Plus, Minus, BookOpen, Clock, PenLine, X, Send, ChevronRight, Trash2, List, LayoutDashboard, ChevronUp, ChevronDown, Tag as TagIcon, MoreVertical, ArrowUpDown, Play, Target, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence, LayoutGroup } from 'motion/react';
 import {
@@ -1350,63 +1350,80 @@ export default function SessionView() {
         ) : (
           <>
             {/* Compact Session Header */}
-            <div 
-          className={`mb-3 sm:mb-6 bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-3 sm:p-4 shrink-0 flex-col transition-all duration-300 ${isEditingSessionDetails ? 'flex' : 'hidden lg:flex'}`}
-        >
-          <div className="hidden lg:flex items-center justify-between gap-4">
+            <div className={`grid transition-[grid-template-rows,margin,opacity] duration-300 ease-in-out lg:!grid-rows-[1fr] lg:!opacity-100 lg:!mb-6 lg:!pointer-events-auto ${isEditingSessionDetails ? 'grid-rows-[1fr] opacity-100 mb-3 sm:mb-6 pointer-events-auto' : 'grid-rows-[0fr] opacity-0 mb-0 pointer-events-none'}`}>
+              <div className="overflow-hidden min-h-0">
+                <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-3 sm:p-4 flex flex-col shrink-0">
+          <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2 min-w-0 group/title flex-1">
               {isEditingTitleInline ? (
-                <input
-                  type="text"
-                  value={inlineTitleInput}
-                  onChange={(e) => setInlineTitleInput(e.target.value)}
-                  onKeyDown={async (e) => {
-                    if (e.key === 'Enter') {
-                       if (inlineTitleInput.trim() && inlineTitleInput !== (activeSession.name || activeSession.progressMarker)) {
-                         await handleUpdateSessionDetails(inlineTitleInput.trim(), activeSession.chapter || '', activeSession.hoursPlayed ? activeSession.hoursPlayed.toString() : '', activeSession.groupId);
-                       }
-                       setIsEditingTitleInline(false);
-                    } else if (e.key === 'Escape') {
-                       setIsEditingTitleInline(false);
-                    }
-                  }}
-                  autoFocus
-                  onBlur={async () => {
-                     if (inlineTitleInput.trim() && inlineTitleInput !== (activeSession.name || activeSession.progressMarker)) {
-                       await handleUpdateSessionDetails(inlineTitleInput.trim(), activeSession.chapter || '', activeSession.hoursPlayed ? activeSession.hoursPlayed.toString() : '', activeSession.groupId);
-                     }
-                     setIsEditingTitleInline(false);
-                  }}
-                  className="text-xl font-medium bg-zinc-950 border border-zinc-800 rounded px-2 py-0.5 focus:outline-none focus:border-zinc-600 w-full"
-                />
-              ) : (
-                <>
-                  <h2 className="text-xl font-medium truncate">
-                    {activeSession.name || activeSession.progressMarker}
-                  </h2>
+                <div className="flex items-center gap-1 w-full bg-zinc-950 border border-zinc-800 focus-within:border-zinc-600 rounded pr-0.5">
+                  <input
+                    type="text"
+                    value={inlineTitleInput}
+                    onChange={(e) => setInlineTitleInput(e.target.value)}
+                    onKeyDown={async (e) => {
+                      if (e.key === 'Enter') {
+                         if (inlineTitleInput.trim() && inlineTitleInput !== (activeSession.name || activeSession.progressMarker)) {
+                           await handleUpdateSessionDetails(inlineTitleInput.trim(), activeSession.chapter || '', activeSession.hoursPlayed ? activeSession.hoursPlayed.toString() : '', activeSession.groupId);
+                         }
+                         setIsEditingTitleInline(false);
+                      } else if (e.key === 'Escape') {
+                         setIsEditingTitleInline(false);
+                      }
+                    }}
+                    autoFocus
+                    className="text-xl font-medium bg-transparent px-2 py-0.5 focus:outline-none w-full"
+                  />
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (inlineTitleInput.trim() && inlineTitleInput !== (activeSession.name || activeSession.progressMarker)) {
+                        await handleUpdateSessionDetails(inlineTitleInput.trim(), activeSession.chapter || '', activeSession.hoursPlayed ? activeSession.hoursPlayed.toString() : '', activeSession.groupId);
+                      }
+                      setIsEditingTitleInline(false);
+                    }}
+                    className="p-1.5 text-zinc-400 hover:text-green-400 hover:bg-zinc-800 rounded transition-colors"
+                  >
+                    <Check className="w-4 h-4" />
+                  </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setInlineTitleInput(activeSession.name || activeSession.progressMarker);
-                      setIsEditingTitleInline(true);
+                      setIsEditingTitleInline(false);
                     }}
-                    className="p-1 text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 rounded opacity-0 group-hover/title:opacity-100 transition-opacity hidden sm:block shrink-0"
-                    title="Edit Title"
+                    className="p-1.5 text-zinc-400 hover:text-red-400 hover:bg-zinc-800 rounded transition-colors"
                   >
-                    <PenLine className="w-4 h-4" />
+                    <X className="w-4 h-4" />
                   </button>
-                </>
+                </div>
+              ) : (
+                <div 
+                  className="flex items-center gap-2 cursor-pointer group/heading w-full min-w-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setInlineTitleInput(activeSession.name || activeSession.progressMarker);
+                    setIsEditingTitleInline(true);
+                  }}
+                  title="Edit Session Title"
+                >
+                  <h2 className="text-xl font-medium truncate border-b border-transparent group-hover/heading:border-zinc-700 transition-colors pb-0.5">
+                    {activeSession.name || activeSession.progressMarker}
+                  </h2>
+                  <PenLine className="w-4 h-4 text-zinc-500 opacity-100 sm:opacity-0 sm:group-hover/title:opacity-100 transition-opacity shrink-0" />
+                </div>
               )}
             </div>
             
             <div className="flex items-center gap-3 shrink-0">
               <div className="flex items-center gap-3 text-zinc-400 text-xs flex-wrap mr-1">
+                {/*
                 {activeSession.chapter && (
                   <div className="flex items-center gap-1.5">
                     <BookOpen className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
                     <span className="truncate max-w-[100px] sm:max-w-none">{activeSession.chapter}</span>
                   </div>
                 )}
+                */}
                 {(activeSession.hoursPlayed !== undefined && activeSession.hoursPlayed !== null) && (
                   <div className="flex items-center gap-1.5 shrink-0">
                     <Clock className="w-3.5 h-3.5 text-zinc-500" />
@@ -1449,14 +1466,12 @@ export default function SessionView() {
             </div>
           </div>
 
-          {isEditingSessionDetails && (
-            <div className="mt-0 pt-0 lg:mt-4 lg:pt-4 border-t-0 lg:border-t border-zinc-800/50 animate-in fade-in slide-in-from-top-2 duration-200">
-              <div className="flex items-center justify-between mb-4 lg:hidden">
-                <h3 className="font-bold">Edit Session Details</h3>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div className={`grid transition-all duration-300 ease-in-out border-zinc-800/50 ${isEditingSessionDetails ? 'grid-rows-[1fr] opacity-100 mt-3 pt-3 sm:mt-4 sm:pt-4 border-t' : 'grid-rows-[0fr] opacity-0 pointer-events-none mt-0 pt-0 border-t-0'}`}>
+            <div className="overflow-hidden min-h-0">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                {/*
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Session Name</label>
+                  <label className="text-[11px] font-normal text-zinc-500 uppercase tracking-[.072em]">Session Name</label>
                   <input
                     type="text"
                     value={sessionNameInput}
@@ -1465,8 +1480,10 @@ export default function SessionView() {
                     className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-zinc-600 transition-colors"
                   />
                 </div>
+                */}
+                {/*
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Chapter / Level</label>
+                  <label className="text-[11px] font-normal text-zinc-500 uppercase tracking-[.072em]">Chapter / Level</label>
                   <input
                     type="text"
                     value={sessionChapterInput}
@@ -1475,16 +1492,17 @@ export default function SessionView() {
                     className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-zinc-600 transition-colors"
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Session Hours</label>
+                */}
+                <div className="flex flex-col justify-end space-y-1.5">
+                  <div className="flex items-center justify-between min-h-[16px]">
+                    <label className="text-[11px] font-normal text-zinc-500 uppercase tracking-[.072em]">Session Hours</label>
                     {totalHoursInput && (
-                      <span className="text-xs text-zinc-500">
+                      <span className="text-[10px] text-zinc-500">
                         ({totalHoursInput} total)
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="relative flex items-center h-[42px] bg-zinc-950 border border-zinc-800 focus-within:border-zinc-600 rounded-xl transition-colors">
                     <button 
                       type="button"
                       onClick={() => {
@@ -1493,7 +1511,7 @@ export default function SessionView() {
                          setSessionHoursInput(decimalToHoursStr(next));
                          setTotalHoursInput(decimalToHoursStr(prevHoursPlayed + next));
                       }}
-                      className="w-10 h-10 shrink-0 bg-zinc-950 border border-zinc-800 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors"
+                      className="absolute left-1.5 w-7 h-7 rounded-full flex items-center justify-center text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
                     >
                       <Minus className="w-4 h-4" />
                     </button>
@@ -1510,7 +1528,7 @@ export default function SessionView() {
                         }
                       }}
                       placeholder="H:MM"
-                      className="w-full text-center bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-zinc-600 transition-colors"
+                      className="w-full text-center bg-transparent px-10 text-sm focus:outline-none"
                     />
                     <button 
                       type="button"
@@ -1520,14 +1538,16 @@ export default function SessionView() {
                          setSessionHoursInput(decimalToHoursStr(next));
                          setTotalHoursInput(decimalToHoursStr(prevHoursPlayed + next));
                       }}
-                      className="w-10 h-10 shrink-0 bg-zinc-950 border border-zinc-800 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors"
+                      className="absolute right-1.5 w-7 h-7 rounded-full flex items-center justify-center text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
                     >
                       <Plus className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Session Group</label>
+                <div className="flex flex-col justify-end space-y-1.5">
+                  <div className="flex items-center min-h-[16px]">
+                    <label className="text-[11px] font-normal text-zinc-500 uppercase tracking-[.072em]">Session Group</label>
+                  </div>
                   {!isCreatingNewGroup ? (
                     <select
                       value={sessionGroupIdInput || ''}
@@ -1539,7 +1559,7 @@ export default function SessionView() {
                           setSessionGroupIdInput(e.target.value);
                         }
                       }}
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-zinc-600 transition-colors"
+                      className="w-full h-[42px] bg-zinc-950 border border-zinc-800 rounded-xl px-3 text-sm focus:outline-none focus:border-zinc-600 transition-colors"
                     >
                       <option value="">None</option>
                       {sessionGroups.map(group => (
@@ -1548,13 +1568,13 @@ export default function SessionView() {
                       <option value="new">+ Create New Group</option>
                     </select>
                   ) : (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 h-[42px]">
                       <input
                         type="text"
                         value={newGroupNameInput}
                         onChange={(e) => setNewGroupNameInput(e.target.value)}
                         placeholder="New Group Name"
-                        className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-zinc-600 transition-colors"
+                        className="flex-1 h-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 text-sm focus:outline-none focus:border-zinc-600 transition-colors"
                         autoFocus
                       />
                       <button
@@ -1562,7 +1582,7 @@ export default function SessionView() {
                           setIsCreatingNewGroup(false);
                           setNewGroupNameInput('');
                         }}
-                        className="p-2 text-zinc-400 hover:text-zinc-100 rounded-lg hover:bg-zinc-800 transition-colors"
+                        className="w-[42px] h-[42px] flex items-center justify-center shrink-0 text-zinc-400 hover:text-zinc-100 rounded-xl hover:bg-zinc-800 transition-colors"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -1570,7 +1590,7 @@ export default function SessionView() {
                   )}
                 </div>
               </div>
-              <div className="flex justify-end gap-3 mt-4">
+              <div className="flex justify-end gap-3 mt-3 pt-3 sm:mt-4 sm:pt-4 border-t border-zinc-800/50">
                 <button
                   onClick={() => {
                     setIsEditingSessionDetails(false);
@@ -1589,7 +1609,9 @@ export default function SessionView() {
                 </button>
               </div>
             </div>
-          )}
+          </div>
+        </div>
+        </div>
         </div>
 
         {/* Notes Feed */}
