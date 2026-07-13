@@ -127,9 +127,21 @@ function SidebarSessionItem({ session, ctx }: any) {
     editingSidebarSessionId, setEditingSidebarSessionId,
     editingSidebarSessionName, setEditingSidebarSessionName,
     handleUpdateSessionDetails, handleResumeSession, scrollToTab,
-    getSessionNotesCount, setSessionToDelete, activeSession
+    getSessionNotesCount, setSessionToDelete, activeSession, sessions
   } = ctx;
   const [isBouncing, setIsBouncing] = useState(false);
+  const prevHours = React.useMemo(() => {
+    if (!sessions) return 0;
+    const currentIndex = sessions.findIndex((s: any) => s.id === session.id);
+    if (currentIndex >= 0 && currentIndex < sessions.length - 1) {
+      for (let i = currentIndex + 1; i < sessions.length; i++) {
+        if (sessions[i].hoursPlayed !== undefined && sessions[i].hoursPlayed !== null) {
+          return sessions[i].hoursPlayed;
+        }
+      }
+    }
+    return 0;
+  }, [sessions, session.id]);
 
   return (
     <motion.div 
@@ -215,9 +227,11 @@ function SidebarSessionItem({ session, ctx }: any) {
               <span className={`text-xs ${activeSession?.id === session.id ? 'text-zinc-300' : 'text-zinc-500'}`}>
                 {format(session.startTime, 'MMM d, yyyy')}
               </span>
+              {/* TODO: User Preference for Session Time (Delta vs Total) */}
+              {/* Delta approach: {decimalToHoursStr(Math.max(0, session.hoursPlayed - prevHours))} hrs */}
               {(session.hoursPlayed !== undefined && session.hoursPlayed !== null) && (
                 <span className={`text-xs font-medium ${activeSession?.id === session.id ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                  {decimalToHoursStr(session.hoursPlayed)}
+                  {decimalToHoursStr(session.hoursPlayed)} hrs
                 </span>
               )}
             </div>
@@ -441,6 +455,21 @@ export default function SessionView() {
   const [sessionNameInput, setSessionNameInput] = useState('');
   const [sessionChapterInput, setSessionChapterInput] = useState('');
   const [sessionHoursInput, setSessionHoursInput] = useState('');
+  const prevHoursPlayed = React.useMemo(() => {
+    if (!activeSession) return 0;
+    const currentIndex = sessions.findIndex(s => s.id === activeSession.id);
+    if (currentIndex >= 0 && currentIndex < sessions.length - 1) {
+      for (let i = currentIndex + 1; i < sessions.length; i++) {
+        if (sessions[i].hoursPlayed !== undefined && sessions[i].hoursPlayed !== null) {
+          return sessions[i].hoursPlayed as number;
+        }
+      }
+    }
+    return 0;
+  }, [sessions, activeSession]);
+
+  const [totalHoursInput, setTotalHoursInput] = useState('');
+
   const [sessionGroupIdInput, setSessionGroupIdInput] = useState<string | undefined>(undefined);
   const [isCreatingNewGroup, setIsCreatingNewGroup] = useState(false);
   const [newGroupNameInput, setNewGroupNameInput] = useState('');
@@ -550,7 +579,15 @@ export default function SessionView() {
       if (activeSession) {
         setSessionNameInput(activeSession.name || '');
         setSessionChapterInput(activeSession.chapter || '');
-        setSessionHoursInput(decimalToHoursStr(activeSession.hoursPlayed));
+        if (activeSession.hoursPlayed !== undefined && activeSession.hoursPlayed !== null) {
+          const total = activeSession.hoursPlayed;
+          const delta = Math.max(0, total - prevHoursPlayed);
+          setSessionHoursInput(decimalToHoursStr(delta));
+          setTotalHoursInput(decimalToHoursStr(total));
+        } else {
+          setSessionHoursInput('');
+          setTotalHoursInput('');
+        }
         setSessionGroupIdInput(activeSession.groupId);
         setIsEditingSessionDetails(true);
         // Switch to the notes tab so the details form is visible on mobile
@@ -740,7 +777,7 @@ export default function SessionView() {
       }
     }
 
-    await handleUpdateSessionDetails(sessionNameInput, sessionChapterInput, hoursStrToDecimalStr(sessionHoursInput), finalGroupId === undefined ? '' : finalGroupId);
+    await handleUpdateSessionDetails(sessionNameInput, sessionChapterInput, hoursStrToDecimalStr(totalHoursInput), finalGroupId === undefined ? '' : finalGroupId);
     setIsEditingSessionDetails(false);
     setIsCreatingNewGroup(false);
     setNewGroupNameInput('');
@@ -1119,7 +1156,7 @@ export default function SessionView() {
                         editingSidebarSessionId, setEditingSidebarSessionId,
                         editingSidebarSessionName, setEditingSidebarSessionName,
                         handleUpdateSessionDetails, handleResumeSession, scrollToTab,
-                        getSessionNotesCount, setSessionToDelete, activeSession
+                        getSessionNotesCount, setSessionToDelete, activeSession, sessions
                       };
                       return <SidebarSessionItem key={session.id} session={session} ctx={sessionContext} />;
                     })}
@@ -1196,7 +1233,7 @@ export default function SessionView() {
                         editingSidebarSessionId, setEditingSidebarSessionId,
                         editingSidebarSessionName, setEditingSidebarSessionName,
                         handleUpdateSessionDetails, handleResumeSession, scrollToTab,
-                        getSessionNotesCount, setSessionToDelete, activeSession
+                        getSessionNotesCount, setSessionToDelete, activeSession, sessions
                       };
                       return <SidebarSessionItem key={session.id} session={session} ctx={sessionContext} />;
                     })}
@@ -1381,7 +1418,12 @@ export default function SessionView() {
                 {(activeSession.hoursPlayed !== undefined && activeSession.hoursPlayed !== null) && (
                   <div className="flex items-center gap-1.5 shrink-0">
                     <Clock className="w-3.5 h-3.5 text-zinc-500" />
-                    {decimalToHoursStr(activeSession.hoursPlayed)} hrs
+                    <span className="text-zinc-300">
+                      {decimalToHoursStr(Math.max(0, activeSession.hoursPlayed - prevHoursPlayed))} hrs
+                    </span>
+                    {(activeSession.hoursPlayed > 0 && activeSession.hoursPlayed > prevHoursPlayed) ? (
+                      <span className="text-zinc-500 text-xs ml-1">({decimalToHoursStr(activeSession.hoursPlayed)} Total)</span>
+                    ) : null}
                   </div>
                 )}
               </div>
@@ -1395,7 +1437,15 @@ export default function SessionView() {
                   } else {
                     setSessionNameInput(activeSession.name || '');
                     setSessionChapterInput(activeSession.chapter || '');
-                    setSessionHoursInput(decimalToHoursStr(activeSession.hoursPlayed));
+                    if (activeSession.hoursPlayed !== undefined && activeSession.hoursPlayed !== null) {
+          const total = activeSession.hoursPlayed;
+          const delta = Math.max(0, total - prevHoursPlayed);
+          setSessionHoursInput(decimalToHoursStr(delta));
+          setTotalHoursInput(decimalToHoursStr(total));
+        } else {
+          setSessionHoursInput('');
+          setTotalHoursInput('');
+        }
                     setSessionGroupIdInput(activeSession.groupId);
                     setIsEditingSessionDetails(true);
                   }
@@ -1434,15 +1484,23 @@ export default function SessionView() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Hours Played</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Session Hours</label>
+                    {totalHoursInput && (
+                      <span className="text-xs text-zinc-500">
+                        ({totalHoursInput} total)
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2">
                     <button 
                       type="button"
-                      onClick={() => setSessionHoursInput(prev => {
-                         const current = parseFloat(hoursStrToDecimalStr(prev || '0')) || 0;
+                      onClick={() => {
+                         const current = parseFloat(hoursStrToDecimalStr(sessionHoursInput || '0')) || 0;
                          const next = Math.max(0, current - 0.25);
-                         return decimalToHoursStr(next);
-                      })}
+                         setSessionHoursInput(decimalToHoursStr(next));
+                         setTotalHoursInput(decimalToHoursStr(prevHoursPlayed + next));
+                      }}
                       className="w-10 h-10 shrink-0 bg-zinc-950 border border-zinc-800 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors"
                     >
                       <Minus className="w-4 h-4" />
@@ -1450,17 +1508,26 @@ export default function SessionView() {
                     <input
                       type="text"
                       value={sessionHoursInput}
-                      onChange={(e) => setSessionHoursInput(e.target.value)}
+                      onChange={(e) => {
+                        setSessionHoursInput(e.target.value);
+                        const parsed = parseFloat(hoursStrToDecimalStr(e.target.value));
+                        if (!isNaN(parsed)) {
+                          setTotalHoursInput(decimalToHoursStr(prevHoursPlayed + parsed));
+                        } else if (e.target.value === '') {
+                          setTotalHoursInput('');
+                        }
+                      }}
                       placeholder="H:MM"
                       className="w-full text-center bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-zinc-600 transition-colors"
                     />
                     <button 
                       type="button"
-                      onClick={() => setSessionHoursInput(prev => {
-                         const current = parseFloat(hoursStrToDecimalStr(prev || '0')) || 0;
+                      onClick={() => {
+                         const current = parseFloat(hoursStrToDecimalStr(sessionHoursInput || '0')) || 0;
                          const next = current + 0.25;
-                         return decimalToHoursStr(next);
-                      })}
+                         setSessionHoursInput(decimalToHoursStr(next));
+                         setTotalHoursInput(decimalToHoursStr(prevHoursPlayed + next));
+                      }}
                       className="w-10 h-10 shrink-0 bg-zinc-950 border border-zinc-800 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors"
                     >
                       <Plus className="w-4 h-4" />
@@ -1885,10 +1952,10 @@ export default function SessionView() {
                   .map(([groupName, groupMetrics]) => {
                   const isGroupCollapsed = collapsedTrackerGroups.has(groupName);
                   return (
-                  <div key={groupName} className={`bg-zinc-950/30 border border-zinc-800/50 rounded-2xl p-2 md:col-span-full xl:col-auto ${!isGroupCollapsed ? 'lg:mb-4' : ''}`}>
+                  <div key={groupName} className="bg-zinc-950/30 border border-zinc-800/50 rounded-2xl p-2 md:col-span-full xl:col-auto flex flex-col">
                     <div 
                       onClick={(e) => toggleTrackerGroup(groupName, e)}
-                      className={`flex items-center justify-between px-2 py-[2px] cursor-pointer hover:bg-zinc-900/30 rounded-lg transition-colors group/header ${isGroupCollapsed ? 'mb-0' : 'mb-[10px]'}`}
+                      className="flex items-center justify-between px-2 py-[2px] cursor-pointer hover:bg-zinc-900/30 rounded-lg transition-colors group/header"
                     >
                       <div className="flex items-center gap-2">
                         {isGroupCollapsed ? (
@@ -1901,7 +1968,7 @@ export default function SessionView() {
                     </div>
                     <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${isGroupCollapsed ? 'grid-rows-[0fr] opacity-0 pointer-events-none' : 'grid-rows-[1fr] opacity-100'}`}>
                       <div className="overflow-hidden min-h-0">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-2 lg:flex lg:flex-col lg:space-y-1 lg:gap-0">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-2 lg:flex lg:flex-col lg:space-y-1 lg:gap-0 pt-[10px]">
                           {groupMetrics.map(metric => (
                             <MetricCard 
                               key={metric.id}
