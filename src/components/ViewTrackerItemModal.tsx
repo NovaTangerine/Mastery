@@ -56,7 +56,7 @@ export const ViewTrackerItemModal: React.FC<ViewTrackerItemModalProps> = ({ item
                     onClick={(e) => { e.stopPropagation(); onUpdateItem(trackerId, id, { completed: !completed }); }}
                     className="flex items-center gap-3 w-full text-left p-2 -m-2 rounded-lg hover:bg-zinc-900 transition-colors group/checkbox"
                   >
-                    <div className={`w-5 h-5 rounded flex items-center justify-center border transition-colors ${completed ? 'bg-blue-500 border-blue-400 text-white' : 'bg-zinc-900 border-zinc-700 text-transparent group-hover/checkbox:border-zinc-500'}`}>
+                    <div className={`w-5 h-5 rounded flex items-center justify-center border transition-colors ${completed ? 'bg-gradient-to-br from-white to-zinc-400 border-zinc-300 text-zinc-950 shadow-[0_0_12px_rgba(255,255,255,0.15)]' : 'bg-zinc-900 border-zinc-700 text-transparent group-hover/checkbox:border-zinc-500'}`}>
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3"><polyline points="20 6 9 17 4 12"></polyline></svg>
                     </div>
                     <span className={`text-sm ${completed ? 'text-zinc-500 line-through' : 'text-zinc-100'}`}>{title}</span>
@@ -94,7 +94,7 @@ export const ViewTrackerItemModal: React.FC<ViewTrackerItemModalProps> = ({ item
                       className="w-full relative h-6 bg-zinc-900/80 rounded-full overflow-hidden border border-zinc-800/50"
                     >
                       <div 
-                        className="absolute left-0 top-0 bottom-0 bg-blue-500 transition-all duration-300"
+                        className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-zinc-200 to-zinc-400 transition-all duration-300"
                         style={{ width: `${Math.min(100, Math.max(0, (currentValue / (maxValue || 100)) * 100))}%` }}
                       />
                       <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-zinc-300 z-10 w-full mix-blend-screen mix-blend-plus-lighter pointer-events-none">

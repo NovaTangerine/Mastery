@@ -506,6 +506,41 @@ export default function SessionView() {
   const noteInputContainerRef = useRef<HTMLDivElement>(null);
   const [collapsedTrackerGroups, setCollapsedTrackerGroups] = useState<Set<string>>(new Set());
 
+  const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
+  const [pendingSessionAction, setPendingSessionAction] = useState<(() => void) | null>(null);
+
+  const attemptSessionChange = (action: () => void) => {
+    if (!isEditingSessionDetails) {
+      action();
+      return;
+    }
+    
+    const prevHoursDeltaStr = activeSession?.hoursPlayed !== undefined && activeSession?.hoursPlayed !== null
+            ? decimalToHoursStr(Math.max(0, (activeSession.hoursPlayed as number) - prevHoursPlayed))
+            : '';
+
+    const isNameChanged = sessionNameInput !== (activeSession?.name || '');
+    const isChapterChanged = sessionChapterInput !== (activeSession?.chapter || '');
+    const isGroupIdChanged = (sessionGroupIdInput || '') !== (activeSession?.groupId || '') || isCreatingNewGroup;
+    const isHoursChanged = sessionHoursInput !== prevHoursDeltaStr;
+
+    const hasUnsavedChanges = isNameChanged || isChapterChanged || isGroupIdChanged || isHoursChanged;
+
+    if (hasUnsavedChanges) {
+      setPendingSessionAction(() => action);
+      setShowUnsavedChangesModal(true);
+    } else {
+      setIsEditingSessionDetails(false);
+      setIsCreatingNewGroup(false);
+      setNewGroupNameInput('');
+      action();
+    }
+  };
+
+  const wrappedHandleResumeSession = (session: any) => attemptSessionChange(() => { handleResumeSession(session); scrollToTab('notes'); });
+  const wrappedHandleStartSession = (groupId?: string) => attemptSessionChange(() => handleStartSession(groupId));
+  const wrappedGoBack = () => attemptSessionChange(() => goBack());
+
   const toggleTrackerGroup = (groupName: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     setCollapsedTrackerGroups(prev => {
@@ -935,7 +970,7 @@ export default function SessionView() {
             <div className="hidden lg:block w-[1px] h-3.5 bg-zinc-700/50 mx-0.5" />
             <button 
               onClick={() => {
-                handleStartSession();
+                wrappedHandleStartSession();
                 scrollToTab('notes');
               }}
               className="lg:w-7 lg:h-7 p-1.5 lg:p-0 bg-zinc-900 hover:bg-zinc-800 lg:bg-zinc-700/80 lg:hover:bg-zinc-600 rounded-lg text-zinc-300 hover:text-white transition-all flex items-center justify-center focus:scale-95 lg:shadow-sm lg:border lg:border-zinc-600/50"
@@ -953,7 +988,7 @@ export default function SessionView() {
               value={newGroupNameInput}
               onChange={(e) => setNewGroupNameInput(e.target.value)}
               placeholder="New Group Name"
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-zinc-600 transition-colors"
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-[16px] sm:text-sm focus:outline-none focus:border-zinc-600 transition-colors"
               autoFocus
             />
             <div className="flex justify-end gap-2">
@@ -996,9 +1031,9 @@ export default function SessionView() {
             const isCollapsed = collapsedGroups.has(group.id);
             const isGroupTapped = activeTappedId === group.id;
             return (
-            <div key={group.id} className={`bg-zinc-950/30 border border-zinc-800/50 rounded-2xl p-2 space-y-1 group relative ${(activeMenuId === group.id && activeMenuType === 'group') || (activeMenuType === 'session' && group.sessions.some(s => s.id === activeMenuId)) ? 'z-50' : 'z-10'}`}>
+            <div key={group.id} className={`bg-zinc-950/30 border border-zinc-800/50 rounded-2xl p-2 flex flex-col group relative ${(activeMenuId === group.id && activeMenuType === 'group') || (activeMenuType === 'session' && group.sessions.some(s => s.id === activeMenuId)) ? 'z-50' : 'z-10'}`}>
               <div 
-                className={`flex items-center justify-between px-2 py-1.5 cursor-pointer transition-colors group/header ${activeMenuId === group.id && activeMenuType === 'group' ? 'bg-zinc-900/30 rounded-lg' : 'hover:bg-zinc-900/30 rounded-lg'}`}
+                className={`flex items-center justify-between px-2 py-[2px] cursor-pointer transition-colors group/header ${activeMenuId === group.id && activeMenuType === 'group' ? 'bg-zinc-900/30 rounded-lg' : 'hover:bg-zinc-900/30 rounded-lg'}`}
                 onClick={(e) => {
                   // Don't toggle if clicking on buttons or inputs
                   const target = e.target as HTMLElement;
@@ -1065,7 +1100,7 @@ export default function SessionView() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleStartSession(group.id);
+                          wrappedHandleStartSession(group.id);
                         }}
                         className="hidden sm:flex p-1 rounded text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
                         title="Add Session"
@@ -1094,7 +1129,7 @@ export default function SessionView() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleStartSession(group.id);
+                                wrappedHandleStartSession(group.id);
                                 setActiveMenuId(null);
                                 setActiveMenuType(null);
                               }}
@@ -1140,14 +1175,14 @@ export default function SessionView() {
                 <div className={cn(
                   (activeMenuType === 'session' && group.sessions.some(s => s.id === activeMenuId)) ? "overflow-visible" : "overflow-hidden"
                 )}>
-                  <div className="grid grid-cols-1 gap-1 mt-1">
+                  <div className="grid grid-cols-1 gap-1 pt-[10px]">
                     {group.sessions.map(session => {
                       const sessionContext = {
                         activeMenuId, activeMenuType, setActiveMenuId, setActiveMenuType,
                         editingGroupId, selectedSessionIdsForGroup, setSelectedSessionIdsForGroup,
                         editingSidebarSessionId, setEditingSidebarSessionId,
                         editingSidebarSessionName, setEditingSidebarSessionName,
-                        handleUpdateSessionDetails, handleResumeSession, scrollToTab,
+                        handleUpdateSessionDetails, handleResumeSession: wrappedHandleResumeSession, scrollToTab,
                         getSessionNotesCount, setSessionToDelete, activeSession, sessions
                       };
                       return <SidebarSessionItem key={session.id} session={session} ctx={sessionContext} />;
@@ -1156,7 +1191,7 @@ export default function SessionView() {
                     <div className={`grid transition-all duration-200 ease-in-out ${isGroupTapped ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] lg:group-hover:grid-rows-[1fr]'}`}>
                       <div className="overflow-hidden">
                         <button
-                          onClick={() => handleStartSession(group.id)}
+                          onClick={() => wrappedHandleStartSession(group.id)}
                           className={`w-full text-left p-2 rounded-xl text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50 transition-all flex items-center justify-center gap-2 h-10 ${isGroupTapped ? 'opacity-100' : 'opacity-0 lg:group-hover:opacity-100'}`}
                         >
                           <Plus className="w-3.5 h-3.5" />
@@ -1178,10 +1213,10 @@ export default function SessionView() {
             const isGroupTapped = activeTappedId === 'ungrouped';
             const isWrapped = groupedSessions.length > 0;
             return (
-            <div className={`space-y-1 group relative ${isWrapped ? 'bg-zinc-950/30 border border-zinc-800/50 rounded-2xl p-2' : ''} ${(activeMenuType === 'session' && ungroupedSessions.some(s => s.id === activeMenuId)) ? 'z-50' : 'z-10'}`}>
+            <div className={`flex flex-col group relative ${isWrapped ? 'bg-zinc-950/30 border border-zinc-800/50 rounded-2xl p-2' : ''} ${(activeMenuType === 'session' && ungroupedSessions.some(s => s.id === activeMenuId)) ? 'z-50' : 'z-10'}`}>
               {groupedSessions.length > 0 && (
                 <div 
-                  className={`flex items-center justify-between px-2 py-1.5 cursor-pointer transition-colors group/header ${activeMenuType === 'session' && activeMenuId === 'ungrouped' ? 'bg-zinc-900/30 rounded-lg' : 'hover:bg-zinc-900/30 rounded-lg'}`}
+                  className={`flex items-center justify-between px-2 py-[2px] cursor-pointer transition-colors group/header ${activeMenuType === 'session' && activeMenuId === 'ungrouped' ? 'bg-zinc-900/30 rounded-lg' : 'hover:bg-zinc-900/30 rounded-lg'}`}
                   onClick={(e) => {
                     const target = e.target as HTMLElement;
                     if (target.closest('button') || target.closest('input')) return;
@@ -1201,7 +1236,7 @@ export default function SessionView() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleStartSession();
+                        wrappedHandleStartSession();
                       }}
                       className="hidden sm:flex p-1 rounded text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
                       title="Add Session"
@@ -1217,14 +1252,14 @@ export default function SessionView() {
                 <div className={cn(
                   (activeMenuType === 'session' && ungroupedSessions.some(s => s.id === activeMenuId)) ? "overflow-visible" : "overflow-hidden"
                 )}>
-                  <div className="grid grid-cols-1 gap-1 mt-1">
+                  <div className="grid grid-cols-1 gap-1 pt-[10px]">
                     {ungroupedSessions.map(session => {
                       const sessionContext = {
                         activeMenuId, activeMenuType, setActiveMenuId, setActiveMenuType,
                         editingGroupId, selectedSessionIdsForGroup, setSelectedSessionIdsForGroup,
                         editingSidebarSessionId, setEditingSidebarSessionId,
                         editingSidebarSessionName, setEditingSidebarSessionName,
-                        handleUpdateSessionDetails, handleResumeSession, scrollToTab,
+                        handleUpdateSessionDetails, handleResumeSession: wrappedHandleResumeSession, scrollToTab,
                         getSessionNotesCount, setSessionToDelete, activeSession, sessions
                       };
                       return <SidebarSessionItem key={session.id} session={session} ctx={sessionContext} />;
@@ -1233,7 +1268,7 @@ export default function SessionView() {
                      <div className={`grid transition-all duration-200 ease-in-out ${isGroupTapped ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] lg:group-hover:grid-rows-[1fr]'}`}>
                        <div className="overflow-hidden">
                          <button
-                           onClick={() => handleStartSession()}
+                           onClick={() => wrappedHandleStartSession()}
                            className={`w-full text-left p-2 rounded-xl text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50 transition-all flex items-center justify-center gap-2 h-10 ${isGroupTapped ? 'opacity-100' : 'opacity-0 lg:group-hover:opacity-100'}`}
                          >
                            <Plus className="w-3.5 h-3.5" />
@@ -1468,7 +1503,7 @@ export default function SessionView() {
 
           <div className={`grid transition-all duration-300 ease-in-out border-zinc-800/50 ${isEditingSessionDetails ? 'grid-rows-[1fr] opacity-100 mt-3 pt-3 sm:mt-4 sm:pt-4 border-t' : 'grid-rows-[0fr] opacity-0 pointer-events-none mt-0 pt-0 border-t-0'}`}>
             <div className="overflow-hidden min-h-0">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              <div className="flex flex-col max-w-sm mx-auto w-full gap-4 sm:gap-5 pt-4 pb-6 sm:py-4">
                 {/*
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-normal text-zinc-500 uppercase tracking-[.072em]">Session Name</label>
@@ -1477,7 +1512,7 @@ export default function SessionView() {
                     value={sessionNameInput}
                     onChange={(e) => setSessionNameInput(e.target.value)}
                     placeholder="e.g. Boss Fight"
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-zinc-600 transition-colors"
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-[16px] sm:text-sm focus:outline-none focus:border-zinc-600 transition-colors"
                   />
                 </div>
                 */}
@@ -1489,7 +1524,7 @@ export default function SessionView() {
                     value={sessionChapterInput}
                     onChange={(e) => setSessionChapterInput(e.target.value)}
                     placeholder="e.g. Chapter 4"
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-zinc-600 transition-colors"
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-[16px] sm:text-sm focus:outline-none focus:border-zinc-600 transition-colors"
                   />
                 </div>
                 */}
@@ -1528,7 +1563,7 @@ export default function SessionView() {
                         }
                       }}
                       placeholder="H:MM"
-                      className="w-full text-center bg-transparent px-10 text-sm focus:outline-none"
+                      className="w-full text-center bg-transparent px-10 text-[16px] sm:text-sm focus:outline-none"
                     />
                     <button 
                       type="button"
@@ -1549,7 +1584,8 @@ export default function SessionView() {
                     <label className="text-[11px] font-normal text-zinc-500 uppercase tracking-[.072em]">Session Group</label>
                   </div>
                   {!isCreatingNewGroup ? (
-                    <select
+                    <div className="relative">
+                      <select
                       value={sessionGroupIdInput || ''}
                       onChange={(e) => {
                         if (e.target.value === 'new') {
@@ -1559,7 +1595,7 @@ export default function SessionView() {
                           setSessionGroupIdInput(e.target.value);
                         }
                       }}
-                      className="w-full h-[42px] bg-zinc-950 border border-zinc-800 rounded-xl px-3 text-sm focus:outline-none focus:border-zinc-600 transition-colors"
+                      className="w-full h-[42px] bg-zinc-950 border border-zinc-800 rounded-xl pl-3 pr-10 text-[16px] sm:text-sm focus:outline-none focus:border-zinc-600 transition-colors appearance-none"
                     >
                       <option value="">None</option>
                       {sessionGroups.map(group => (
@@ -1567,6 +1603,8 @@ export default function SessionView() {
                       ))}
                       <option value="new">+ Create New Group</option>
                     </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                    </div>
                   ) : (
                     <div className="flex items-center gap-2 h-[42px]">
                       <input
@@ -1574,7 +1612,7 @@ export default function SessionView() {
                         value={newGroupNameInput}
                         onChange={(e) => setNewGroupNameInput(e.target.value)}
                         placeholder="New Group Name"
-                        className="flex-1 h-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 text-sm focus:outline-none focus:border-zinc-600 transition-colors"
+                        className="flex-1 h-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 text-[16px] sm:text-sm focus:outline-none focus:border-zinc-600 transition-colors"
                         autoFocus
                       />
                       <button
@@ -2132,7 +2170,7 @@ export default function SessionView() {
 
       {/* Mobile FAB */}
       <button 
-        onClick={() => navigateTo('note-editor')}
+        onClick={() => attemptSessionChange(() => navigateTo('note-editor'))}
         className="lg:hidden fixed right-6 bottom-[66px] w-14 h-14 bg-zinc-100 text-zinc-950 rounded-full shadow-2xl flex items-center justify-center z-40 active:scale-90 transition-transform"
       >
         <Plus className="w-8 h-8" />
@@ -2174,6 +2212,45 @@ export default function SessionView() {
           }}
           onUpdate={handleUpdateMetric}
         />
+      )}
+
+      {showUnsavedChangesModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-zinc-100 mb-2">Unsaved Changes</h3>
+              <p className="text-sm text-zinc-400">
+                You have unsaved changes to this session's details. If you leave now, those changes will be lost.
+              </p>
+            </div>
+            <div className="p-4 bg-zinc-950/50 border-t border-zinc-800/50 flex items-center justify-end gap-3">
+              <button 
+                onClick={() => {
+                  setShowUnsavedChangesModal(false);
+                  setPendingSessionAction(null);
+                }}
+                className="px-4 py-2 text-sm font-bold text-zinc-400 hover:text-zinc-100 transition-colors"
+              >
+                Stay
+              </button>
+              <button 
+                onClick={() => {
+                  setShowUnsavedChangesModal(false);
+                  setIsEditingSessionDetails(false);
+                  setIsCreatingNewGroup(false);
+                  setNewGroupNameInput('');
+                  if (pendingSessionAction) {
+                    pendingSessionAction();
+                  }
+                  setPendingSessionAction(null);
+                }}
+                className="px-4 py-2 text-sm font-bold bg-zinc-100 text-zinc-950 hover:bg-white rounded-xl transition-colors"
+              >
+                Leave without saving
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <style>{`

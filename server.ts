@@ -181,35 +181,43 @@ Note: "${noteContent}"`,
       const clientId = process.env.TWITCH_CLIENT_ID;
       const token = await getTwitchAccessToken();
 
-      // Fallback to mock data if no credentials or token fetching failed
-      if (!clientId || !token) {
-        console.log("Using mock IGDB data for query:", query);
+      const getMockResults = () => {
         const lowercaseQuery = query.toLowerCase();
-        const results = MOCK_GAMES.filter(game => 
+        return MOCK_GAMES.filter(game => 
           game.name.toLowerCase().includes(lowercaseQuery)
         );
-        return res.json(results);
+      };
+
+      // Fallback to mock data if no credentials or token fetching failed
+      if (!clientId || !token) {
+        console.log("Using mock IGDB data for query (no credentials):", query);
+        return res.json(getMockResults());
       }
 
-      const response = await fetch("https://api.igdb.com/v4/games", {
-        method: "POST",
-        headers: {
-          "Client-ID": clientId,
-          "Authorization": `Bearer ${token}`,
-          "Accept": "application/json",
-          "Content-Type": "text/plain",
-        },
-        body: `search "${query}"; fields name, cover.image_id, first_release_date; limit 10;`
-      });
+      try {
+        const response = await fetch("https://api.igdb.com/v4/games", {
+          method: "POST",
+          headers: {
+            "Client-ID": clientId,
+            "Authorization": `Bearer ${token}`,
+            "Accept": "application/json",
+            "Content-Type": "text/plain",
+          },
+          body: `search "${query}"; fields name, cover.image_id, first_release_date; limit 10;`
+        });
 
-      if (!response.ok) {
-        const errText = await response.text();
-        console.error("IGDB API error:", errText);
-        return res.status(500).json({ error: "Failed to fetch games from IGDB" });
+        if (!response.ok) {
+          const errText = await response.text();
+          console.error("IGDB API error, falling back to mock:", errText);
+          return res.json(getMockResults());
+        }
+
+        const data = await response.json();
+        res.json(data);
+      } catch (apiErr) {
+        console.error("IGDB fetch exception, falling back to mock:", apiErr);
+        res.json(getMockResults());
       }
-
-      const data = await response.json();
-      res.json(data);
     } catch (error) {
       console.error("Error searching games:", error);
       res.status(500).json({ error: "Internal Server Error" });
@@ -223,36 +231,65 @@ Note: "${noteContent}"`,
         return res.status(400).json({ error: "Bad Request: Missing game ID" });
       }
 
-      const clientId = process.env.TWITCH_CLIENT_ID;
-      if (!clientId) {
-        return res.status(500).json({ error: "Server missing Twitch credentials" });
-      }
+      const getMockGame = () => {
+        const parsedId = parseInt(id, 10);
+        const found = MOCK_GAMES.find(g => g.id === parsedId);
+        if (found) {
+          return {
+            ...found,
+            summary: "This is a wonderful game from our curated collection.",
+            genres: [{ name: "Adventure" }, { name: "Role-Playing (RPG)" }],
+            platforms: [{ name: "Nintendo Switch" }, { name: "PC" }, { name: "PlayStation" }],
+            screenshots: [{ image_id: found.cover?.image_id }],
+            involved_companies: [{ company: { name: "Developer Studio" }, developer: true }]
+          };
+        }
+        return null;
+      };
 
+      const clientId = process.env.TWITCH_CLIENT_ID;
       const token = await getTwitchAccessToken();
 
-      const response = await fetch("https://api.igdb.com/v4/games", {
-        method: "POST",
-        headers: {
-          "Client-ID": clientId,
-          "Authorization": `Bearer ${token}`,
-          "Accept": "application/json",
-          "Content-Type": "text/plain",
-        },
-        body: `fields name, cover.image_id, first_release_date, summary, genres.name, platforms.name, screenshots.image_id, involved_companies.company.name, involved_companies.developer, aggregated_rating; where id = ${id};`
-      });
-
-      if (!response.ok) {
-        const errText = await response.text();
-        console.error("IGDB API error:", errText);
-        return res.status(500).json({ error: "Failed to fetch game details from IGDB" });
-      }
-
-      const data = await response.json();
-      if (!data || data.length === 0) {
+      if (!clientId || !token) {
+        const mockG = getMockGame();
+        if (mockG) return res.json(mockG);
         return res.status(404).json({ error: "Game not found" });
       }
-      
-      res.json(data[0]);
+
+      try {
+        const response = await fetch("https://api.igdb.com/v4/games", {
+          method: "POST",
+          headers: {
+            "Client-ID": clientId,
+            "Authorization": `Bearer ${token}`,
+            "Accept": "application/json",
+            "Content-Type": "text/plain",
+          },
+          body: `fields name, cover.image_id, first_release_date, summary, genres.name, platforms.name, screenshots.image_id, involved_companies.company.name, involved_companies.developer, aggregated_rating; where id = ${id};`
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          console.error("IGDB API error, falling back to mock:", errText);
+          const mockG = getMockGame();
+          if (mockG) return res.json(mockG);
+          return res.status(500).json({ error: "Failed to fetch game details from IGDB" });
+        }
+
+        const data = await response.json();
+        if (!data || data.length === 0) {
+          const mockG = getMockGame();
+          if (mockG) return res.json(mockG);
+          return res.status(404).json({ error: "Game not found" });
+        }
+        
+        res.json(data[0]);
+      } catch (apiErr) {
+        console.error("IGDB fetch details exception, falling back to mock:", apiErr);
+        const mockG = getMockGame();
+        if (mockG) return res.json(mockG);
+        res.status(500).json({ error: "Internal Server Error" });
+      }
     } catch (error) {
       console.error("Error fetching game details:", error);
       res.status(500).json({ error: "Internal Server Error" });

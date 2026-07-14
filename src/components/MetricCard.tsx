@@ -121,7 +121,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
             onClick={(e) => { e.stopPropagation(); onUpdate(metric.id, { completed: !metric.completed }); }}
             className={`w-5 h-5 rounded flex items-center justify-center transition-all border shrink-0 ${
               metric.completed 
-                ? 'bg-blue-500 border-blue-400 text-white shadow-[0_0_8px_rgba(59,130,246,0.25)]' 
+                ? 'bg-gradient-to-br from-white to-zinc-400 border-zinc-300 text-zinc-950 shadow-[0_0_12px_rgba(255,255,255,0.15)]' 
                 : 'bg-zinc-950 border-zinc-800 text-zinc-700 hover:border-zinc-600'
             }`}
           >
@@ -236,7 +236,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
               {Array.from({ length: metric.targetCount || Math.max(5, metric.currentCount ?? 0) }).map((_, i) => (
                 <div 
                   key={i} 
-                  className={`w-2 h-2 rounded-full transition-colors ${i < (metric.currentCount ?? 0) ? 'bg-blue-500' : 'bg-zinc-800'}`}
+                  className={`w-2 h-2 rounded-full transition-colors ${i < (metric.currentCount ?? 0) ? 'bg-gradient-to-br from-white to-zinc-400 shadow-[0_0_8px_rgba(255,255,255,0.15)]' : 'bg-zinc-800'}`}
                 />
               ))}
               <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-lg ml-auto shrink-0 border border-zinc-800/50">
@@ -267,7 +267,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
                 className="w-full relative h-6 bg-zinc-950 rounded-full overflow-hidden border border-zinc-800"
               >
                 <div 
-                  className="absolute left-0 top-0 bottom-0 bg-blue-500/50 transition-all duration-300"
+                  className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-zinc-200 to-zinc-400 opacity-90 transition-all duration-300"
                   style={{ width: `${Math.min(100, Math.max(0, metric.currentValue ?? 0))}%` }}
                 />
                 <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-zinc-300 z-10 w-full mix-blend-screen mix-blend-plus-lighter">

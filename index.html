@@ -12,6 +12,7 @@
         }
       });
       window.onerror = function(message) {
+        document.getElementById("error-log").innerHTML += message + "<br>";
         if (typeof message === 'string' && (message.includes('ResizeObserver loop completed with undelivered notifications') || message.includes('ResizeObserver loop limit exceeded'))) {
           return true; // Suppress the error
         }
@@ -30,8 +31,8 @@
       };
     </script>
   </head>
-  <body>
-    <div id="root"></div>
+  <body style="background-color: #09090b; color: #f4f4f5;">
+    <div id="error-log" style="color:red; background:white; position:fixed; z-index:9999;"></div><div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

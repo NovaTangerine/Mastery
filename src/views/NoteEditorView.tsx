@@ -125,7 +125,7 @@ export const NoteEditorView: React.FC = () => {
           >
             <History className="w-4 h-4 sm:w-5 sm:h-5" />
             {gameDrafts.length > 0 && (
-              <span className="absolute top-1 right-1 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-500 rounded-full" />
+              <span className="absolute top-1 right-1 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-zinc-100 rounded-full" />
             )}
           </button>
           <button 

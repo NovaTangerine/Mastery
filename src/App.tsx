@@ -427,12 +427,12 @@ function MainApp() {
 
 export default function App() {
   return (
-    <AuthProvider>
+    <ErrorBoundary><AuthProvider>
       <UIProvider>
         <GameProvider>
           <MainApp />
         </GameProvider>
       </UIProvider>
-    </AuthProvider>
+    </AuthProvider></ErrorBoundary>
   );
 }

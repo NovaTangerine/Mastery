@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, X, Loader2, Image as ImageIcon, Plus } from 'lucide-react';
+import { Search, X, Loader2, Image as ImageIcon, Plus, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getPaletteSync } from 'colorthief';
 
@@ -159,6 +159,15 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
               className="flex-1 bg-transparent border-none text-lg text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-0"
             />
             {isSearching && <Loader2 className="w-5 h-5 text-amber-400 animate-spin shrink-0" />}
+            {selectedPreviewGame && (
+              <button 
+                onClick={() => setSelectedPreviewGame(null)}
+                className="p-2 hover:bg-zinc-800 rounded-lg transition-colors shrink-0"
+                title="Back to search results"
+              >
+                <ArrowLeft className="w-5 h-5 text-zinc-400 hover:text-zinc-100" />
+              </button>
+            )}
             <button 
               onClick={onClose}
               className="p-2 hover:bg-zinc-800 rounded-lg transition-colors shrink-0"
