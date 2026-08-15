@@ -82,7 +82,7 @@ export default function TrackerModalMockupView() {
       const returnalGame = gamesSnap.docs.find(d => d.data().title.toLowerCase() === 'returnal');
       
       if (returnalGame) {
-        const sessionsQ = query(collection(db, 'sessions'), where('gameId', '==', returnalGame.id));
+        const sessionsQ = query(collection(db, 'sessions'), where('gameId', '==', returnalGame.id), where('uid', '==', user!.uid));
         const sessionsSnap = await getDocs(sessionsQ);
         
         const uniqueGroups = new Set<string>();

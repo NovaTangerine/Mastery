@@ -1,10 +1,13 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, User, signInAnonymously } from 'firebase/auth';
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDocFromServer } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDocFromServer, setLogLevel } from 'firebase/firestore';
 import { getAnalytics, isSupported, logEvent, Analytics } from 'firebase/analytics';
 
 // Import the Firebase configuration
 import firebaseConfig from '../firebase-applet-config.json';
+
+// Set Firestore log level to 'error' to suppress non-critical warnings like minor clock synchronization drift
+setLogLevel('error');
 
 // Initialize Firebase SDK
 const app = initializeApp(firebaseConfig);
@@ -35,6 +38,11 @@ export const signInWithGoogle = async () => {
       console.log('Sign-in popup closed or cancelled.');
     } else {
       console.error('Error signing in with Google:', error);
+      let alertMsg = `Error signing in with Google: ${error.message || error.code}`;
+      if (error.code === 'auth/admin-restricted-operation' || error.code === 'auth/operation-not-allowed') {
+        alertMsg = "Authentication failed. Please ensure that:\n\n1. Google Sign-In is ENABLED in your Firebase Console (Authentication -> Sign-in method).\n2. The current URL domain is added to your Authorized Domains in the Firebase Console (Authentication -> Settings -> Authorized domains).";
+      }
+      alert(alertMsg);
       throw error;
     }
   }
@@ -42,8 +50,13 @@ export const signInWithGoogle = async () => {
 export const signInWithDemo = async () => {
   try {
     await signInAnonymously(auth);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error signing in anonymously:', error);
+    let alertMsg = `Error signing in with Demo: ${error.message || error.code}`;
+    if (error.code === 'auth/admin-restricted-operation' || error.code === 'auth/operation-not-allowed') {
+      alertMsg = "Anonymous authentication failed. Please ensure that the 'Anonymous' provider is ENABLED in your Firebase Console (Authentication -> Sign-in method).";
+    }
+    alert(alertMsg);
     throw error;
   }
 };

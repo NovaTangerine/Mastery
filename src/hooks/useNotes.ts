@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { collection, query, where, orderBy, limit, onSnapshot, addDoc, updateDoc, doc, deleteDoc, getDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, onSnapshot, addDoc, updateDoc, doc, deleteDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType, logAppEvent } from '../firebase';
 import { Note } from '../types';
 import { toast } from 'sonner';
@@ -7,12 +7,15 @@ import { suggestTags } from '../services/geminiService';
 import { safeGenerateKeyBetween } from '../lib/fractionalIndexing';
 import { arrayMove } from '@dnd-kit/sortable';
 import { DragEndEvent } from '@dnd-kit/core';
+import { useUserJourney } from '../contexts/UserJourneyContext';
 
 export function useNotes(gameId: string | null, sessionId?: string | null, tagFilter?: string | null) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [notesLimit, setNotesLimit] = useState(50);
   const [isSubmittingNote, setIsSubmittingNote] = useState(false);
   const [taggingStatus, setTaggingStatus] = useState<Record<string, 'loading' | 'error'>>({});
+  
+  const { refreshStats } = useUserJourney();
 
   useEffect(() => {
     if (!gameId || !auth.currentUser) {
@@ -22,7 +25,7 @@ export function useNotes(gameId: string | null, sessionId?: string | null, tagFi
 
     let q = query(
       collection(db, 'notes'),
-      where('gameId', '==', gameId),
+      where('gameId', '==', gameId),  
       where('uid', '==', auth.currentUser.uid)
     );
 
@@ -85,6 +88,7 @@ export function useNotes(gameId: string | null, sessionId?: string | null, tagFi
         timestamp: Date.now(),
         order: newOrder
       });
+      refreshStats();
 
       logAppEvent('note_created', { 
         source: sessionId ? 'session-view' : 'quick-note',
@@ -107,7 +111,7 @@ export function useNotes(gameId: string | null, sessionId?: string | null, tagFi
             if (docSnap.exists()) {
               await updateDoc(docRef, {
                 tags: suggestion.tags,
-                isGlobal: suggestion.isGlobal
+                isGlobal: suggestion.isGlobal, updatedAt: Date.now()
               });
               setTaggingStatus(prev => {
                 const newStatus = { ...prev };
@@ -148,7 +152,7 @@ export function useNotes(gameId: string | null, sessionId?: string | null, tagFi
       if (docSnap.exists()) {
         await updateDoc(docRef, {
           tags: suggestion.tags,
-          isGlobal: suggestion.isGlobal
+          isGlobal: suggestion.isGlobal, updatedAt: Date.now()
         });
         setTaggingStatus(prev => {
           const newStatus = { ...prev };
@@ -172,7 +176,7 @@ export function useNotes(gameId: string | null, sessionId?: string | null, tagFi
 
   const handleUpdateNote = async (noteId: string, content: string) => {
     try {
-      await updateDoc(doc(db, 'notes', noteId), { content });
+      await updateDoc(doc(db, 'notes', noteId), { content, updatedAt: Date.now() });
       toast.success('Note updated');
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'notes');
@@ -183,7 +187,7 @@ export function useNotes(gameId: string | null, sessionId?: string | null, tagFi
     try {
       await updateDoc(doc(db, 'notes', noteId), { 
         sessionId: newSessionId,
-        isGlobal: newSessionId === null 
+        isGlobal: newSessionId === null, updatedAt: Date.now() 
       });
       toast.success('Note moved successfully');
     } catch (error) {
@@ -194,6 +198,7 @@ export function useNotes(gameId: string | null, sessionId?: string | null, tagFi
   const handleDeleteNote = async (noteId: string) => {
     try {
       await deleteDoc(doc(db, 'notes', noteId));
+      refreshStats();
       toast.success('Note deleted');
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, 'notes');
@@ -208,7 +213,7 @@ export function useNotes(gameId: string | null, sessionId?: string | null, tagFi
 
     try {
       await updateDoc(doc(db, 'notes', noteId), {
-        tags: [...note.tags, tag]
+        tags: [...note.tags, tag], updatedAt: Date.now()
       });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'notes');
@@ -221,7 +226,7 @@ export function useNotes(gameId: string | null, sessionId?: string | null, tagFi
 
     try {
       await updateDoc(doc(db, 'notes', noteId), {
-        tags: note.tags.filter(t => t !== tagToRemove)
+        tags: note.tags.filter(t => t !== tagToRemove), updatedAt: Date.now()
       });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'notes');
@@ -246,7 +251,7 @@ export function useNotes(gameId: string | null, sessionId?: string | null, tagFi
     newOrderKey = safeGenerateKeyBetween(prevOrder, nextOrder);
 
     try {
-      await updateDoc(doc(db, 'notes', active.id as string), { order: newOrderKey });
+      await updateDoc(doc(db, 'notes', active.id as string), { order: newOrderKey, updatedAt: Date.now() });
       logAppEvent('note_reordered');
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'notes');

@@ -13,7 +13,7 @@ import {
   getDocs,
   getDoc,
   limit,
-  deleteField
+  deleteField, serverTimestamp
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType, logAppEvent } from '../firebase';
 import { Game, GameSession, Note, ViewMode, Draft, SessionGroup, TrackerItem, SessionMetric } from '../types';
@@ -22,6 +22,7 @@ import { safeGenerateKeyBetween } from '../lib/fractionalIndexing';
 import { writeBatch } from 'firebase/firestore';
 import { useAuth } from './AuthContext';
 import { useUI } from './UIContext';
+import { useUserJourney } from './UserJourneyContext';
 
 interface GameContextType {
   games: Game[];
@@ -77,6 +78,7 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 export const GameProvider = ({ children }: { children: React.ReactNode }) => {
   const { user, isAuthReady } = useAuth();
   const { selectedGameId, activeSessionId, navigateTo, goBack, clearHistory } = useUI();
+  const { refreshStats } = useUserJourney();
 
   const [games, setGames] = useState<Game[]>([]);
   const [sessions, setSessions] = useState<GameSession[]>([]);
@@ -119,7 +121,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     setIsSessionsLoading(true);
-    const q = query(collection(db, 'sessions'), where('gameId', '==', selectedGame.id), orderBy('startTime', 'desc'), limit(sessionsLimit));
+    const q = query(collection(db, 'sessions'), where('gameId', '==', selectedGame.id), where('uid', '==', user.uid), orderBy('startTime', 'desc'), limit(sessionsLimit));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const sessionsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GameSession));
       setSessions(sessionsList);
@@ -135,7 +137,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (!user || !selectedGame) return;
 
-    const q = query(collection(db, 'sessionGroups'), where('gameId', '==', selectedGame.id), orderBy('createdAt', 'asc'), limit(sessionGroupsLimit));
+    const q = query(collection(db, 'sessionGroups'), where('gameId', '==', selectedGame.id), where('uid', '==', user.uid), orderBy('createdAt', 'asc'), limit(sessionGroupsLimit));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const groupsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SessionGroup));
       setSessionGroups(groupsList);
@@ -174,6 +176,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       const docRef = await addDoc(collection(db, 'games'), gameData);
+      refreshStats();
       toast.success('Game added to your library');
       return docRef.id;
     } catch (error) {
@@ -205,6 +208,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
         sessionData.groupId = groupId;
       }
       const docRef = await addDoc(collection(db, 'sessions'), sessionData);
+      refreshStats();
       const newSession = { id: docRef.id, ...sessionData };
       navigateTo('session-view', selectedGame, newSession);
       toast.info('Session started');
@@ -230,7 +234,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
         hoursPlayed: hoursPlayed ? parseFloat(hoursPlayed) : null,
       };
       if (groupId !== undefined) {
-        updateData.groupId = groupId === '' ? null : groupId;
+        updateData.groupId = groupId === '' ? null : groupId; updateData.updatedAt = serverTimestamp();
       }
       await updateDoc(doc(db, 'sessions', sessionIdToUpdate), updateData);
       toast.success('Session details updated');
@@ -242,7 +246,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
   const handleUpdateSessionTags = async (sessionId: string, tags: string[]) => {
     if (!user) return;
     try {
-      await updateDoc(doc(db, 'sessions', sessionId), { tags });
+      await updateDoc(doc(db, 'sessions', sessionId), { tags, updatedAt: Date.now() });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `sessions/${sessionId}`);
     }
@@ -260,12 +264,12 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       const docRef = await addDoc(collection(db, 'sessionGroups'), {
         gameId: selectedGame.id,
         uid: user.uid,
-        title: title.trim(),
+        title: title.trim(), updatedAt: Date.now(),
         createdAt: Date.now(),
         order: newOrder
       });
       toast.success('Group created');
-      return { id: docRef.id, title: title.trim() };
+      return { id: docRef.id, title: title.trim(), updatedAt: Date.now() };
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'sessionGroups');
       return null;
@@ -276,7 +280,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     if (!user || !title.trim()) return;
     try {
       await updateDoc(doc(db, 'sessionGroups', groupId), {
-        title: title.trim()
+        title: title.trim(), updatedAt: Date.now()
       });
       toast.success('Group updated');
     } catch (error) {
@@ -365,7 +369,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
         updateData.coverUrl = coverUrl;
       }
       
-      await updateDoc(doc(db, 'games', gameId), updateData);
+      updateData.updatedAt = serverTimestamp(); await updateDoc(doc(db, 'games', gameId), updateData);
       toast.success('Game synced successfully');
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'games');
@@ -379,12 +383,12 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     
     try {
       // 1. Delete all notes for this game
-      const notesQuery = query(collection(db, 'notes'), where('gameId', '==', gameId));
+      const notesQuery = query(collection(db, 'notes'), where('gameId', '==', gameId), where('uid', '==', user.uid));
       const notesSnapshot = await getDocs(notesQuery);
       const noteDeletions = notesSnapshot.docs.map(noteDoc => deleteDoc(doc(db, 'notes', noteDoc.id)));
       
       // 2. Delete all sessions for this game
-      const sessionsQuery = query(collection(db, 'sessions'), where('gameId', '==', gameId));
+      const sessionsQuery = query(collection(db, 'sessions'), where('gameId', '==', gameId), where('uid', '==', user.uid));
       const sessionsSnapshot = await getDocs(sessionsQuery);
       const sessionDeletions = sessionsSnapshot.docs.map(sessionDoc => deleteDoc(doc(db, 'sessions', sessionDoc.id)));
       
@@ -392,6 +396,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       const gameDeletion = deleteDoc(doc(db, 'games', gameId));
       
       await Promise.all([...noteDeletions, ...sessionDeletions, gameDeletion]);
+      refreshStats();
       
       toast.dismiss(loadingToast);
       toast.success('Game deleted successfully');
@@ -412,7 +417,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const q = query(
         collection(db, 'notes'),
-        where('sessionId', '==', sessionId),
+        where('sessionId', '==', sessionId), where('uid', '==', user.uid),
         where('uid', '==', user.uid),
         limit(1)
       );
@@ -429,7 +434,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const q = query(
         collection(db, 'notes'),
-        where('sessionId', '==', sessionId),
+        where('sessionId', '==', sessionId), where('uid', '==', user.uid),
         where('uid', '==', user.uid)
       );
       const snapshot = await getDocs(q);
@@ -448,7 +453,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     try {
         const notesQ = query(
             collection(db, 'notes'),
-            where('gameId', '==', selectedGame.id),
+            where('gameId', '==', selectedGame.id), where('uid', '==', user.uid),
             where('uid', '==', user.uid),
             orderBy('createdAt', 'desc')
         );
@@ -493,7 +498,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     
     try {
       // 1. Delete all notes for this session
-      const notesQuery = query(collection(db, 'notes'), where('sessionId', '==', sessionId));
+      const notesQuery = query(collection(db, 'notes'), where('sessionId', '==', sessionId), where('uid', '==', user.uid));
       const notesSnapshot = await getDocs(notesQuery);
       const noteDeletions = notesSnapshot.docs.map(noteDoc => deleteDoc(doc(db, 'notes', noteDoc.id)));
       
@@ -501,6 +506,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       const sessionDeletion = deleteDoc(doc(db, 'sessions', sessionId));
       
       await Promise.all([...noteDeletions, sessionDeletion]);
+      refreshStats();
       
       toast.dismiss(loadingToast);
       toast.success('Session deleted successfully');
@@ -523,7 +529,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       const updatedTrackers = [...(activeSession.trackers || []), newTracker];
       
       await updateDoc(doc(db, 'sessions', activeSession.id), {
-        trackers: updatedTrackers
+        trackers: updatedTrackers, updatedAt: Date.now()
       });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'sessions');
@@ -541,7 +547,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       });
       
       await updateDoc(doc(db, 'sessions', activeSession.id), {
-        trackers: updatedTrackers
+        trackers: updatedTrackers, updatedAt: Date.now()
       });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'sessions');
@@ -559,7 +565,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       });
       
       await updateDoc(doc(db, 'sessions', activeSession.id), {
-        trackers: updatedTrackers
+        trackers: updatedTrackers, updatedAt: Date.now()
       });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to add tracker item');
@@ -584,7 +590,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       });
       
       await updateDoc(doc(db, 'sessions', activeSession.id), {
-        trackers: updatedTrackers
+        trackers: updatedTrackers, updatedAt: Date.now()
       });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'sessions');
@@ -607,7 +613,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       });
       
       await updateDoc(doc(db, 'sessions', activeSession.id), {
-        trackers: updatedTrackers
+        trackers: updatedTrackers, updatedAt: Date.now()
       });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'sessions');
@@ -620,7 +626,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       const updatedTrackers = (activeSession.trackers || []).filter(t => t.id !== trackerId);
       
       await updateDoc(doc(db, 'sessions', activeSession.id), {
-        trackers: updatedTrackers
+        trackers: updatedTrackers, updatedAt: Date.now()
       });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'sessions');
@@ -666,7 +672,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
         
         const cleanedTrackers = JSON.parse(JSON.stringify(newTrackers));
         await updateDoc(doc(db, 'sessions', activeSession.id), {
-          trackers: cleanedTrackers
+          trackers: cleanedTrackers, updatedAt: Date.now()
         });
         return newId;
       }
@@ -674,7 +680,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       const updatedMetrics = [...(activeSession.metrics || []), { ...metric, id: newId }];
       const cleanedMetrics = JSON.parse(JSON.stringify(updatedMetrics));
       await updateDoc(doc(db, 'sessions', activeSession.id), {
-        metrics: cleanedMetrics
+        metrics: cleanedMetrics, updatedAt: Date.now()
       });
       return newId;
     } catch (error) {
@@ -750,7 +756,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
           
           const cleanedTrackers = JSON.parse(JSON.stringify(newTrackers));
           await updateDoc(doc(db, 'sessions', activeSession.id), {
-            trackers: cleanedTrackers
+            trackers: cleanedTrackers, updatedAt: Date.now()
           });
         }
         return;
@@ -782,7 +788,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       });
       const cleanedMetrics = JSON.parse(JSON.stringify(updatedMetrics));
       await updateDoc(doc(db, 'sessions', activeSession.id), {
-        metrics: cleanedMetrics
+        metrics: cleanedMetrics, updatedAt: Date.now()
       });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'sessions');
@@ -804,7 +810,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
         
         const cleanedTrackers = JSON.parse(JSON.stringify(newTrackers));
         await updateDoc(doc(db, 'sessions', activeSession.id), {
-          trackers: cleanedTrackers
+          trackers: cleanedTrackers, updatedAt: Date.now()
         });
         return;
       }
@@ -812,7 +818,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       const updatedMetrics = (activeSession.metrics || []).filter(m => m.id !== metricId);
       const cleanedMetrics = JSON.parse(JSON.stringify(updatedMetrics));
       await updateDoc(doc(db, 'sessions', activeSession.id), {
-        metrics: cleanedMetrics
+        metrics: cleanedMetrics, updatedAt: Date.now()
       });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'sessions');
@@ -862,7 +868,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       const cleanedMetrics = JSON.parse(JSON.stringify(updatedMetrics));
 
       await updateDoc(doc(db, 'sessions', activeSession.id), {
-        metrics: cleanedMetrics,
+        metrics: cleanedMetrics, updatedAt: Date.now(),
         trackers: deleteField()
       });
       

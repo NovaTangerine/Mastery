@@ -6,12 +6,14 @@ import { db } from '../../firebase';
 import { useGameContext } from '../../contexts/GameContext';
 import { useUI } from '../../contexts/UIContext';
 import { useNotes } from '../../hooks/useNotes';
+import { useAuth } from '../../contexts/AuthContext';
 import { cn } from '../../lib/utils';
 
 import { GameSession } from '../../types';
 
 export default function GameDetailView() {
   const { navigateTo } = useUI();
+  const { user } = useAuth();
   const {
     selectedGame,
     sessions,
@@ -38,10 +40,10 @@ export default function GameDetailView() {
     setIsCheckingDelete(true);
     setDeleteInfo(null);
     try {
-      const sessionsQuery = query(collection(db, 'sessions'), where('gameId', '==', selectedGame.id));
+      const sessionsQuery = query(collection(db, 'sessions'), where('gameId', '==', selectedGame.id), where('uid', '==', user!.uid));
       const sessionsSnap = await getDocs(sessionsQuery);
       
-      const notesQuery = query(collection(db, 'notes'), where('gameId', '==', selectedGame.id));
+      const notesQuery = query(collection(db, 'notes'), where('gameId', '==', selectedGame.id), where('uid', '==', user!.uid));
       const notesSnap = await getDocs(notesQuery);
       
       const sCount = sessionsSnap.size;

@@ -86,7 +86,7 @@ service cloud.firestore {
     // Domain Validators
     // ===============================================================
     function isValidGame(data) {
-      return hasOnlyAllowedFields(['title', 'platform', 'status', 'coverUrl', 'overallNotes', 'storySynopsis', 'uid', 'createdAt', 'updatedAt']) &&
+      return hasOnlyAllowedFields(['title', 'platform', 'status', 'coverUrl', 'overallNotes', 'storySynopsis', 'uid', 'createdAt', 'updatedAt', 'dismissedSessionBanner']) &&
              data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
              data.status in ['playing', 'completed', 'backlog', 'abandoned'] &&
              data.uid is string &&
@@ -95,7 +95,8 @@ service cloud.firestore {
              (!('platform' in data) || data.platform == null || (data.platform is string && data.platform.size() < 100)) &&
              (!('coverUrl' in data) || data.coverUrl == null || (data.coverUrl is string && data.coverUrl.size() < 2000)) &&
              (!('overallNotes' in data) || data.overallNotes == null || (data.overallNotes is string && data.overallNotes.size() < 10000)) &&
-             (!('storySynopsis' in data) || data.storySynopsis == null || (data.storySynopsis is string && data.storySynopsis.size() < 10000));
+             (!('storySynopsis' in data) || data.storySynopsis == null || (data.storySynopsis is string && data.storySynopsis.size() < 10000)) &&
+             (!('dismissedSessionBanner' in data) || data.dismissedSessionBanner == null || data.dismissedSessionBanner is bool);
     }
 
     function isValidSession(data) {

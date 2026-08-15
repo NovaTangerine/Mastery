@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useUI } from '../contexts/UIContext';
 import { useGameContext } from '../contexts/GameContext';
+import { useAuth } from '../contexts/AuthContext';
 import { ArrowLeft, Plus, PlayCircle, Calendar, Star, Loader2, Info } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -32,6 +33,7 @@ interface IGDBGameDetails {
 
 export default function IGDBGameView() {
   const { selectedIgdbId, goBack, navigateTo } = useUI();
+  const { user } = useAuth();
   const { handleAddGame, games } = useGameContext();
   const [game, setGame] = useState<IGDBGameDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,12 +70,12 @@ export default function IGDBGameView() {
   const handleGoToSession = async () => {
     if (!existingGame) return;
     try {
-      const { collection, query, where, orderBy, limit, getDocs, addDoc } = await import('firebase/firestore');
+      const { collection, query, where, orderBy, limit, getDocs, addDoc, serverTimestamp } = await import('firebase/firestore');
       const { db } = await import('../firebase');
 
       const q = query(
         collection(db, 'sessions'),
-        where('gameId', '==', existingGame.id),
+        where('gameId', '==', existingGame.id), where('uid', '==', user!.uid),
         orderBy('startTime', 'desc'),
         limit(1)
       );
@@ -96,8 +98,9 @@ export default function IGDBGameView() {
         const sessionData: any = {
           name: sessionName,
           gameId: existingGame.id,
+          uid: user!.uid,
           startTime: now.getTime(),
-          progressMarker: 'Starting session'
+          progressMarker: 'Starting session',
         };
         const docRef = await addDoc(collection(db, 'sessions'), sessionData);
         const newSession = { id: docRef.id, ...sessionData };

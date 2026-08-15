@@ -14,7 +14,8 @@ import {
   ChevronDown,
   WifiOff,
   Home,
-  Archive
+  Archive,
+  BookOpen
 } from 'lucide-react';
 
 import { Toaster } from 'sonner';
@@ -26,6 +27,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { GameProvider, useGameContext } from './contexts/GameContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { UIProvider, useUI } from './contexts/UIContext';
+import { UserJourneyProvider } from './contexts/UserJourneyContext';
 import { useNetworkStatus } from './hooks/useNetworkStatus';
 
 import HomeView from './views/HomeView';
@@ -52,6 +54,7 @@ import TrackerSyncMockupView from './views/TrackerSyncMockupView';
 import NoteVisualsMockupView from './views/NoteVisualsMockupView';
 
 import TrackersV2PostMortemView from './views/TrackersV2PostMortemView';
+import UXDocumentationView from './views/UXDocumentationView';
 
 // --- Components ---
 
@@ -257,6 +260,29 @@ function MainApp() {
                     </div>
                   )}
                   
+                  {cartridgeUnlocked && (
+                    <div className="relative group">
+                      <button 
+                        className="flex items-center gap-2 text-indigo-400 hover:text-indigo-300 transition-colors"
+                        title="Documentation"
+                      >
+                        <BookOpen className="w-5 h-5" />
+                        <span className="hidden sm:block font-medium text-sm">Documentation</span>
+                        <ChevronDown className="w-4 h-4 opacity-70" />
+                      </button>
+                      
+                      {/* Dropdown Menu */}
+                      <div className="absolute top-full left-0 mt-2 w-56 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all flex flex-col overflow-hidden z-50">
+                        <button 
+                          onClick={() => { clearHistory(); navigateTo('ux-documentation', null, null); }}
+                          className={`px-4 py-2 text-left text-sm transition-colors rounded-lg ${view === 'ux-documentation' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                        >
+                          User Journey Architecture
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {selectedGame && (
                     <button 
                       onClick={() => navigateTo('session-view')}
@@ -402,6 +428,7 @@ function MainApp() {
             {view === 'tracker-sync-mockup' && <TrackerSyncMockupView />}
             {view === 'note-visuals-mockup' && <NoteVisualsMockupView />}
             {view === 'trackers-v2-post-mortem' && <TrackersV2PostMortemView />}
+            {view === 'ux-documentation' && <UXDocumentationView />}
           </div>
         </main>
 
@@ -428,11 +455,13 @@ function MainApp() {
 export default function App() {
   return (
     <ErrorBoundary><AuthProvider>
-      <UIProvider>
-        <GameProvider>
-          <MainApp />
-        </GameProvider>
-      </UIProvider>
+      <UserJourneyProvider>
+        <UIProvider>
+          <GameProvider>
+            <MainApp />
+          </GameProvider>
+        </UIProvider>
+      </UserJourneyProvider>
     </AuthProvider></ErrorBoundary>
   );
 }

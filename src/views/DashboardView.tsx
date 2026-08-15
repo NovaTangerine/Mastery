@@ -114,10 +114,10 @@ export default function DashboardView() {
     setIsCheckingDelete(true);
     setDeleteInfo(null);
     try {
-      const sessionsQuery = query(collection(db, 'sessions'), where('gameId', '==', game.id));
+      const sessionsQuery = query(collection(db, 'sessions'), where('gameId', '==', game.id), where('uid', '==', user!.uid));
       const sessionsSnap = await getDocs(sessionsQuery);
       
-      const notesQuery = query(collection(db, 'notes'), where('gameId', '==', game.id));
+      const notesQuery = query(collection(db, 'notes'), where('gameId', '==', game.id), where('uid', '==', user!.uid));
       const notesSnap = await getDocs(notesQuery);
       
       const sCount = sessionsSnap.size;
@@ -154,7 +154,7 @@ export default function DashboardView() {
     try {
       const q = query(
         collection(db, 'sessions'),
-        where('gameId', '==', game.id),
+        where('gameId', '==', game.id), where('uid', '==', user!.uid),
         orderBy('startTime', 'desc'),
         limit(1)
       );
@@ -164,7 +164,7 @@ export default function DashboardView() {
         const sessionData = { id: sessionDoc.id, ...sessionDoc.data() } as GameSession;
         navigateTo('session-view', game, sessionData);
       } else {
-        const { addDoc } = await import('firebase/firestore');
+        const { addDoc, serverTimestamp } = await import('firebase/firestore');
         const now = new Date();
         const hour = now.getHours();
         let timeOfDay = 'Morning';
@@ -176,9 +176,9 @@ export default function DashboardView() {
         const sessionData: any = {
           name: sessionName,
           gameId: game.id,
-          uid: user?.uid,
+          uid: user!.uid,
           startTime: now.getTime(),
-          progressMarker: 'Starting session'
+          progressMarker: 'Starting session',
         };
         const docRef = await addDoc(collection(db, 'sessions'), sessionData);
         const newSession = { id: docRef.id, ...sessionData } as GameSession;

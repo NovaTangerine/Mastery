@@ -62,7 +62,6 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
 
   const handlePreviewGame = async (game: Game) => {
     setIsLoadingDetails(true);
-    setSelectedPreviewGame(game); // Set initial data for immediate UI feedback
     setButtonGradient(null);
     setButtonTextColor(null);
     
@@ -74,6 +73,7 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
     } catch (err) {
       console.error(err);
       // Fallback is just to keep the basic info we already had
+      setSelectedPreviewGame(game);
     } finally {
       setIsLoadingDetails(false);
     }
@@ -130,7 +130,15 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
           <div className="fixed inset-0 z-[101] flex items-start justify-center pt-[10vh] px-4 sm:px-6 pointer-events-none">
             <motion.div 
               layout
-              transition={{ layout: { duration: 0.5, ease: [0.32, 0.72, 0, 1] } }}
+              transition={{ 
+                layout: { 
+                  duration: 0.5,
+                  ease: [0.16, 1, 0.3, 1]
+                },
+                opacity: { duration: 0.3, ease: "easeOut" },
+                scale: { duration: 0.3, ease: "easeOut" },
+                y: { duration: 0.3, ease: "easeOut" }
+              }}
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -176,15 +184,32 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
             </button>
           </div>
 
-          <div className="overflow-y-auto overflow-x-hidden flex-1 min-h-[400px] relative">
+          <div 
+            className="overflow-y-auto overflow-x-hidden flex-1 min-h-[400px] relative"
+            style={{ scrollbarGutter: 'stable' }}
+          >
             <AnimatePresence mode="popLayout" initial={false}>
-              {selectedPreviewGame ? (
+              {isLoadingDetails ? (
+                <motion.div
+                  key="loading"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute inset-0 flex flex-col items-center justify-center min-h-[400px] p-8"
+                >
+                  <Loader2 className="w-8 h-8 text-amber-400 animate-spin mb-4" />
+                  <p className="text-zinc-500 font-bold tracking-widest text-xs uppercase animate-pulse">
+                    Retrieving Game Chronicles...
+                  </p>
+                </motion.div>
+              ) : selectedPreviewGame ? (
                 <motion.div
                   key="detail"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.2 }}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
                   className="p-5 flex flex-col max-w-[720px] mx-auto w-full h-full"
                 >
                   <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-5 sm:mb-6">
@@ -243,52 +268,43 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
                     </div>
                     
                     <div className="flex-1 min-w-0 flex flex-col">
-                      {isLoadingDetails ? (
-                        <div className="flex-1 flex flex-col items-center justify-center min-h-[300px] bg-zinc-900/20 border border-zinc-800/30 rounded-xl ml-0 sm:ml-4 sm:mt-1.5 mt-4">
-                          <Loader2 className="w-8 h-8 text-amber-400 animate-spin mb-4" />
-                          <p className="text-zinc-500 font-bold tracking-widest text-xs uppercase">Loading Details...</p>
+                      <div className="pl-[13px] sm:pl-[11px] sm:ml-2 pt-2 text-zinc-100">
+                        <h3 className="text-2xl sm:text-3xl font-medium tracking-tight leading-tight">
+                          {selectedPreviewGame.name}
+                        </h3>
+                      </div>
+
+                      <div className="mt-3 sm:mt-4 ml-0 sm:ml-2 bg-zinc-900/40 border border-zinc-800/60 pr-3 pl-3 sm:pl-2.5 py-2 sm:py-4 flex flex-col gap-4 sm:gap-5">
+                        <div className="grid grid-cols-2 gap-y-4 gap-x-6">
+                          <div className="space-y-0.5">
+                            <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">Developer</p>
+                            <p className="text-sm text-zinc-300">
+                              {selectedPreviewGame.involved_companies?.find(c => c.developer)?.company.name || 'Unknown'}
+                            </p>
+                          </div>
+                          <div className="space-y-0.5">
+                            <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">Publisher</p>
+                            <p className="text-sm text-zinc-300">
+                              {selectedPreviewGame.involved_companies?.find(c => c.publisher)?.company.name || 'Unknown'}
+                            </p>
+                          </div>
+                          <div className="space-y-0.5">
+                            <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">Release Date</p>
+                            <p className="text-sm text-zinc-300">
+                              {selectedPreviewGame.first_release_date 
+                                ? new Date(selectedPreviewGame.first_release_date * 1000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+                                : 'Unknown'}
+                            </p>
+                          </div>
                         </div>
-                      ) : (
-                        <>
-                          <div className="pl-[13px] sm:pl-[11px] sm:ml-2 pt-2 text-zinc-100">
-                            <h3 className="text-2xl sm:text-3xl font-medium tracking-tight leading-tight">
-                              {selectedPreviewGame.name}
-                            </h3>
-                          </div>
 
-                          <div className="mt-3 sm:mt-4 ml-0 sm:ml-2 bg-zinc-900/40 border border-zinc-800/60 pr-3 pl-3 sm:pl-2.5 py-2 sm:py-4 flex flex-col gap-4 sm:gap-5">
-                            <div className="grid grid-cols-2 gap-y-4 gap-x-6">
-                              <div className="space-y-0.5">
-                                <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">Developer</p>
-                                <p className="text-sm text-zinc-300">
-                                  {selectedPreviewGame.involved_companies?.find(c => c.developer)?.company.name || 'Unknown'}
-                                </p>
-                              </div>
-                              <div className="space-y-0.5">
-                                <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">Publisher</p>
-                                <p className="text-sm text-zinc-300">
-                                  {selectedPreviewGame.involved_companies?.find(c => c.publisher)?.company.name || 'Unknown'}
-                                </p>
-                              </div>
-                              <div className="space-y-0.5">
-                                <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">Release Date</p>
-                                <p className="text-sm text-zinc-300">
-                                  {selectedPreviewGame.first_release_date 
-                                    ? new Date(selectedPreviewGame.first_release_date * 1000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
-                                    : 'Unknown'}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="space-y-2">
-                              <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">About this game</p>
-                              <p className="text-zinc-400 text-sm leading-relaxed font-normal line-clamp-4">
-                                {selectedPreviewGame.summary || "No description available for this title."}
-                              </p>
-                            </div>
-                          </div>
-                        </>
-                      )}
+                        <div className="space-y-2">
+                          <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">About this game</p>
+                          <p className="text-zinc-400 text-sm leading-relaxed font-normal line-clamp-4">
+                            {selectedPreviewGame.summary || "No description available for this title."}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -331,10 +347,10 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
               ) : (
                   <motion.div
                   key="list"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ duration: 0.2 }}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
                   className="p-2 sm:p-4 flex flex-col gap-4 relative"
                 >
                   {addingState !== 'idle' && (

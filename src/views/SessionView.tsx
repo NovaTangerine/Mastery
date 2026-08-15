@@ -20,6 +20,7 @@ import { SessionMetric } from '../types';
 
 import { useGameContext } from '../contexts/GameContext';
 import { useUI } from '../contexts/UIContext';
+import { useUserJourney } from '../contexts/UserJourneyContext';
 import { useNotes } from '../hooks/useNotes';
 import { SortableNote } from '../components/SortableNote';
 import { TrackerCard } from '../components/TrackerCard';
@@ -327,6 +328,7 @@ const hoursStrToDecimalStr = (valStr: string): string => {
 
 export default function SessionView() {
   const { goBack, navigateTo } = useUI();
+  const { hasLoggedAnySession, hasCreatedAnyNote, isEligibleForGameOnboarding } = useUserJourney();
   const { 
     selectedGame, 
     activeSession,
@@ -1019,8 +1021,26 @@ export default function SessionView() {
 
         <div className="flex-1 overflow-y-auto px-3 lg:px-6 custom-scrollbar">
           <div className="space-y-6 pb-24 lg:pb-20">
-          {sessions.length === 1 && sessions[0].id === activeSession?.id && (
-            <div className="px-2 py-4 mb-2 bg-indigo-500/5 border border-indigo-500/10 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-700">
+          {isEligibleForGameOnboarding && !selectedGame?.dismissedSessionBanner && sessions.length === 1 && sessions[0].id === activeSession?.id && (
+            <div className="relative px-2 py-4 mb-2 bg-indigo-500/5 border border-indigo-500/10 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-700 pr-8">
+              <button 
+                onClick={async () => {
+                  if (!selectedGame) return;
+                  try {
+                    const { doc, updateDoc, serverTimestamp } = await import('firebase/firestore');
+                    const { db } = await import('../firebase');
+                    await updateDoc(doc(db, 'games', selectedGame.id), {
+                      dismissedSessionBanner: true,
+                      updatedAt: serverTimestamp()
+                    });
+                  } catch (err) {
+                    console.error('Failed to dismiss banner', err);
+                  }
+                }}
+                className="absolute top-3 right-3 text-indigo-400/50 hover:text-indigo-400 transition-colors p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
               <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-[.072em] mb-1">Getting Started</p>
               <p className="text-xs text-zinc-400 leading-relaxed">
                 This is your first session! As you play more, your history will build up here.
@@ -1669,15 +1689,23 @@ export default function SessionView() {
             </div>
           )}
           {sessionNotes.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center p-8 animate-in fade-in zoom-in-95 duration-700">
-              <div className="w-16 h-16 bg-zinc-900/50 rounded-2xl flex items-center justify-center mb-6 rotate-3">
-                <PenLine className="w-8 h-8 text-zinc-500" />
+            hasCreatedAnyNote ? (
+              <div className="h-full flex flex-col items-center justify-center text-center p-8 animate-in fade-in zoom-in-95 duration-700">
+                <p className="text-zinc-600 text-sm font-medium italic">
+                  No notes yet. Start typing below.
+                </p>
               </div>
-              <h3 className="text-xl font-bold text-zinc-100 mb-3">Your Journey Begins</h3>
-              <p className="text-zinc-500 max-w-xs text-sm leading-relaxed mb-8">
-                Every great adventure deserves to be remembered. Start typing below to capture your first thought, discovery, or strategy.
-              </p>
-            </div>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-center p-8 animate-in fade-in zoom-in-95 duration-700">
+                <div className="w-16 h-16 bg-zinc-900/50 rounded-2xl flex items-center justify-center mb-6 rotate-3">
+                  <PenLine className="w-8 h-8 text-zinc-500" />
+                </div>
+                <h3 className="text-xl font-bold text-zinc-100 mb-3">Your Journey Begins</h3>
+                <p className="text-zinc-500 max-w-xs text-sm leading-relaxed mb-8">
+                  Every great adventure deserves to be remembered. Start typing below to capture your first thought, discovery, or strategy.
+                </p>
+              </div>
+            )
           ) : (
             <DndContext 
               sensors={sensors}
@@ -1944,8 +1972,14 @@ export default function SessionView() {
               }
             });
 
-            if (metrics.length === 0 && (!activeSession.trackers || activeSession.trackers.length === 0) && !anySessionHasTrackers) {
-              return (
+            if (metrics.length === 0 && (!activeSession.trackers || activeSession.trackers.length === 0)) {
+              return anySessionHasTrackers || hasLoggedAnySession ? (
+                <div className="md:col-span-full w-full py-8 text-center animate-in fade-in zoom-in-95 duration-700">
+                  <p className="text-zinc-600 text-sm font-medium italic">
+                    No trackers added to this session.
+                  </p>
+                </div>
+              ) : (
                 <div className="md:col-span-full w-full py-12 px-6 bg-zinc-900/30 border border-dashed border-zinc-800 rounded-3xl text-center animate-in fade-in zoom-in-95 duration-700">
                   <div className="w-12 h-12 bg-zinc-900/50 rounded-xl flex items-center justify-center mb-4 mx-auto">
                     <LayoutDashboard className="w-6 h-6 text-zinc-600" />
