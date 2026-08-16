@@ -1582,7 +1582,7 @@ export default function SessionView() {
                           setTotalHoursInput('');
                         }
                       }}
-                      placeholder="H:MM"
+                      placeholder="0:00"
                       className="w-full text-center bg-transparent px-10 text-[16px] sm:text-sm focus:outline-none"
                     />
                     <button 
