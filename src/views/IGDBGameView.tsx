@@ -70,7 +70,7 @@ export default function IGDBGameView() {
   const handleGoToSession = async () => {
     if (!existingGame) return;
     try {
-      const { collection, query, where, orderBy, limit, getDocs, addDoc, serverTimestamp } = await import('firebase/firestore');
+      const { collection, query, where, orderBy, limit, getDocs, addDoc } = await import('firebase/firestore');
       const { db } = await import('../firebase');
 
       const q = query(

@@ -22,6 +22,7 @@ import { useGameContext } from '../contexts/GameContext';
 import { useUI } from '../contexts/UIContext';
 import { useUserJourney } from '../contexts/UserJourneyContext';
 import { useNotes } from '../hooks/useNotes';
+import { useGameTags } from '../hooks/useGameTags';
 import { SortableNote } from '../components/SortableNote';
 import { TrackerCard } from '../components/TrackerCard';
 import { AddTrackerMenu } from '../components/AddTrackerMenu';
@@ -384,6 +385,7 @@ export default function SessionView() {
 
   const { notes: allSessionNotes } = useNotes(selectedGame?.id || null, activeSession?.id || null, null);
   const { notes: globalNotesForTag } = useNotes(selectedGame?.id || null, undefined, filteredTag);
+  const { tags: gameTags } = useGameTags(selectedGame?.id || null);
 
   const tagCounts = React.useMemo(() => {
     const counts: Record<string, number> = {};
@@ -397,18 +399,6 @@ export default function SessionView() {
     return counts;
   }, [allSessionNotes]);
 
-  const activeSessionTags = activeSession?.tags || [];
-  const allSessionTagsList = React.useMemo(() => {
-    const combined = new Set([...Object.keys(tagCounts), ...activeSessionTags]);
-    return Array.from(combined).sort((a, b) => {
-      // Sort by count descending, then alphabetical
-      const countA = tagCounts[a] || 0;
-      const countB = tagCounts[b] || 0;
-      if (countB !== countA) return countB - countA;
-      return a.localeCompare(b);
-    });
-  }, [tagCounts, activeSessionTags]);
-
   const globalSessionTags = React.useMemo(() => {
     const tags = new Set<string>();
     sessions.forEach(s => {
@@ -416,6 +406,57 @@ export default function SessionView() {
     });
     return Array.from(tags);
   }, [sessions]);
+
+  const activeSessionTags = activeSession?.tags || [];
+  
+  const structuredTags = React.useMemo(() => {
+    const combined = new Set([...gameTags, ...globalSessionTags, ...activeSessionTags]);
+    const allTags = Array.from(combined);
+    
+    const sessionTags: string[] = [];
+    const gameTagsList: string[] = [];
+
+    allTags.forEach(tag => {
+      // It's a session tag if it's explicitly in activeSessionTags or used in a note in this session (tagCounts[tag] > 0)
+      if (activeSessionTags.includes(tag) || (tagCounts[tag] && tagCounts[tag] > 0)) {
+        sessionTags.push(tag);
+      } else {
+        gameTagsList.push(tag);
+      }
+    });
+
+    // Sort session tags by count descending, then alphabetical
+    sessionTags.sort((a, b) => {
+      const countA = tagCounts[a] || 0;
+      const countB = tagCounts[b] || 0;
+      if (countB !== countA) return countB - countA;
+      return a.localeCompare(b);
+    });
+
+    // Sort game tags purely alphabetically
+    gameTagsList.sort((a, b) => a.localeCompare(b));
+
+    // Group game tags by letter
+    const groups: Record<string, string[]> = {};
+    gameTagsList.forEach(tag => {
+      const letter = tag.charAt(0).toUpperCase();
+      if (!groups[letter]) groups[letter] = [];
+      groups[letter].push(tag);
+    });
+    
+    const gameTagsByLetter = Object.keys(groups).sort().map(letter => ({
+      letter,
+      tags: groups[letter]
+    }));
+
+    return { 
+      sessionTagsList: sessionTags, 
+      gameTagsByLetter,
+      gameTagsList,
+      totalTagsCount: allTags.length,
+      allTagsFlat: sessionTags.concat(gameTagsList) // fallback flat array if needed
+    };
+  }, [gameTags, globalSessionTags, activeSessionTags, tagCounts]);
 
   const existingTrackerTitles = React.useMemo(() => {
     const titles = new Set<string>();
@@ -650,7 +691,7 @@ export default function SessionView() {
     const checkHeight = () => {
       if (tagsContainerRef.current) {
         const { scrollHeight } = tagsContainerRef.current;
-        if (scrollHeight > 96) {
+        if (scrollHeight > 140) {
           setShowTagsExpandButton(true);
         } else {
           setShowTagsExpandButton(false);
@@ -671,7 +712,7 @@ export default function SessionView() {
     return () => {
       if (observer) observer.disconnect();
     };
-  }, [allSessionTagsList.length, activeSessionTags.length]);
+  }, [structuredTags.totalTagsCount, activeSessionTags.length]);
 
   useEffect(() => {
     const handleMouseDown = (e: MouseEvent) => {
@@ -1027,11 +1068,11 @@ export default function SessionView() {
                 onClick={async () => {
                   if (!selectedGame) return;
                   try {
-                    const { doc, updateDoc, serverTimestamp } = await import('firebase/firestore');
+                    const { doc, updateDoc } = await import('firebase/firestore');
                     const { db } = await import('../firebase');
                     await updateDoc(doc(db, 'games', selectedGame.id), {
                       dismissedSessionBanner: true,
-                      updatedAt: serverTimestamp()
+                      updatedAt: Date.now()
                     });
                   } catch (err) {
                     console.error('Failed to dismiss banner', err);
@@ -2102,7 +2143,7 @@ export default function SessionView() {
           <div className="space-y-4 w-full md:col-span-2 lg:col-span-1 border-zinc-800 lg:border-t-0 mt-6 lg:mt-auto">
             <div className="flex items-center gap-2 text-zinc-400">
               <TagIcon className="w-4 h-4 text-zinc-600" />
-              <h3 className="font-normal uppercase tracking-[.072em] text-xs">Session Tags</h3>
+              <h3 className="font-normal uppercase tracking-[.072em] text-xs">Game Tags</h3>
             </div>
             
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl flex flex-col overflow-hidden">
@@ -2119,23 +2160,23 @@ export default function SessionView() {
                       setSessionTagInput('');
                     }
                   }}
-                  existingTags={allSessionTagsList}
+                  existingTags={structuredTags.allTagsFlat}
                   additionalSuggestions={globalSessionTags}
                   placeholder="Add a tag..."
                   className="bg-transparent border-none focus:ring-0 text-sm text-zinc-300 placeholder:text-zinc-600 outline-none w-full"
                 />
               </div>
               <div className="p-5 flex-1 relative flex flex-col">
-                {allSessionTagsList.length > 0 ? (
+                {structuredTags.totalTagsCount > 0 ? (
                   <div className="relative">
                     <div 
                       ref={tagsContainerRef}
                       className={cn(
                         "flex flex-wrap gap-2 transition-[max-height] duration-300 ease-in-out overflow-hidden relative p-2 -m-2",
-                        isTagsExpanded ? "max-h-[1000px]" : "max-h-[104px]"
+                        isTagsExpanded ? "max-h-[5000px]" : "max-h-[148px]"
                       )}
                     >
-                      {allSessionTagsList.map((tag) => (
+                      {structuredTags.sessionTagsList.map((tag) => (
                         <SessionTagItem
                           key={tag}
                           tag={tag}
@@ -2144,6 +2185,33 @@ export default function SessionView() {
                           scrollToTab={scrollToTab}
                           handleDeleteSessionTag={handleDeleteSessionTag}
                         />
+                      ))}
+
+                      {structuredTags.sessionTagsList.length > 0 && structuredTags.gameTagsList.length > 0 && (
+                        <div className="w-full flex items-center gap-3 pt-2 pb-1 mt-1">
+                          <div className="h-px bg-zinc-800/80 flex-1"></div>
+                          <span className="text-[9px] uppercase tracking-[0.1em] text-zinc-500 font-bold">Game Tags</span>
+                          <div className="h-px bg-zinc-800/80 flex-1"></div>
+                        </div>
+                      )}
+
+                      {structuredTags.gameTagsByLetter.map((group) => (
+                        <React.Fragment key={group.letter}>
+                          <div className="w-full flex items-center mt-1">
+                            <span className="text-[10px] font-bold text-zinc-600 w-4 shrink-0 text-center">{group.letter}</span>
+                            <div className="h-px bg-zinc-800/40 flex-1 ml-2"></div>
+                          </div>
+                          {group.tags.map((tag) => (
+                            <SessionTagItem
+                              key={tag}
+                              tag={tag}
+                              count={tagCounts[tag] || 0}
+                              setFilteredTag={setFilteredTag}
+                              scrollToTab={scrollToTab}
+                              handleDeleteSessionTag={handleDeleteSessionTag}
+                            />
+                          ))}
+                        </React.Fragment>
                       ))}
                     </div>
                   </div>
@@ -2160,7 +2228,7 @@ export default function SessionView() {
                       onClick={() => setIsTagsExpanded(!isTagsExpanded)}
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/50 hover:border-zinc-700 rounded-full transition-all text-zinc-400 hover:text-zinc-300 group"
                     >
-                       <span className="text-[10px] font-bold uppercase tracking-[.072em]">{isTagsExpanded ? 'Show Less' : `Show All (${allSessionTagsList.length})`}</span>
+                       <span className="text-[10px] font-bold uppercase tracking-[.072em]">{isTagsExpanded ? 'Show Less' : `Show All (${structuredTags.totalTagsCount})`}</span>
                        <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-300", isTagsExpanded && "rotate-180")} />
                     </button>
                   </div>

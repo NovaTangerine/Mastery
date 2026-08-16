@@ -49,7 +49,7 @@ interface GameContextType {
   handleUpdateSessionTags: (sessionId: string, tags: string[]) => Promise<void>;
   handleUpdateGameField: (field: 'overallNotes' | 'storySynopsis', value: string) => Promise<void>;
   handleUpdateGameStatus: (status: Game['status']) => Promise<void>;
-  handleUpdateGameDetails: (gameId: string, title: string, coverUrl?: string) => Promise<void>;
+  handleUpdateGameDetails: (gameId: string, title: string, coverUrl?: string | null) => Promise<void>;
   handleDeleteGame: (targetGameId?: string) => Promise<void>;
   handleDeleteSession: (sessionId: string) => Promise<void>;
   handleDeleteSessionAndShiftFocus: (sessionId: string) => Promise<void>;
@@ -233,7 +233,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
         hoursPlayed: hoursPlayed ? parseFloat(hoursPlayed) : null,
       };
       if (groupId !== undefined) {
-        updateData.groupId = groupId === '' ? null : groupId; updateData.updatedAt = serverTimestamp();
+        updateData.groupId = groupId === '' ? null : groupId;
       }
       await updateDoc(doc(db, 'sessions', sessionIdToUpdate), updateData);
       toast.success('Session details updated');
@@ -358,7 +358,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const handleUpdateGameDetails = async (gameId: string, title: string, coverUrl?: string) => {
+  const handleUpdateGameDetails = async (gameId: string, title: string, coverUrl?: string | null) => {
     try {
       const updateData: any = {
         title,
@@ -368,7 +368,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
         updateData.coverUrl = coverUrl;
       }
       
-      updateData.updatedAt = serverTimestamp(); await updateDoc(doc(db, 'games', gameId), updateData);
+      updateData.updatedAt = Date.now(); await updateDoc(doc(db, 'games', gameId), updateData);
       toast.success('Game synced successfully');
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'games');

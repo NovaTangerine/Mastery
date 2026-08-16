@@ -164,7 +164,7 @@ export default function DashboardView() {
         const sessionData = { id: sessionDoc.id, ...sessionDoc.data() } as GameSession;
         navigateTo('session-view', game, sessionData);
       } else {
-        const { addDoc, serverTimestamp } = await import('firebase/firestore');
+        const { addDoc } = await import('firebase/firestore');
         const now = new Date();
         const hour = now.getHours();
         let timeOfDay = 'Morning';
@@ -202,10 +202,12 @@ export default function DashboardView() {
     
     if (isSwapped) {
       const originalCover = localStorage.getItem(`originalCover_${game.id}`);
-      await handleUpdateGameDetails(game.id, game.title, originalCover || undefined);
+      await handleUpdateGameDetails(game.id, game.title, originalCover || null);
     } else {
       if (game.coverUrl) {
-         localStorage.setItem(`originalCover_${game.id}`, game.coverUrl);
+        localStorage.setItem(`originalCover_${game.id}`, game.coverUrl);
+      } else {
+        localStorage.removeItem(`originalCover_${game.id}`);
       }
       await handleUpdateGameDetails(game.id, game.title, dsCover);
     }

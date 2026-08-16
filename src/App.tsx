@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Gamepad2, 
   LogOut, 
@@ -61,12 +61,31 @@ import UXDocumentationView from './views/UXDocumentationView';
 
 function MainApp() {
   const [isBackBarVisible, setIsBackBarVisible] = useState(true);
-  const [cartridgeClickCount, setCartridgeClickCount] = useState(0);
-  const [cartridgeUnlocked, setCartridgeUnlocked] = useState(false);
+  const [secretNavClickCount, setSecretNavClickCount] = useState(0);
+  const [secretNavUnlocked, setSecretNavUnlocked] = useState(false);
   const [headerBlur, setHeaderBlur] = useState('24px');
   const mainRef = useRef<HTMLElement>(null);
   const isOnline = useNetworkStatus();
   const { user, isAuthReady } = useAuth();
+
+  const isAdmin = useMemo(() => {
+    if (!user?.email) return false;
+    const allowedEmails = [
+      'kyledk05@gmail.com',
+      'kyle@shadowpuppet.io',
+      'kyl3dk05@gmail.com'
+    ];
+    return allowedEmails.includes(user.email.toLowerCase());
+  }, [user?.email]);
+
+  // Reset unlocked state if user changes to a non-admin
+  useEffect(() => {
+    if (!isAdmin) {
+      setSecretNavUnlocked(false);
+      setSecretNavClickCount(0);
+    }
+  }, [isAdmin]);
+
   const {
     view,
     navigateTo,
@@ -160,7 +179,7 @@ function MainApp() {
                     <span className="hidden sm:block font-medium text-sm">Home</span>
                   </button>
 
-                  {cartridgeUnlocked && (
+                  {isAdmin && secretNavUnlocked && (
                     <div className="relative group">
                       <button 
                         className="flex items-center gap-2 text-amber-500 hover:text-amber-400 transition-colors"
@@ -261,7 +280,7 @@ function MainApp() {
                     </div>
                   )}
                   
-                  {cartridgeUnlocked && (
+                  {isAdmin && secretNavUnlocked && (
                     <div className="relative group">
                       <button 
                         className="flex items-center gap-2 text-indigo-400 hover:text-indigo-300 transition-colors"
@@ -300,15 +319,16 @@ function MainApp() {
                 <div 
                   className="flex-1 self-stretch cursor-default"
                   onClick={() => {
-                    const newCount = cartridgeClickCount + 1;
+                    if (!isAdmin) return;
+                    const newCount = secretNavClickCount + 1;
                     if (newCount === 5) {
-                      setCartridgeUnlocked(true);
+                      setSecretNavUnlocked(true);
                     } else if (newCount >= 10) {
-                      setCartridgeUnlocked(false);
-                      setCartridgeClickCount(0);
+                      setSecretNavUnlocked(false);
+                      setSecretNavClickCount(0);
                       return;
                     }
-                    setCartridgeClickCount(newCount);
+                    setSecretNavClickCount(newCount);
                   }}
                 />
 

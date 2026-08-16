@@ -153,7 +153,9 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
                 <Search className="w-5 h-5 text-zinc-400" />
               </button>
             ) : (
-              <Search className="w-5 h-5 text-zinc-400 shrink-0" />
+              <div className="p-2 shrink-0">
+                <Search className="w-5 h-5 text-zinc-400" />
+              </div>
             )}
             <input
               ref={inputRef}
