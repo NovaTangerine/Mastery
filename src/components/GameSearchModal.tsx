@@ -4,6 +4,22 @@ import { Search, X, Loader2, Image as ImageIcon, Plus, ArrowLeft } from 'lucide-
 import { motion, AnimatePresence } from 'motion/react';
 import { getPaletteSync } from 'colorthief';
 
+function SmoothImage({ src, alt, className, onLoad, ...props }: any) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <img
+      src={src}
+      alt={alt}
+      onLoad={(e) => {
+        setLoaded(true);
+        if (onLoad) onLoad(e);
+      }}
+      className={`${className} transition-opacity duration-500 ease-out ${loaded ? 'opacity-100' : 'opacity-0'}`}
+      {...props}
+    />
+  );
+}
+
 interface Game {
   id: number;
   name: string;
@@ -132,16 +148,16 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
               layout
               transition={{ 
                 layout: { 
-                  duration: 0.5,
+                  duration: 0.4,
                   ease: [0.16, 1, 0.3, 1]
                 },
                 opacity: { duration: 0.3, ease: "easeOut" },
                 scale: { duration: 0.3, ease: "easeOut" },
                 y: { duration: 0.3, ease: "easeOut" }
               }}
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
               className="relative w-full max-w-[800px] bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] pointer-events-auto"
             >
           <div className="p-4 border-b border-zinc-800 flex items-center gap-3">
@@ -194,10 +210,10 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
               {isLoadingDetails ? (
                 <motion.div
                   key="loading"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15 }}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
                   className="absolute inset-0 flex flex-col items-center justify-center min-h-[400px] p-8"
                 >
                   <Loader2 className="w-8 h-8 text-amber-400 animate-spin mb-4" />
@@ -208,22 +224,22 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
               ) : selectedPreviewGame ? (
                 <motion.div
                   key="detail"
-                  initial={{ opacity: 0, y: 12 }}
+                  initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -12 }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                   className="p-5 flex flex-col max-w-[720px] mx-auto w-full h-full"
                 >
                   <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-5 sm:mb-6">
                     <div className="w-full max-w-[200px] sm:max-w-none sm:w-48 mx-auto sm:mx-0 aspect-[264/374] bg-zinc-800 rounded-md overflow-hidden shrink-0 shadow-[0_1px_3px_rgba(0,0,0,0.35)] relative mt-0 sm:mt-1.5 ">
                       <div className="absolute inset-0 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.15)] rounded-md z-20 pointer-events-none" />
                       {selectedPreviewGame.cover?.image_id ? (
-                        <img 
+                        <SmoothImage 
                           src={`https://images.igdb.com/igdb/image/upload/t_720p/${selectedPreviewGame.cover.image_id}.jpg`}
                           alt={selectedPreviewGame.name}
                           className="w-full h-full object-cover"
                           crossOrigin="anonymous"
-                          onLoad={(e) => {
+                          onLoad={(e: any) => {
                             try {
                               const palette = getPaletteSync(e.currentTarget, { colorCount: 8 });
                               if (palette && palette.length > 0) {
@@ -349,11 +365,11 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
               ) : (
                   <motion.div
                   key="list"
-                  initial={{ opacity: 0, y: 12 }}
+                  initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -12 }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="p-2 sm:p-4 flex flex-col gap-4 relative"
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  className="p-2 sm:p-4 flex flex-col gap-4 relative min-h-[400px]"
                 >
                   {addingState !== 'idle' && (
                      <div className="absolute inset-0 bg-zinc-900/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-xl">
@@ -381,18 +397,41 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
                     </div>
                   )}
 
-                  {results.length > 0 && (
+                  {isSearching && (
+                    <motion.div
+                      key="skeletons"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3"
+                    >
+                      {Array.from({ length: 8 }).map((_, i) => (
+                        <div key={`skeleton-${i}`} className="w-full flex items-center gap-4 p-3 sm:p-4 rounded-2xl">
+                          <div className="w-14 sm:w-16 aspect-[264/374] bg-zinc-800/50 rounded-md animate-pulse shrink-0" />
+                          <div className="flex-1 space-y-3 min-w-0 pr-2">
+                            <div className="h-4 bg-zinc-800/50 rounded animate-pulse w-3/4" />
+                            <div className="h-3 bg-zinc-800/50 rounded animate-pulse w-1/4" />
+                          </div>
+                        </div>
+                      ))}
+                    </motion.div>
+                  )}
+
+                  {!isSearching && results.length > 0 && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                      {results.map((game) => (
-                        <div
+                      {results.map((game, index) => (
+                        <motion.div
                           key={game.id}
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.04, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                           onClick={() => addingState === 'idle' && handlePreviewGame(game)}
                           className="w-full flex items-center gap-4 p-3 sm:p-4 hover:bg-zinc-800/80 rounded-2xl transition-colors text-left group cursor-pointer border border-transparent hover:border-zinc-700/50"
                         >
                           <div className="w-14 sm:w-16 aspect-[264/374] bg-zinc-800 rounded-md overflow-hidden shrink-0 flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.35)] relative">
                             <div className="absolute inset-0 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.15)] rounded-md z-20 pointer-events-none" />
                             {game.cover?.image_id ? (
-                              <img 
+                              <SmoothImage 
                                 src={`https://images.igdb.com/igdb/image/upload/t_cover_big/${game.cover.image_id}.jpg`}
                                 alt={game.name}
                                 className="w-full h-full object-cover"
@@ -420,7 +459,7 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
                           >
                             <Plus className="w-5 h-5" />
                           </button>
-                        </div>
+                        </motion.div>
                       ))}
                     </div>
                   )}

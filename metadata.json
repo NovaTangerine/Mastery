@@ -1,5 +1,6 @@
 {
   "name": "Capsule: Game Journal",
   "description": "A dead-simple video game journaling and logging experience with AI-powered tagging and organization.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

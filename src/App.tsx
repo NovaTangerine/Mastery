@@ -56,6 +56,12 @@ import NoteVisualsMockupView from './views/NoteVisualsMockupView';
 
 import TrackersV2PostMortemView from './views/TrackersV2PostMortemView';
 import UXDocumentationView from './views/UXDocumentationView';
+import ProfileMockupView from './views/ProfileMockupView';
+
+import ProfileDropdown from './components/ProfileDropdown';
+import ProfileDrawer from './components/ProfileDrawer';
+import ProfileModal from './components/ProfileModal';
+import ProfileHoverCard from './components/ProfileHoverCard';
 
 // --- Components ---
 
@@ -64,6 +70,13 @@ function MainApp() {
   const [secretNavClickCount, setSecretNavClickCount] = useState(0);
   const [secretNavUnlocked, setSecretNavUnlocked] = useState(false);
   const [headerBlur, setHeaderBlur] = useState('24px');
+
+  // Profile UX States (5 Options)
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [isProfileDrawerOpen, setIsProfileDrawerOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isProfileHoverCardOpen, setIsProfileHoverCardOpen] = useState(false);
+
   const mainRef = useRef<HTMLElement>(null);
   const isOnline = useNetworkStatus();
   const { user, isAuthReady } = useAuth();
@@ -271,6 +284,12 @@ function MainApp() {
                           Note Visuals UI
                         </button>
                         <button 
+                          onClick={() => { clearHistory(); navigateTo('profile-mockups', null, null); }}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 text-amber-400/90 font-medium ${view === 'profile-mockups' ? 'bg-zinc-800 text-amber-300' : 'hover:text-amber-300 hover:bg-amber-400/10'}`}
+                        >
+                          Profile Mockups (5 UX)
+                        </button>
+                        <button 
                           onClick={() => { clearHistory(); navigateTo('trackers-v2-post-mortem', null, null); }}
                           className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 rounded-b-xl ${view === 'trackers-v2-post-mortem' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
                         >
@@ -355,19 +374,40 @@ function MainApp() {
                   >
                     <LogOut className="w-5 h-5" />
                   </button>
-                  <button 
-                    onClick={() => navigateTo('profile')}
-                    className="rounded-full border border-zinc-800 hover:border-zinc-600 transition-colors overflow-hidden bg-zinc-900 flex items-center justify-center w-8 h-8"
-                    title="View Profile"
-                  >
-                    {user.photoURL ? (
-                      <img src={user.photoURL} className="w-full h-full object-cover" alt="Profile" />
-                    ) : (
-                      <span className="text-xs font-bold text-zinc-500">
-                        {user.isAnonymous ? 'D' : (user.email?.[0]?.toUpperCase() || 'U')}
-                      </span>
-                    )}
-                  </button>
+
+                  <div className="relative">
+                    <button 
+                      onClick={() => {
+                        const currentOption = parseInt(localStorage.getItem('cartridge_profile_ux_option') || '1', 10);
+                        if (currentOption === 1) {
+                          setIsProfileDropdownOpen(prev => !prev);
+                          setIsProfileHoverCardOpen(false);
+                        } else if (currentOption === 2) {
+                          setIsProfileDrawerOpen(true);
+                        } else if (currentOption === 3) {
+                          setIsProfileModalOpen(true);
+                        } else if (currentOption === 4) {
+                          setIsProfileHoverCardOpen(prev => !prev);
+                          setIsProfileDropdownOpen(false);
+                        } else {
+                          navigateTo('profile');
+                        }
+                      }}
+                      className="rounded-full border border-zinc-800 hover:border-amber-400/80 transition-all overflow-hidden bg-zinc-900 flex items-center justify-center w-8 h-8 cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-400/40"
+                      title={user?.displayName || user?.email || (user?.isAnonymous ? 'Guest User' : 'Profile (Click to view)')}
+                    >
+                      {user?.photoURL ? (
+                        <img src={user.photoURL} className="w-full h-full object-cover" alt="Profile" />
+                      ) : (
+                        <span className="text-xs font-bold text-amber-400">
+                          {user?.isAnonymous ? 'D' : (user?.email?.[0]?.toUpperCase() || 'U')}
+                        </span>
+                      )}
+                    </button>
+
+                    <ProfileDropdown isOpen={isProfileDropdownOpen} onClose={() => setIsProfileDropdownOpen(false)} />
+                    <ProfileHoverCard isOpen={isProfileHoverCardOpen} onClose={() => setIsProfileHoverCardOpen(false)} />
+                  </div>
                 </div>
               </div>
 
@@ -450,8 +490,12 @@ function MainApp() {
             {view === 'note-visuals-mockup' && <NoteVisualsMockupView />}
             {view === 'trackers-v2-post-mortem' && <TrackersV2PostMortemView />}
             {view === 'ux-documentation' && <UXDocumentationView />}
+            {view === 'profile-mockups' && <ProfileMockupView />}
           </div>
         </main>
+
+        <ProfileDrawer isOpen={isProfileDrawerOpen} onClose={() => setIsProfileDrawerOpen(false)} />
+        <ProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} />
 
         <style>{`
           .custom-scrollbar::-webkit-scrollbar {
