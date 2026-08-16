@@ -114,7 +114,7 @@ export default function ProfileView() {
                 onClick={() => navigateTo('dashboard')}
                 className="text-sm text-emerald-500 hover:text-emerald-400 font-medium flex items-center gap-1"
               >
-                Go to QuestLog <ChevronRight className="w-4 h-4" />
+                Go to Capsule <ChevronRight className="w-4 h-4" />
               </button>
             </div>
 

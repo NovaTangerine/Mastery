@@ -89,10 +89,10 @@ export default function HomeView() {
             className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 text-xs font-bold uppercase tracking-widest mb-4"
           >
             <Sparkles className="w-3 h-3 text-zinc-300" />
-            <span>Welcome to QuestLog</span>
+            <span>Welcome to Capsule</span>
           </motion.div>
           <h1 className="text-4xl font-extrabold tracking-tight mb-3 text-emerald-400">
-            QuestLog: Build your Cartridge.
+            Capsule: Build your Cartridge.
           </h1>
           <div className="bg-emerald-500 text-zinc-950 px-3 py-1 inline-flex items-center gap-2 font-black rounded-lg mt-4 shadow-lg shadow-emerald-500/20">
             <span className="animate-pulse">●</span> DEPLOYED: v1.0.2 @ 14:42

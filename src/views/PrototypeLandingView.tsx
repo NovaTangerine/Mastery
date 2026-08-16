@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Gamepad2, X, ArrowRight, Sparkles, Terminal } from 'lucide-react';
+import { Package, X, ArrowRight, Sparkles, Terminal } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { signInWithGoogle, signInWithDemo } from '../firebase';
 
@@ -27,9 +27,9 @@ export default function PrototypeLandingView({ onCompleteSignUp }: { onCompleteS
       <header className="px-6 py-6 flex items-center justify-between relative z-10 max-w-7xl mx-auto w-full">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-zinc-100 rounded-xl flex items-center justify-center rotate-3">
-            <Gamepad2 className="w-6 h-6 text-zinc-950" />
+            <Package className="w-6 h-6 text-zinc-950" />
           </div>
-          <span className="font-bold text-2xl tracking-tight">QuestLog</span>
+          <span className="font-bold text-2xl tracking-tight">Capsule</span>
         </div>
         <div className="flex items-center gap-4">
           <button 
@@ -75,7 +75,7 @@ export default function PrototypeLandingView({ onCompleteSignUp }: { onCompleteS
           transition={{ duration: 0.5, delay: 0.2 }}
           className="text-xl text-zinc-400 mb-12 max-w-2xl leading-relaxed"
         >
-          Stop treating your games like a chore list. QuestLog is a digital trophy room and private workshop for the games that matter to you.
+          Stop treating your games like a chore list. Capsule is a digital trophy room and private workshop for the games that matter to you.
         </motion.p>
         
         <motion.div

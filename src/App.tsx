@@ -15,7 +15,8 @@ import {
   WifiOff,
   Home,
   Archive,
-  BookOpen
+  BookOpen,
+  Package
 } from 'lucide-react';
 
 import { Toaster } from 'sonner';
@@ -143,9 +144,9 @@ function MainApp() {
                     className="flex items-center gap-2 group"
                   >
                     <div className="w-8 h-8 bg-zinc-100 rounded-lg flex items-center justify-center group-hover:rotate-6 transition-transform">
-                      <Gamepad2 className="w-5 h-5 text-zinc-950" />
+                      <Package className="w-5 h-5 text-zinc-950" />
                     </div>
-                    <span className="font-bold text-xl tracking-tight hidden sm:block">QuestLog</span>
+                    <span className="font-bold text-xl tracking-tight hidden sm:block">Capsule</span>
                   </button>
 
                   <div className="h-6 w-px bg-zinc-800 mx-1 hidden sm:block"></div>

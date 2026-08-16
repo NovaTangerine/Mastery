@@ -219,7 +219,6 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
 
   const handleResumeSession = (session: GameSession) => {
     navigateTo('session-view', selectedGame, session);
-    toast.info(`Resumed session: ${session.name || session.progressMarker}`);
   };
 
   const handleUpdateSessionDetails = async (name: string, chapter: string, hoursPlayed: string, groupId?: string, targetSessionId?: string) => {
