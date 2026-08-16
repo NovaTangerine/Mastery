@@ -190,7 +190,7 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
             className="overflow-y-auto overflow-x-hidden flex-1 min-h-[400px] relative"
             style={{ scrollbarGutter: 'stable' }}
           >
-            <AnimatePresence mode="popLayout" initial={false}>
+            <AnimatePresence mode="wait" initial={false}>
               {isLoadingDetails ? (
                 <motion.div
                   key="loading"
