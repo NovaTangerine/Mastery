@@ -43,6 +43,7 @@ export interface SessionGroup {
   uid: string;
   title: string;
   createdAt: number;
+  updatedAt: number;
   order: string;
 }
 
@@ -93,6 +94,7 @@ export interface Note {
   isGlobal: boolean; // If true, shows up in overall notes too
   timestamp: number;
   order: string;
+  updatedAt?: number;
 }
 
 export interface Draft {

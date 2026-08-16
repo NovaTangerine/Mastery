@@ -32,7 +32,7 @@ interface IGDBGameDetails {
 }
 
 export default function IGDBGameView() {
-  const { selectedIgdbId, goBack, navigateTo } = useUI();
+  const { selectedIgdbId, navigateTo } = useUI();
   const { user } = useAuth();
   const { handleAddGame, games } = useGameContext();
   const [game, setGame] = useState<IGDBGameDetails | null>(null);
@@ -143,10 +143,10 @@ export default function IGDBGameView() {
         <h2 className="text-xl font-bold mb-2">Game Not Found</h2>
         <p className="text-zinc-400 mb-6">{error || "We couldn't find details for this game."}</p>
         <button 
-          onClick={goBack}
+          onClick={() => navigateTo('dashboard')}
           className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 px-6 py-2 rounded-full font-medium transition-colors"
         >
-          Go Back
+          Return Home
         </button>
       </div>
     );
@@ -185,7 +185,7 @@ export default function IGDBGameView() {
       {/* Content Container */}
       <div className="relative z-10 pt-8 md:pt-32 max-w-5xl mx-auto">
         <button 
-          onClick={goBack}
+          onClick={() => navigateTo('dashboard')}
           className="mb-8 flex items-center gap-2 text-zinc-400 hover:text-zinc-100 transition-colors font-medium bg-zinc-950/50 px-4 py-2 rounded-full backdrop-blur-md w-fit"
         >
           <ArrowLeft className="w-4 h-4" />

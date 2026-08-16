@@ -100,7 +100,7 @@ service cloud.firestore {
     }
 
     function isValidSession(data) {
-      return hasOnlyAllowedFields(['gameId', 'uid', 'startTime', 'endTime', 'progressMarker', 'name', 'chapter', 'hoursPlayed', 'groupId', 'trackers', 'metrics', 'tags']) &&
+      return hasOnlyAllowedFields(['gameId', 'uid', 'startTime', 'endTime', 'progressMarker', 'name', 'chapter', 'hoursPlayed', 'groupId', 'trackers', 'metrics', 'tags', 'updatedAt']) &&
              data.gameId is string &&
              data.uid is string &&
              data.startTime is number &&
@@ -112,20 +112,22 @@ service cloud.firestore {
              (!('groupId' in data) || data.groupId == null || (data.groupId is string && data.groupId.size() < 100)) &&
              (!('trackers' in data) || data.trackers == null || (data.trackers is list && data.trackers.size() <= 50)) &&
              (!('metrics' in data) || data.metrics == null || (data.metrics is list && data.metrics.size() <= 50)) &&
-             (!('tags' in data) || data.tags == null || (data.tags is list && data.tags.size() <= 50));
+             (!('tags' in data) || data.tags == null || (data.tags is list && data.tags.size() <= 50)) &&
+             (!('updatedAt' in data) || data.updatedAt == null || data.updatedAt is number);
     }
 
     function isValidSessionGroup(data) {
-      return hasOnlyAllowedFields(['gameId', 'uid', 'title', 'createdAt', 'order']) &&
+      return hasOnlyAllowedFields(['gameId', 'uid', 'title', 'createdAt', 'updatedAt', 'order']) &&
              data.gameId is string &&
              data.uid is string &&
              data.title is string && data.title.size() > 0 && data.title.size() < 100 &&
              data.createdAt is number &&
+             data.updatedAt is number &&
              data.order is string;
     }
 
     function isValidNote(data) {
-      return hasOnlyAllowedFields(['gameId', 'sessionId', 'uid', 'content', 'tags', 'isGlobal', 'timestamp', 'order']) &&
+      return hasOnlyAllowedFields(['gameId', 'sessionId', 'uid', 'content', 'tags', 'isGlobal', 'timestamp', 'order', 'updatedAt']) &&
              data.gameId is string &&
              data.uid is string &&
              data.content is string && data.content.size() > 0 && data.content.size() < 10000 &&
@@ -133,7 +135,8 @@ service cloud.firestore {
              (!('order' in data) || data.order == null || data.order is string) &&
              (!('sessionId' in data) || data.sessionId == null || (data.sessionId is string && data.sessionId.size() < 100)) &&
              (!('isGlobal' in data) || data.isGlobal == null || data.isGlobal is bool) &&
-             (!('tags' in data) || data.tags == null || (data.tags is list && data.tags.size() <= 20));
+             (!('tags' in data) || data.tags == null || (data.tags is list && data.tags.size() <= 20)) &&
+             (!('updatedAt' in data) || data.updatedAt == null || data.updatedAt is number);
     }
 
     function isValidDraft(data) {

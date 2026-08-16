@@ -5,7 +5,7 @@ import { useUserJourney } from '../contexts/UserJourneyContext';
 
 export default function UXDocumentationView() {
   const { goBack } = useUI();
-  const { totalGames, totalSessions, totalNotes, hasLoggedAnySession, hasCreatedAnyNote, isPowerUser, isEligibleForGameOnboarding } = useUserJourney();
+  const { totalGames, totalSessions, totalNotes, totalTrackers, hasLoggedAnySession, hasCreatedAnyNote, isPowerUser, isEligibleForGameOnboarding, isEligibleForTrackerOnboarding } = useUserJourney();
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
@@ -66,7 +66,7 @@ export default function UXDocumentationView() {
               <h2 className="text-2xl font-bold">Current User Thresholds</h2>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5">
                 <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-1">Total Games</h3>
                 <p className="text-3xl font-bold text-zinc-100">{totalGames}</p>
@@ -78,6 +78,10 @@ export default function UXDocumentationView() {
               <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5">
                 <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-1">Total Notes</h3>
                 <p className="text-3xl font-bold text-zinc-100">{totalNotes}</p>
+              </div>
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5">
+                <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-1">Total Trackers</h3>
+                <p className="text-3xl font-bold text-zinc-100">{totalTrackers}</p>
               </div>
             </div>
 
@@ -135,6 +139,17 @@ export default function UXDocumentationView() {
                       )}
                     </td>
                   </tr>
+                  <tr className="hover:bg-zinc-800/20 transition-colors">
+                    <td className="px-6 py-4 font-mono text-indigo-400">isEligibleForTrackerOnboarding</td>
+                    <td className="px-6 py-4 text-zinc-400">Total trackers &lt; 10 AND NOT power user</td>
+                    <td className="px-6 py-4 text-right">
+                      {isEligibleForTrackerOnboarding ? (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-bold uppercase tracking-wider">True</span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full bg-zinc-800 text-zinc-500 text-xs font-bold uppercase tracking-wider">False</span>
+                      )}
+                    </td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -166,8 +181,8 @@ export default function UXDocumentationView() {
               <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
                 <h3 className="font-bold text-zinc-200 mb-2">Trackers Tab</h3>
                 <p className="text-zinc-400 leading-relaxed text-sm">
-                  <strong className="text-zinc-300">New User:</strong> Sees a verbose "Stay Quantified" call-to-action module outlining what trackers can do.
-                  <br /><strong className="text-zinc-300">Experienced User (hasLoggedAnySession or anySessionHasTrackers):</strong> Sees a subtle ghost state indicating "No trackers added to this session".
+                  <strong className="text-zinc-300">New User:</strong> Sees a verbose "Stay Quantified" call-to-action module outlining what trackers can do. This module is shown as long as the user is eligible for tracker onboarding (<code>isEligibleForTrackerOnboarding</code>), meaning they have created fewer than 10 trackers across all sessions and are not yet considered a power user.
+                  <br /><strong className="text-zinc-300">Experienced User (!isEligibleForTrackerOnboarding):</strong> Sees a subtle ghost state indicating "No trackers added to this session".
                 </p>
               </div>
             </div>

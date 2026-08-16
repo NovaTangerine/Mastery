@@ -69,13 +69,13 @@ export default function AllNotesView() {
                       <span 
                         key={tag} 
                         onClick={() => setFilteredTag(tag)}
-                        className="cursor-pointer hover:bg-zinc-700 hover:text-zinc-300 transition-colors px-2 py-0.5 bg-zinc-800 rounded text-[10px] font-bold text-zinc-400 uppercase tracking-tighter"
+                        className="cursor-pointer hover:bg-zinc-700 hover:text-zinc-300 transition-colors px-2 py-0.5 bg-zinc-800 rounded text-[10px] font-medium text-zinc-400 uppercase tracking-wide"
                       >
                         {tag}
                       </span>
                     ))}
                     {note.isGlobal && (
-                      <span className="px-2 py-0.5 bg-zinc-100 text-zinc-950 rounded text-[10px] font-bold uppercase tracking-tighter">
+                      <span className="px-2 py-0.5 bg-zinc-100 text-zinc-950 rounded text-[10px] font-medium uppercase tracking-wide">
                         Global
                       </span>
                     )}

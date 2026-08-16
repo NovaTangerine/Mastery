@@ -415,7 +415,7 @@ function MainApp() {
               {view === 'session-view' && (
                 <div className="flex lg:hidden items-center justify-between w-full gap-2">
                   <button 
-                    onClick={goBack}
+                    onClick={() => navigateTo('dashboard')}
                     className="p-2 -ml-2 text-zinc-500 hover:text-zinc-100 transition-colors shrink-0"
                   >
                     <ChevronRight className="w-6 h-6 rotate-180" />

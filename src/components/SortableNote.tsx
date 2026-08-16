@@ -45,6 +45,14 @@ export const SortableNote = memo(({
 
   const [deleteProgress, setDeleteProgress] = useState(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  React.useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const holdStartTimeRef = React.useRef<number | null>(null);
   const progressTimerRef = React.useRef<NodeJS.Timeout | null>(null);
   const hoverTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -170,6 +178,108 @@ export const SortableNote = memo(({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const renderTags = () => (
+    <div className="flex flex-wrap items-center gap-2 pb-1 -mb-1">
+      {note.tags.map(tag => (
+        <span 
+          key={tag} 
+          className={cn(
+            "group/tag px-2 py-0.5 bg-zinc-800 rounded text-[10px] font-medium text-zinc-400 uppercase tracking-wide flex items-center gap-1 shrink-0 transition-colors",
+            onTagClick && "cursor-pointer hover:bg-zinc-700 hover:text-zinc-300"
+          )}
+          onClick={() => onTagClick?.(tag)}
+        >
+          {tag}
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemoveTag(note.id, tag);
+            }}
+            className="hover:text-red-400 opacity-0 group-hover/tag:opacity-100 transition-opacity"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </span>
+      ))}
+      
+      {taggingStatus === 'loading' && (
+        <span className="flex items-center gap-1 px-2 py-0.5 bg-zinc-800/50 rounded text-[10px] font-medium text-zinc-500 uppercase tracking-wide shrink-0">
+          <Sparkles className="w-3 h-3 animate-spin text-zinc-400" />
+          Tagging...
+        </span>
+      )}
+
+      {taggingStatus === 'error' && (
+        <div className="flex items-center gap-1 shrink-0">
+          <span className="flex items-center gap-1 px-2 py-0.5 bg-red-500/10 border border-red-500/20 rounded text-[10px] font-medium text-red-400 uppercase tracking-wide">
+            <AlertCircle className="w-3 h-3" />
+            Failed
+          </span>
+          <button 
+            onClick={() => onRetryTagging?.(note.id, note.content)}
+            className="p-1 text-zinc-500 hover:text-zinc-300 transition-colors"
+            title="Retry AI Tagging"
+          >
+            <RefreshCw className="w-3 h-3" />
+          </button>
+        </div>
+      )}
+
+      {!taggingStatus && isManagingTags ? (
+        <div className="flex items-center gap-1 shrink-0">
+          <TagAutocompleteInput
+            gameId={note.gameId}
+            value={newTagInput}
+            onChange={setNewTagInput}
+            onAddTag={(tag) => {
+              const trimmed = tag.trim().toLowerCase();
+              if (trimmed) onAddTag(note.id, trimmed);
+              setIsManagingTags(false);
+              setNewTagInput('');
+            }}
+            onBlur={() => {
+              if (newTagInput.trim()) {
+                onAddTag(note.id, newTagInput.trim().toLowerCase());
+              }
+              setIsManagingTags(false);
+              setNewTagInput('');
+            }}
+            onEscape={() => {
+              setIsManagingTags(false);
+              setNewTagInput('');
+            }}
+            existingTags={note.tags}
+            placeholder="New tag..."
+            autoFocus
+            className="bg-zinc-800 border-none rounded px-2 py-0.5 text-[10px] text-zinc-100 focus:ring-1 focus:ring-zinc-500 w-24"
+          />
+          <button 
+            onMouseDown={(e) => {
+              e.preventDefault(); // Prevent onBlur from firing
+              setIsManagingTags(false);
+              setNewTagInput('');
+            }}
+          >
+            <X className="w-3 h-3 text-zinc-500" />
+          </button>
+        </div>
+      ) : (
+        <button 
+          onClick={() => {
+            setIsManagingTags(true);
+            setNewTagInput('');
+          }}
+          className={cn(
+            "shrink-0 px-2 py-0.5 border border-dashed border-zinc-700 rounded text-[10px] font-medium text-zinc-500 uppercase tracking-wide hover:border-zinc-500 hover:text-zinc-300 transition-colors",
+            isExpanded ? "opacity-100" : "opacity-0"
+          )}
+        >
+          + Tag
+        </button>
+      )}
+    </div>
+  );
+
   return (
     <motion.div 
       ref={mergedRef} 
@@ -277,7 +387,7 @@ export const SortableNote = memo(({
       <div className={cn(
         "flex justify-between items-center gap-4 transition-all ease-in-out",
         isMenuOpen ? "overflow-visible" : "overflow-hidden",
-        isExpanded ? "duration-300 max-h-12 opacity-100 mb-2" : "duration-150 max-h-0 opacity-0 mb-0"
+        isExpanded ? "duration-300 max-h-12 opacity-100 mb-3" : "duration-150 max-h-0 opacity-0 mb-0"
       )}>
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <button 
@@ -291,105 +401,7 @@ export const SortableNote = memo(({
             <GripVertical className="w-4 h-4" />
           </button>
           
-          <div className="flex flex-wrap items-center gap-2 pb-1 -mb-1">
-            {note.tags.map(tag => (
-              <span 
-                key={tag} 
-                className={cn(
-                  "group/tag px-2 py-0.5 bg-zinc-800 rounded text-[10px] font-bold text-zinc-400 uppercase tracking-tighter flex items-center gap-1 shrink-0 transition-colors",
-                  onTagClick && "cursor-pointer hover:bg-zinc-700 hover:text-zinc-300"
-                )}
-                onClick={() => onTagClick?.(tag)}
-              >
-                {tag}
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRemoveTag(note.id, tag);
-                  }}
-                  className="hover:text-red-400 opacity-0 group-hover/tag:opacity-100 transition-opacity"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            ))}
-            
-            {taggingStatus === 'loading' && (
-              <span className="flex items-center gap-1 px-2 py-0.5 bg-zinc-800/50 rounded text-[10px] font-bold text-zinc-500 uppercase tracking-tighter shrink-0">
-                <Sparkles className="w-3 h-3 animate-spin text-zinc-400" />
-                Tagging...
-              </span>
-            )}
-
-            {taggingStatus === 'error' && (
-              <div className="flex items-center gap-1 shrink-0">
-                <span className="flex items-center gap-1 px-2 py-0.5 bg-red-500/10 border border-red-500/20 rounded text-[10px] font-bold text-red-400 uppercase tracking-tighter">
-                  <AlertCircle className="w-3 h-3" />
-                  Failed
-                </span>
-                <button 
-                  onClick={() => onRetryTagging?.(note.id, note.content)}
-                  className="p-1 text-zinc-500 hover:text-zinc-300 transition-colors"
-                  title="Retry AI Tagging"
-                >
-                  <RefreshCw className="w-3 h-3" />
-                </button>
-              </div>
-            )}
-
-            {!taggingStatus && isManagingTags ? (
-              <div className="flex items-center gap-1 shrink-0">
-                <TagAutocompleteInput
-                  gameId={note.gameId}
-                  value={newTagInput}
-                  onChange={setNewTagInput}
-                  onAddTag={(tag) => {
-                    const trimmed = tag.trim().toLowerCase();
-                    if (trimmed) onAddTag(note.id, trimmed);
-                    setIsManagingTags(false);
-                    setNewTagInput('');
-                  }}
-                  onBlur={() => {
-                    if (newTagInput.trim()) {
-                      onAddTag(note.id, newTagInput.trim().toLowerCase());
-                    }
-                    setIsManagingTags(false);
-                    setNewTagInput('');
-                  }}
-                  onEscape={() => {
-                    setIsManagingTags(false);
-                    setNewTagInput('');
-                  }}
-                  existingTags={note.tags}
-                  placeholder="New tag..."
-                  autoFocus
-                  className="bg-zinc-800 border-none rounded px-2 py-0.5 text-[10px] text-zinc-100 focus:ring-1 focus:ring-zinc-500 w-24"
-                />
-                <button 
-                  onMouseDown={(e) => {
-                    e.preventDefault(); // Prevent onBlur from firing
-                    setIsManagingTags(false);
-                    setNewTagInput('');
-                  }}
-                >
-                  <X className="w-3 h-3 text-zinc-500" />
-                </button>
-              </div>
-            ) : (
-              <button 
-                onClick={() => {
-                  setIsManagingTags(true);
-                  setNewTagInput('');
-                }}
-                className={cn(
-                  "shrink-0 px-2 py-0.5 border border-dashed border-zinc-700 rounded text-[10px] font-bold text-zinc-500 uppercase tracking-tighter hover:border-zinc-500 hover:text-zinc-300 transition-colors",
-                  isExpanded ? "opacity-100" : "opacity-0"
-                )}
-              >
-                + Tag
-              </button>
-            )}
-          </div>
+          {!isMobile && renderTags()}
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
@@ -528,6 +540,15 @@ export const SortableNote = memo(({
         </div>
       ) : (
         <p className="text-zinc-200 leading-relaxed text-sm">{note.content}</p>
+      )}
+
+      {isMobile && (
+        <div className={cn(
+          "transition-all ease-in-out overflow-hidden",
+          isExpanded ? "duration-300 max-h-24 opacity-100 mt-5" : "duration-150 max-h-0 opacity-0 mt-0"
+        )}>
+          {renderTags()}
+        </div>
       )}
 
       {showDeleteConfirm && createPortal(

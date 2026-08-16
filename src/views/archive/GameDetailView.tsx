@@ -220,7 +220,7 @@ export default function GameDetailView() {
                         onClick={() => navigateTo('all-notes', selectedGame, null, null, { filteredTag: tag })}
                         className="px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg flex items-center gap-2 group hover:border-zinc-700 hover:bg-zinc-800 transition-colors animate-in fade-in"
                       >
-                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter group-hover:text-zinc-300">{tag}</span>
+                        <span className="text-[10px] font-medium text-zinc-400 uppercase tracking-wide group-hover:text-zinc-300">{tag}</span>
                         <span className="text-[10px] font-mono text-zinc-600 bg-zinc-900 px-1.5 py-0.5 rounded group-hover:bg-zinc-950">{count}</span>
                       </button>
                     ))}
@@ -256,12 +256,12 @@ export default function GameDetailView() {
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex flex-wrap gap-2">
                         {note.tags.map(tag => (
-                          <span key={tag} className="px-2 py-0.5 bg-zinc-800 rounded text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">
+                          <span key={tag} className="px-2 py-0.5 bg-zinc-800 rounded text-[10px] font-medium text-zinc-400 uppercase tracking-wide">
                             {tag}
                           </span>
                         ))}
                         {note.isGlobal && (
-                          <span className="px-2 py-0.5 bg-zinc-100 text-zinc-950 rounded text-[10px] font-bold uppercase tracking-tighter">
+                          <span className="px-2 py-0.5 bg-zinc-100 text-zinc-950 rounded text-[10px] font-medium uppercase tracking-wide">
                             Global
                           </span>
                         )}

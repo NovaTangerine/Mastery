@@ -45,7 +45,7 @@ export default function AllInsightsView() {
               <div className="flex justify-between items-start mb-4">
                 <div className="flex flex-wrap gap-2">
                   {note.tags.map(tag => (
-                    <span key={tag} className="px-2 py-0.5 bg-zinc-800 rounded text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">
+                    <span key={tag} className="px-2 py-0.5 bg-zinc-800 rounded text-[10px] font-medium text-zinc-400 uppercase tracking-wide">
                       {tag}
                     </span>
                   ))}

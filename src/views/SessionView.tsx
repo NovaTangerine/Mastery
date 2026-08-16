@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useLayoutEffect, useState } from 'react';
 import { Plus, Minus, BookOpen, Clock, PenLine, X, Send, ChevronRight, Trash2, List, LayoutDashboard, ChevronUp, ChevronDown, Tag as TagIcon, MoreVertical, ArrowUpDown, Play, Target, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence, LayoutGroup } from 'motion/react';
@@ -79,7 +79,7 @@ function SessionTagItem({ tag, count, setFilteredTag, scrollToTab, handleDeleteS
             scrollToTab('notes');
           }}
         >
-          <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter transition-colors group-hover:text-zinc-300">{tag}</span>
+          <span className="text-[10px] font-medium text-zinc-400 uppercase tracking-wide transition-colors group-hover:text-zinc-300">{tag}</span>
         </div>
         
         {/* Sliding Container for Count / Delete */}
@@ -328,8 +328,8 @@ const hoursStrToDecimalStr = (valStr: string): string => {
 };
 
 export default function SessionView() {
-  const { goBack, navigateTo } = useUI();
-  const { hasLoggedAnySession, hasCreatedAnyNote, isEligibleForGameOnboarding } = useUserJourney();
+  const { navigateTo } = useUI();
+  const { hasLoggedAnySession, hasCreatedAnyNote, isEligibleForGameOnboarding, isEligibleForTrackerOnboarding } = useUserJourney();
   const { 
     selectedGame, 
     activeSession,
@@ -582,7 +582,6 @@ export default function SessionView() {
 
   const wrappedHandleResumeSession = (session: any) => attemptSessionChange(() => { handleResumeSession(session); scrollToTab('notes'); });
   const wrappedHandleStartSession = (groupId?: string) => attemptSessionChange(() => handleStartSession(groupId));
-  const wrappedGoBack = () => attemptSessionChange(() => goBack());
 
   const toggleTrackerGroup = (groupName: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -616,40 +615,40 @@ export default function SessionView() {
     }
   };
 
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    if (window.innerWidth >= 1024) return;
-    const target = e.currentTarget;
-    const scrollLeft = target.scrollLeft;
-    const width = target.clientWidth;
-    // Mobile gap is 48px (gap-12)
-    const index = Math.round(scrollLeft / (width + 48));
-    const tabs = ['sessions', 'notes', 'trackers'] as const;
-    if (tabs[index]) {
-      setActiveMobileTab(prev => prev !== tabs[index] ? tabs[index] : prev);
-    }
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (typeof window !== 'undefined' && window.innerWidth >= 1024) return;
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
   };
 
-  const scrollToTab = (tab: 'sessions' | 'notes' | 'trackers', behavior: ScrollBehavior = 'smooth') => {
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (typeof window !== 'undefined' && window.innerWidth >= 1024) return;
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+    
+    // Only trigger if movement is predominantly horizontal and >= 50px
+    if (Math.abs(deltaX) >= 50 && Math.abs(deltaX) > Math.abs(deltaY) * 1.4) {
+      if (deltaX < 0) {
+        // Swiped left -> navigate forward (sessions -> notes -> trackers)
+        if (activeMobileTab === 'sessions') setActiveMobileTab('notes');
+        else if (activeMobileTab === 'notes') setActiveMobileTab('trackers');
+      } else {
+        // Swiped right -> navigate backward (trackers -> notes -> sessions)
+        if (activeMobileTab === 'trackers') setActiveMobileTab('notes');
+        else if (activeMobileTab === 'notes') setActiveMobileTab('sessions');
+      }
+    }
+    touchStartX.current = null;
+    touchStartY.current = null;
+  };
+
+  const scrollToTab = (tab: 'sessions' | 'notes' | 'trackers') => {
     setActiveMobileTab(tab);
-    if (window.innerWidth >= 1024) return;
-    const element = document.getElementById(`mobile-tab-${tab}`);
-    if (element) {
-      element.scrollIntoView({ behavior, inline: 'center', block: 'nearest' });
-    }
   };
-
-
-  useEffect(() => {
-    if (window.innerWidth < 1024) {
-      // Small timeout allows initial render and layout to settle
-      const timer = setTimeout(() => {
-        scrollToTab(activeMobileTab, 'instant');
-      }, 50);
-      return () => clearTimeout(timer);
-    }
-  }, []);
 
   useEffect(() => {
     const handleOpenSessionDetails = () => {
@@ -855,10 +854,9 @@ export default function SessionView() {
 
   return (
     <div 
-      ref={scrollContainerRef}
-      onScroll={handleScroll}
-      className="flex-1 min-h-0 pb-[58px] sm:pb-[58px] lg:pb-0 flex flex-row overflow-x-auto snap-x snap-mandatory lg:overflow-x-visible lg:snap-none justify-start lg:justify-center gap-12 lg:gap-0 animate-in fade-in slide-in-from-bottom-4 duration-500 relative scrollbar-hide"
-      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      className="flex-1 min-h-0 pb-[58px] sm:pb-[58px] lg:pb-0 flex flex-row justify-start lg:justify-center animate-in fade-in slide-in-from-bottom-4 duration-500 relative overflow-x-hidden"
     >
       {groupToDelete && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
@@ -983,8 +981,16 @@ export default function SessionView() {
         </div>
       )}
 
-      {/* Sidebar for Sessions */}
-      <div id="mobile-tab-sessions" className="group/sidebar w-full shrink-0 snap-center snap-always lg:w-[320px] flex-col lg:border-r border-zinc-800/50 min-h-0 flex relative">
+      {/* Inner Sliding Wrapper */}
+      <div 
+        className="flex-1 flex flex-row w-full min-h-0 transition-transform duration-300 ease-out max-lg:[transform:translateX(var(--mobile-translate))]"
+        style={{ '--mobile-translate': `-${['sessions', 'notes', 'trackers'].indexOf(activeMobileTab) * 100}%` } as React.CSSProperties}
+      >
+        {/* Sidebar for Sessions */}
+        <div 
+          id="mobile-tab-sessions" 
+          className="flex group/sidebar w-full shrink-0 lg:w-[320px] flex-col lg:border-r border-zinc-800/50 min-h-0 relative"
+        >
         
         <div className="w-full flex flex-col h-full min-h-0 flex-1 relative z-10">
         <div className="flex items-center justify-between px-5 lg:px-6 pt-5 pb-5 z-10">
@@ -1350,7 +1356,10 @@ export default function SessionView() {
       </div>
 
       {/* Main Session View or Filtered View */}
-      <div id="mobile-tab-notes" className="w-full shrink-0 snap-center snap-always lg:flex-1 lg:max-w-3xl xl:max-w-4xl flex-col min-w-0 min-h-0 flex lg:px-6">
+      <div 
+        id="mobile-tab-notes" 
+        className="flex w-full shrink-0 lg:flex-1 lg:max-w-3xl xl:max-w-4xl flex-col min-w-0 min-h-0 lg:px-6"
+      >
         <div className="w-full md:max-w-2xl lg:max-w-none mx-auto flex flex-col h-full min-h-0 flex-1 pl-4 pr-4 sm:pl-6 sm:pr-6 lg:pl-0 lg:pr-0 pt-4 lg:pt-6">
         {filteredTag ? (
           <>
@@ -1906,7 +1915,10 @@ export default function SessionView() {
       </div>
 
       {/* Right Column: Trackers */}
-      <div id="mobile-tab-trackers" className="w-full shrink-0 snap-center snap-always lg:w-[320px] flex-col lg:border-l border-zinc-800/50 min-h-0 flex relative">
+      <div 
+        id="mobile-tab-trackers" 
+        className="flex w-full shrink-0 lg:w-[320px] flex-col lg:border-l border-zinc-800/50 min-h-0 relative"
+      >
         <div className="w-full flex flex-col h-full min-h-0 flex-1 relative z-10">
         <div className="flex items-center justify-between px-5 lg:px-6 pt-5 pb-5 z-10">
           <div className="flex items-center gap-3 text-zinc-100 cursor-pointer group" onClick={() => {
@@ -2014,7 +2026,7 @@ export default function SessionView() {
             });
 
             if (metrics.length === 0 && (!activeSession.trackers || activeSession.trackers.length === 0)) {
-              return anySessionHasTrackers || hasLoggedAnySession ? (
+              return !isEligibleForTrackerOnboarding ? (
                 <div className="md:col-span-full w-full py-8 text-center animate-in fade-in zoom-in-95 duration-700">
                   <p className="text-zinc-600 text-sm font-medium italic">
                     No trackers added to this session.
@@ -2238,6 +2250,9 @@ export default function SessionView() {
           </div>
           </div>
         </div>
+      </div>
+      
+      {/* End of Inner Sliding Wrapper */}
       </div>
 
       {/* Mobile Bottom Navigation */}

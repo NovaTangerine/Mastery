@@ -31,7 +31,8 @@
         "progressMarker": { "type": "string" },
         "name": { "type": "string" },
         "chapter": { "type": "string" },
-        "hoursPlayed": { "type": "number" }
+        "hoursPlayed": { "type": "number" },
+        "updatedAt": { "type": "number" }
       },
       "required": ["gameId", "uid", "startTime", "progressMarker"]
     },
@@ -47,7 +48,9 @@
         "content": { "type": "string" },
         "tags": { "type": "array", "items": { "type": "string" } },
         "isGlobal": { "type": "boolean" },
-        "timestamp": { "type": "number" }
+        "timestamp": { "type": "number" },
+        "order": { "type": "string" },
+        "updatedAt": { "type": "number" }
       },
       "required": ["gameId", "uid", "content", "timestamp"]
     },
@@ -76,6 +79,7 @@
         "uid": { "type": "string" },
         "title": { "type": "string" },
         "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" },
         "order": { "type": "string" }
       },
       "required": ["gameId", "uid", "title", "createdAt", "order"]
