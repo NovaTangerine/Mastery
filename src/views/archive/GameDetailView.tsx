@@ -254,23 +254,28 @@ export default function GameDetailView() {
                 {notes.slice().reverse().slice(0, 3).map(note => (
                   <div key={note.id} className="bg-zinc-900/50 border border-zinc-900 rounded-2xl p-5 hover:border-zinc-800 transition-colors">
                     <div className="flex justify-between items-start mb-3">
-                      <div className="flex flex-wrap gap-2">
-                        {note.tags.map(tag => (
-                          <span key={tag} className="px-2 py-0.5 bg-zinc-800 rounded text-[10px] font-medium text-zinc-400 uppercase tracking-wide">
-                            {tag}
-                          </span>
-                        ))}
-                        {note.isGlobal && (
-                          <span className="px-2 py-0.5 bg-zinc-100 text-zinc-950 rounded text-[10px] font-medium uppercase tracking-wide">
-                            Global
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-[10px] font-mono text-zinc-600">
-                        {format(note.timestamp, 'HH:mm')}
+                      <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider">
+                        {format(note.timestamp, 'MMM d, yyyy · HH:mm')}
                       </span>
+                      {note.isGlobal && (
+                        <span className="px-2 py-0.5 bg-zinc-100 text-zinc-950 rounded text-[10px] font-medium uppercase tracking-wide">
+                          Global
+                        </span>
+                      )}
                     </div>
                     <p className="text-zinc-300 text-sm leading-relaxed">{note.content}</p>
+                    {note.tags && note.tags.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-[2px] mt-3 pt-2 border-t border-zinc-800/40">
+                        <span className="text-[10px] font-mono text-zinc-600 group-hover:text-zinc-400 transition-colors duration-200 uppercase tracking-wide shrink-0 select-none mr-0.5">
+                          Tags:
+                        </span>
+                        {note.tags.map(tag => (
+                          <span key={tag} className="group-hover:text-indigo-300/90 transition-all px-1.5 py-0.5 bg-transparent border border-transparent rounded text-[10px] font-mono font-medium text-zinc-500 uppercase tracking-wide">
+                            #{tag.replace(/^#/, '')}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
                 {notes.length === 0 && (

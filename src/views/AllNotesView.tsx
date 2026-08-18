@@ -62,29 +62,34 @@ export default function AllNotesView() {
         <div className="w-full flex flex-col gap-4">
           {reversedNotes.map((note) => (
             <div key={note.id} className="w-full">
-              <div className="bg-zinc-900/50 border border-zinc-900 rounded-2xl p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex flex-wrap gap-2">
+              <div className="bg-zinc-900/50 border border-zinc-900 rounded-2xl p-6 group hover:border-zinc-800 transition-colors">
+                <div className="flex justify-between items-start mb-3">
+                  <span className="text-[10px] font-mono text-zinc-600 group-hover:text-indigo-400 group-hover:font-semibold transition-colors duration-200 shrink-0 select-none uppercase tracking-wider">
+                    {format(note.timestamp, 'MMM d, yyyy · HH:mm')}
+                  </span>
+                  {note.isGlobal && (
+                    <span className="px-2 py-0.5 bg-zinc-100 text-zinc-950 rounded text-[10px] font-medium uppercase tracking-wide">
+                      Global
+                    </span>
+                  )}
+                </div>
+                <p className="text-zinc-300 text-base leading-relaxed">{note.content}</p>
+                {note.tags && note.tags.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-[2px] mt-5 pt-3 border-t border-zinc-800/40">
+                    <span className="text-[10px] font-mono text-zinc-600 group-hover:text-zinc-400 transition-colors duration-200 uppercase tracking-wide shrink-0 select-none mr-0.5">
+                      Tags:
+                    </span>
                     {note.tags.map(tag => (
                       <span 
                         key={tag} 
                         onClick={() => setFilteredTag(tag)}
-                        className="cursor-pointer hover:bg-zinc-700 hover:text-zinc-300 transition-colors px-2 py-0.5 bg-zinc-800 rounded text-[10px] font-medium text-zinc-400 uppercase tracking-wide"
+                        className="cursor-pointer group-hover:text-indigo-300/90 hover:!bg-indigo-500/15 hover:!border-indigo-500/30 hover:!text-indigo-200 transition-all px-1.5 py-0.5 bg-transparent border border-transparent rounded text-[10px] font-mono font-medium text-zinc-500 uppercase tracking-wide"
                       >
-                        {tag}
+                        #{tag.replace(/^#/, '')}
                       </span>
                     ))}
-                    {note.isGlobal && (
-                      <span className="px-2 py-0.5 bg-zinc-100 text-zinc-950 rounded text-[10px] font-medium uppercase tracking-wide">
-                        Global
-                      </span>
-                    )}
                   </div>
-                  <span className="text-[10px] font-mono text-zinc-600">
-                    {format(note.timestamp, 'MMM d, yyyy HH:mm')}
-                  </span>
-                </div>
-                <p className="text-zinc-300 text-base leading-relaxed">{note.content}</p>
+                )}
               </div>
             </div>
           ))}

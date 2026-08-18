@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { format } from 'date-fns';
-import { GripVertical, X, Edit3, Trash2, Sparkles, AlertCircle, RefreshCw, MoreVertical, FolderOutput, ArrowRight } from 'lucide-react';
+import { X, Edit3, Trash2, Sparkles, AlertCircle, RefreshCw, MoreVertical, FolderOutput, ArrowRight, Tag } from 'lucide-react';
 import { Note } from '../types';
 import { cn } from '../lib/utils';
 import { TagAutocompleteInput } from './TagAutocompleteInput';
@@ -179,31 +179,44 @@ export const SortableNote = memo(({
   };
 
   const renderTags = () => (
-    <div className="flex flex-wrap items-center gap-2 pb-1 -mb-1">
+    <div className="flex flex-wrap items-center gap-[2px] pb-1 -mb-1">
+      {note.tags.length > 0 || isManagingTags || taggingStatus ? (
+        <span className="text-[10px] font-mono text-zinc-600 group-hover:text-zinc-400 transition-colors duration-200 uppercase tracking-wide shrink-0 select-none mr-0.5">
+          Tags:
+        </span>
+      ) : (
+        <span className="text-[10px] font-mono text-zinc-600 group-hover:text-zinc-400 transition-all duration-200 uppercase tracking-wide shrink-0 select-none mr-0.5 opacity-0 group-hover:opacity-100">
+          Tags:
+        </span>
+      )}
       {note.tags.map(tag => (
         <span 
           key={tag} 
           className={cn(
-            "group/tag px-2 py-0.5 bg-zinc-800 rounded text-[10px] font-medium text-zinc-400 uppercase tracking-wide flex items-center gap-1 shrink-0 transition-colors",
-            onTagClick && "cursor-pointer hover:bg-zinc-700 hover:text-zinc-300"
+            "group/tag inline-flex items-center pl-1.5 pr-1.5 group-hover/tag:pr-1 py-0.5 bg-transparent border border-transparent rounded text-[10px] font-mono font-medium text-zinc-500 uppercase tracking-wide shrink-0 transition-all select-none",
+            "group-hover:text-indigo-300/90",
+            "hover:!bg-indigo-500/15 hover:!border-indigo-500/30 hover:!text-indigo-200",
+            "has-[button:hover]:!bg-red-500/15 has-[button:hover]:!border-red-500/30 has-[button:hover]:!text-red-400",
+            onTagClick && "cursor-pointer"
           )}
           onClick={() => onTagClick?.(tag)}
         >
-          {tag}
+          <span className="transition-colors">#{tag.replace(/^#/, '')}</span>
           <button 
             onClick={(e) => {
               e.stopPropagation();
               onRemoveTag(note.id, tag);
             }}
-            className="hover:text-red-400 opacity-0 group-hover/tag:opacity-100 transition-opacity"
+            className="w-0 opacity-0 overflow-hidden group-hover/tag:w-3 group-hover/tag:opacity-100 group-hover/tag:ml-1 text-zinc-500 hover:text-red-400 transition-all duration-150 shrink-0 flex items-center justify-center"
+            title={`Remove tag "${tag}"`}
           >
-            <X className="w-3 h-3" />
+            <X className="w-3 h-3 shrink-0" />
           </button>
         </span>
       ))}
       
       {taggingStatus === 'loading' && (
-        <span className="flex items-center gap-1 px-2 py-0.5 bg-zinc-800/50 rounded text-[10px] font-medium text-zinc-500 uppercase tracking-wide shrink-0">
+        <span className="flex items-center gap-1 px-2 py-0.5 bg-zinc-800/50 rounded text-[10px] font-mono font-medium text-zinc-500 uppercase tracking-wide shrink-0">
           <Sparkles className="w-3 h-3 animate-spin text-zinc-400" />
           Tagging...
         </span>
@@ -211,7 +224,7 @@ export const SortableNote = memo(({
 
       {taggingStatus === 'error' && (
         <div className="flex items-center gap-1 shrink-0">
-          <span className="flex items-center gap-1 px-2 py-0.5 bg-red-500/10 border border-red-500/20 rounded text-[10px] font-medium text-red-400 uppercase tracking-wide">
+          <span className="flex items-center gap-1 px-2 py-0.5 bg-red-500/10 border border-red-500/20 rounded text-[10px] font-mono font-medium text-red-400 uppercase tracking-wide">
             <AlertCircle className="w-3 h-3" />
             Failed
           </span>
@@ -251,7 +264,7 @@ export const SortableNote = memo(({
             existingTags={note.tags}
             placeholder="New tag..."
             autoFocus
-            className="bg-zinc-800 border-none rounded px-2 py-0.5 text-[10px] text-zinc-100 focus:ring-1 focus:ring-zinc-500 w-24"
+            className="bg-zinc-800 border-none rounded px-2 py-0.5 text-[10px] font-mono text-zinc-100 focus:ring-1 focus:ring-zinc-500 w-24"
           />
           <button 
             onMouseDown={(e) => {
@@ -265,14 +278,12 @@ export const SortableNote = memo(({
         </div>
       ) : (
         <button 
-          onClick={() => {
+          onClick={(e) => {
+            e.stopPropagation();
             setIsManagingTags(true);
             setNewTagInput('');
           }}
-          className={cn(
-            "shrink-0 px-2 py-0.5 border border-dashed border-zinc-700 rounded text-[10px] font-medium text-zinc-500 uppercase tracking-wide hover:border-zinc-500 hover:text-zinc-300 transition-colors",
-            isExpanded ? "opacity-100" : "opacity-0"
-          )}
+          className="shrink-0 px-2 py-0.5 border border-dashed border-zinc-700/80 rounded text-[10px] font-mono font-medium text-zinc-500 uppercase tracking-wide hover:border-zinc-500 hover:text-zinc-300 transition-colors opacity-0 group-hover:opacity-100"
         >
           + Tag
         </button>
@@ -351,7 +362,7 @@ export const SortableNote = memo(({
         duration: showDropFeedback ? 0.4 : 0.2
       }}
       className={cn(
-        "group relative transition-all cursor-pointer px-4 py-5 sm:px-6 lg:px-8 hover:bg-zinc-900/50",
+        "group relative transition-all cursor-pointer px-4 pt-5 pb-6 sm:px-6 lg:px-8 hover:bg-zinc-900/50",
         isDragging && "shadow-2xl opacity-50 bg-zinc-900",
         isDragOver && "bg-indigo-500/5 ring-4 ring-indigo-500/10",
         isMenuOpen && "z-[9999]"
@@ -384,48 +395,49 @@ export const SortableNote = memo(({
           </div>
         )}
       </AnimatePresence>
+      {/* Top Header - Displayed by default */}
       <div className={cn(
-        "flex justify-between items-center gap-4 transition-all ease-in-out",
-        isMenuOpen ? "overflow-visible" : "overflow-hidden",
-        isExpanded ? "duration-300 max-h-12 opacity-100 mb-3" : "duration-150 max-h-0 opacity-0 mb-0"
+        "flex justify-between items-center gap-3 mb-2.5 sm:mb-3 transition-all",
+        isMenuOpen ? "overflow-visible" : "overflow-hidden"
       )}>
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <button 
-            {...attributes} 
-            {...listeners} 
-            className={cn(
-              "p-1 text-zinc-700 hover:text-zinc-400 cursor-grab active:cursor-grabbing transition-opacity shrink-0",
-              isExpanded ? "opacity-100" : "opacity-0 group-hover:opacity-100 lg:group-hover:opacity-100"
-            )}
-          >
-            <GripVertical className="w-4 h-4" />
-          </button>
-          
-          {!isMobile && renderTags()}
-        </div>
-
-        <div className="flex items-center gap-3 shrink-0">
-          <span className="text-[10px] font-mono text-zinc-600 shrink-0">
-            {format(note.timestamp, 'HH:mm')}
+        <div className="flex items-center gap-2 min-w-0 flex-1 relative h-6">
+          <span className="text-[10px] font-mono text-zinc-600 group-hover:text-indigo-400 group-hover:font-semibold transition-colors duration-200 shrink-0 select-none uppercase tracking-wider">
+            {format(note.timestamp, 'MMM d, yyyy · HH:mm')}
           </span>
-          <div className={cn(
-            "relative transition-opacity shrink-0",
-            isExpanded || isMenuOpen ? "opacity-100" : "opacity-0 lg:group-hover:opacity-100",
-            !isExpanded && !isMenuOpen && "pointer-events-none"
-          )}>
+          
+          {/* Top Row Hover Add Tag Button (only shows when note has no tags) */}
+          {note.tags.length === 0 && !isManagingTags && !taggingStatus && !isMobile && (
             <button 
-              ref={refs.setReference}
               onClick={(e) => {
                 e.stopPropagation();
-                setIsMenuOpen(!isMenuOpen);
-                setIsHoveringMove(false);
+                setIsManagingTags(true);
+                setNewTagInput('');
               }}
-              className={`p-1.5 rounded-lg transition-all ${isMenuOpen ? 'text-zinc-100 bg-zinc-800' : 'text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800'}`}
+              className="ml-1 px-2 py-0.5 border border-dashed border-zinc-700/80 rounded text-[10px] font-mono font-medium text-zinc-500 uppercase tracking-wide hover:border-zinc-500 hover:text-zinc-300 transition-colors opacity-0 group-hover:opacity-100 whitespace-nowrap"
             >
-              <MoreVertical className="w-4 h-4" />
+              + Tag
             </button>
+          )}
+        </div>
 
-            <FloatingPortal>
+        <div className={cn(
+          "relative transition-opacity shrink-0",
+          isMenuOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+        )}>
+          <button 
+            ref={refs.setReference}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsMenuOpen(!isMenuOpen);
+              setIsHoveringMove(false);
+            }}
+            className={`p-1.5 rounded-lg transition-all ${isMenuOpen ? 'text-zinc-100 bg-zinc-800' : 'text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800'}`}
+            title="More options"
+          >
+            <MoreVertical className="w-4 h-4" />
+          </button>
+
+          <FloatingPortal>
               {isMenuOpen && (
                 <div 
                   ref={refs.setFloating}
@@ -443,6 +455,19 @@ export const SortableNote = memo(({
                   >
                     <Edit3 className="w-4 h-4" />
                     Edit Note
+                  </button>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsManagingTags(true);
+                      setNewTagInput('');
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
+                  >
+                    <Tag className="w-4 h-4" />
+                    Add Tag
                   </button>
                   
                   {availableSessions && availableSessions.filter(s => s.id !== (note.sessionId || 'global') && s.id !== (note.isGlobal ? 'global' : null)).length > 0 && onMoveNote && (
@@ -509,7 +534,6 @@ export const SortableNote = memo(({
               )}
             </FloatingPortal>
           </div>
-        </div>
       </div>
 
       {isEditing ? (
@@ -542,14 +566,20 @@ export const SortableNote = memo(({
         <p className="text-zinc-200 leading-relaxed text-sm">{note.content}</p>
       )}
 
-      {isMobile && (
-        <div className={cn(
-          "transition-all ease-in-out overflow-hidden",
-          isExpanded ? "duration-300 max-h-24 opacity-100 mt-5" : "duration-150 max-h-0 opacity-0 mt-0"
-        )}>
-          {renderTags()}
-        </div>
-      )}
+      {/* Tags at the bottom of the note on all breakpoints */}
+      <AnimatePresence initial={false}>
+        {(note.tags.length > 0 || isManagingTags || !!taggingStatus) && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0, marginTop: 0 }}
+            animate={{ height: 'auto', opacity: 1, marginTop: 20 }}
+            exit={{ height: 0, opacity: 0, marginTop: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="overflow-hidden"
+          >
+            {renderTags()}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {showDeleteConfirm && createPortal(
         <div className="fixed inset-0 bg-zinc-950/80 backdrop-blur z-[9999] flex items-center justify-center p-4 cursor-default">

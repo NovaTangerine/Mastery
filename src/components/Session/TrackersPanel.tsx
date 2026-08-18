@@ -26,7 +26,7 @@ export function SessionTagItem({ tag, count, setFilteredTag, scrollToTab, handle
 
   return (
     <motion.div 
-      className="group relative flex overflow-hidden rounded-full border border-zinc-800 bg-zinc-950 transition-colors hover:border-zinc-700 hover:bg-zinc-800 h-[26px] z-10 lg:hover:z-20 cursor-grab active:cursor-grabbing"
+      className="group relative flex overflow-hidden rounded-full border border-zinc-800 bg-zinc-950 transition-colors hover:border-zinc-700 hover:bg-zinc-800 has-[button:hover]:!bg-red-500/15 has-[button:hover]:!border-red-500/30 h-[26px] z-10 lg:hover:z-20 cursor-grab active:cursor-grabbing"
       onHoverStart={() => {
         if (!isBouncing) setIsBouncing(true);
       }}
@@ -60,7 +60,7 @@ export function SessionTagItem({ tag, count, setFilteredTag, scrollToTab, handle
             scrollToTab('notes');
           }}
         >
-          <span className="text-[10px] font-medium text-zinc-400 uppercase tracking-wide transition-colors group-hover:text-zinc-300">{tag}</span>
+          <span className="text-[10px] font-mono font-medium text-zinc-400 uppercase tracking-wide transition-colors group-hover:text-zinc-300 group-has-[button:hover]:!text-red-400">{tag}</span>
         </div>
         
         {/* Sliding Container for Count / Delete */}
@@ -89,7 +89,7 @@ export function SessionTagItem({ tag, count, setFilteredTag, scrollToTab, handle
                     e.stopPropagation();
                     handleDeleteSessionTag(tag, e);
                   }}
-                  className="text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors flex items-center justify-center h-5 w-5"
+                  className="text-zinc-500 hover:text-red-400 transition-colors flex items-center justify-center h-5 w-5"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>

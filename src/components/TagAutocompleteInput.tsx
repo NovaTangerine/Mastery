@@ -210,7 +210,7 @@ export const TagAutocompleteInput: React.FC<TagAutocompleteInputProps> = ({
           {suggestions.map((suggestion, idx) => (
             <div
               key={suggestion}
-              className={`px-3 py-1.5 text-sm cursor-pointer rounded-lg transition-colors truncate ${
+              className={`px-3 py-1.5 text-xs font-mono uppercase tracking-wide cursor-pointer rounded-lg transition-colors truncate ${
                 idx === selectedIndex 
                   ? 'bg-zinc-700 text-zinc-100' 
                   : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-700/50'
