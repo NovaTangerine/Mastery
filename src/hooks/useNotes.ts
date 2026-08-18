@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { collection, query, where, orderBy, limit, onSnapshot, addDoc, updateDoc, doc, deleteDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { collection, query, where, orderBy, limit, onSnapshot, addDoc, updateDoc, doc, deleteDoc, getDoc, serverTimestamp, startAfter } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType, logAppEvent } from '../firebase';
 import { Note } from '../types';
 import { toast } from 'sonner';
@@ -10,60 +10,125 @@ import { DragEndEvent } from '@dnd-kit/core';
 import { useUserJourney } from '../contexts/UserJourneyContext';
 
 export function useNotes(gameId: string | null, sessionId?: string | null, tagFilter?: string | null) {
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [notesLimit, setNotesLimit] = useState(50);
+  const [pages, setPages] = useState<Record<number, Note[]>>({});
+  const [lastDocs, setLastDocs] = useState<Record<number, any>>({});
+  const [loadedPagesCount, setLoadedPagesCount] = useState(1);
   const [isSubmittingNote, setIsSubmittingNote] = useState(false);
   const [taggingStatus, setTaggingStatus] = useState<Record<string, 'loading' | 'error'>>({});
+
+  const unsubscribesRef = useRef<Record<number, () => void>>({});
+  const activeCursorsRef = useRef<Record<number, string>>({});
   
   const { refreshStats } = useUserJourney();
 
+  // Reset pagination state when filters or game changes
+  useEffect(() => {
+    Object.values(unsubscribesRef.current).forEach(unsub => unsub());
+    unsubscribesRef.current = {};
+    activeCursorsRef.current = {};
+    setPages({});
+    setLastDocs({});
+    setLoadedPagesCount(1);
+  }, [gameId, sessionId, tagFilter]);
+
+  // Cleanup listeners on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(unsubscribesRef.current).forEach(unsub => unsub());
+    };
+  }, []);
+
   useEffect(() => {
     if (!gameId || !auth.currentUser) {
-      setNotes([]);
+      setPages({});
       return;
     }
 
-    let q = query(
-      collection(db, 'notes'),
-      where('gameId', '==', gameId),  
-      where('uid', '==', auth.currentUser.uid)
-    );
+    const uid = auth.currentUser.uid;
 
-    if (sessionId !== undefined) {
-      q = query(q, where('sessionId', '==', sessionId));
-    }
-
-    if (tagFilter) {
-      q = query(q, where('tags', 'array-contains', tagFilter));
-      q = query(q, limit(200)); // Limit to 200 to be safe and avoid orderBy index
-    } else {
-      q = query(q, orderBy('timestamp', 'desc'), limit(notesLimit));
-    }
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const notesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Note[];
-      
-      // Sort by fractional index order if present, otherwise fallback to timestamp (ascending)
-      notesData.sort((a, b) => {
-        if (typeof a.order === 'string' && typeof b.order === 'string') {
-          return a.order.localeCompare(b.order);
+    for (let i = 0; i < loadedPagesCount; i++) {
+      if (unsubscribesRef.current[i]) {
+        const previousPageLastDoc = i > 0 ? lastDocs[i - 1] : null;
+        const previousPageLastDocId = previousPageLastDoc ? previousPageLastDoc.id : '';
+        if (i > 0 && activeCursorsRef.current[i] !== previousPageLastDocId) {
+          unsubscribesRef.current[i]();
+          delete unsubscribesRef.current[i];
+          activeCursorsRef.current[i] = previousPageLastDocId;
+        } else {
+          continue;
         }
-        return a.timestamp - b.timestamp;
-      });
-      
-      setNotes(notesData);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'notes');
-    });
+      }
 
-    return () => unsubscribe();
-  }, [gameId, sessionId, tagFilter, notesLimit]);
+      if (i > 0 && !lastDocs[i - 1]) {
+        break;
+      }
+
+      let q = query(
+        collection(db, 'notes'),
+        where('gameId', '==', gameId),  
+        where('uid', '==', uid)
+      );
+
+      if (sessionId !== undefined) {
+        q = query(q, where('sessionId', '==', sessionId));
+      }
+
+      if (tagFilter) {
+        q = query(q, where('tags', 'array-contains', tagFilter));
+        q = query(q, limit(200)); // Limit to 200 to be safe and avoid orderBy index
+      } else {
+        if (i === 0) {
+          q = query(q, orderBy('timestamp', 'desc'), limit(50));
+        } else {
+          q = query(q, orderBy('timestamp', 'desc'), startAfter(lastDocs[i - 1]), limit(50));
+        }
+      }
+
+      const pageIndex = i;
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const notesData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Note[];
+        
+        setPages(prev => ({
+          ...prev,
+          [pageIndex]: notesData
+        }));
+
+        if (snapshot.docs.length > 0 && !tagFilter) {
+          const lastDoc = snapshot.docs[snapshot.docs.length - 1];
+          setLastDocs(prev => ({
+            ...prev,
+            [pageIndex]: lastDoc
+          }));
+        } else {
+          setLastDocs(prev => {
+            const next = { ...prev };
+            delete next[pageIndex];
+            return next;
+          });
+        }
+      }, (error) => {
+        handleFirestoreError(error, OperationType.LIST, 'notes');
+      });
+
+      unsubscribesRef.current[pageIndex] = unsubscribe;
+    }
+  }, [gameId, sessionId, tagFilter, loadedPagesCount, lastDocs]);
+
+  // Derived notes state across all pages, sorted appropriately
+  const notes = Object.values(pages).flat().sort((a, b) => {
+    if (typeof a.order === 'string' && typeof b.order === 'string') {
+      return a.order.localeCompare(b.order);
+    }
+    return a.timestamp - b.timestamp;
+  });
+
+  const notesLimit = loadedPagesCount * 50;
 
   const loadMoreNotes = useCallback(() => {
-    setNotesLimit(prev => prev + 50);
+    setLoadedPagesCount(prev => prev + 1);
   }, []);
 
   const handleAddNote = async (content: string, tags: string[] = []) => {

@@ -41,7 +41,8 @@ service cloud.firestore {
       return hasOnlyAllowedFields(['title', 'platform', 'status', 'coverUrl', 'overallNotes', 'storySynopsis', 'uid', 'createdAt', 'updatedAt', 'dismissedSessionBanner']) &&
              data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
              data.status in ['playing', 'completed', 'backlog', 'abandoned'] &&
-             data.uid is string &&
+             data.uid is string && data.uid.size() > 0 && data.uid.size() < 128 &&
+             data.uid == request.auth.uid &&
              data.createdAt is number &&
              data.updatedAt is number &&
              (!('platform' in data) || data.platform == null || (data.platform is string && data.platform.size() < 100)) &&
@@ -53,10 +54,11 @@ service cloud.firestore {
 
     function isValidSession(data) {
       return hasOnlyAllowedFields(['gameId', 'uid', 'startTime', 'endTime', 'progressMarker', 'name', 'chapter', 'hoursPlayed', 'groupId', 'trackers', 'metrics', 'tags', 'updatedAt']) &&
-             data.gameId is string &&
-             data.uid is string &&
+             data.gameId is string && data.gameId.size() > 0 && data.gameId.size() < 128 &&
+             data.uid is string && data.uid.size() > 0 && data.uid.size() < 128 &&
+             data.uid == request.auth.uid &&
              data.startTime is number &&
-             data.progressMarker is string && data.progressMarker.size() < 100 &&
+             data.progressMarker is string && data.progressMarker.size() > 0 && data.progressMarker.size() < 100 &&
              (!('endTime' in data) || data.endTime == null || data.endTime is number) &&
              (!('name' in data) || data.name == null || (data.name is string && data.name.size() < 100)) &&
              (!('chapter' in data) || data.chapter == null || (data.chapter is string && data.chapter.size() < 100)) &&
@@ -70,22 +72,24 @@ service cloud.firestore {
 
     function isValidSessionGroup(data) {
       return hasOnlyAllowedFields(['gameId', 'uid', 'title', 'createdAt', 'updatedAt', 'order']) &&
-             data.gameId is string &&
-             data.uid is string &&
+             data.gameId is string && data.gameId.size() > 0 && data.gameId.size() < 128 &&
+             data.uid is string && data.uid.size() > 0 && data.uid.size() < 128 &&
+             data.uid == request.auth.uid &&
              data.title is string && data.title.size() > 0 && data.title.size() < 100 &&
              data.createdAt is number &&
              data.updatedAt is number &&
-             data.order is string;
+             data.order is string && data.order.size() > 0 && data.order.size() < 100;
     }
 
     function isValidNote(data) {
       return hasOnlyAllowedFields(['gameId', 'sessionId', 'uid', 'content', 'tags', 'isGlobal', 'timestamp', 'order', 'updatedAt']) &&
-             data.gameId is string &&
-             data.uid is string &&
+             data.gameId is string && data.gameId.size() > 0 && data.gameId.size() < 128 &&
+             data.uid is string && data.uid.size() > 0 && data.uid.size() < 128 &&
+             data.uid == request.auth.uid &&
              data.content is string && data.content.size() > 0 && data.content.size() < 10000 &&
              data.timestamp is number &&
-             (!('order' in data) || data.order == null || data.order is string) &&
-             (!('sessionId' in data) || data.sessionId == null || (data.sessionId is string && data.sessionId.size() < 100)) &&
+             (!('order' in data) || data.order == null || (data.order is string && data.order.size() < 100)) &&
+             (!('sessionId' in data) || data.sessionId == null || (data.sessionId is string && data.sessionId.size() < 128)) &&
              (!('isGlobal' in data) || data.isGlobal == null || data.isGlobal is bool) &&
              (!('tags' in data) || data.tags == null || (data.tags is list && data.tags.size() <= 20)) &&
              (!('updatedAt' in data) || data.updatedAt == null || data.updatedAt is number);
@@ -93,12 +97,34 @@ service cloud.firestore {
 
     function isValidDraft(data) {
       return hasOnlyAllowedFields(['gameId', 'sessionId', 'uid', 'content', 'tags', 'updatedAt']) &&
-             data.gameId is string &&
-             data.uid is string &&
+             data.gameId is string && data.gameId.size() > 0 && data.gameId.size() < 128 &&
+             data.uid is string && data.uid.size() > 0 && data.uid.size() < 128 &&
+             data.uid == request.auth.uid &&
              data.content is string && data.content.size() > 0 && data.content.size() < 10000 &&
              data.updatedAt is number &&
-             (!('sessionId' in data) || data.sessionId == null || (data.sessionId is string && data.sessionId.size() < 100)) &&
+             (!('sessionId' in data) || data.sessionId == null || (data.sessionId is string && data.sessionId.size() < 128)) &&
              (!('tags' in data) || data.tags == null || (data.tags is list && data.tags.size() <= 20));
+    }
+
+    function isValidFeedback(data) {
+      return hasOnlyAllowedFields(['uid', 'userEmail', 'displayName', 'type', 'description', 'context', 'status', 'createdAt']) &&
+             data.uid == request.auth.uid &&
+             data.type in ['bug', 'feature', 'general'] &&
+             data.description is string && data.description.size() > 0 && data.description.size() < 10000 &&
+             data.status == 'new' &&
+             data.createdAt == request.time &&
+             (!('userEmail' in data) || data.userEmail == null || (data.userEmail is string && data.userEmail.size() < 256)) &&
+             (!('displayName' in data) || data.displayName == null || (data.displayName is string && data.displayName.size() < 256)) &&
+             (!('context' in data) || data.context == null || data.context is map);
+    }
+
+    function isValidUser(data) {
+      return hasOnlyAllowedFields(['role', 'displayName', 'email', 'photoURL', 'updatedAt']) &&
+             data.role == 'user' &&
+             (!('displayName' in data) || data.displayName == null || (data.displayName is string && data.displayName.size() < 256)) &&
+             (!('email' in data) || data.email == null || (data.email is string && data.email.size() < 256)) &&
+             (!('photoURL' in data) || data.photoURL == null || (data.photoURL is string && data.photoURL.size() < 2000)) &&
+             (!('updatedAt' in data) || data.updatedAt == null || data.updatedAt is number);
     }
 
     // ===============================================================
@@ -106,49 +132,50 @@ service cloud.firestore {
     // ===============================================================
     match /drafts/{draftId} {
       allow read: if isDocOwner() || isAdmin();
-      allow create: if isAuthenticated() && isValidDraft(request.resource.data) && uidUnchanged();
-      allow update: if isDocOwner() && isValidDraft(request.resource.data) && uidNotModified() && areImmutableFieldsUnchanged(['uid', 'gameId', 'sessionId']);
+      allow create: if isAuthenticated() && isValidDraft(request.resource.data);
+      allow update: if isDocOwner() && isValidDraft(request.resource.data) && areImmutableFieldsUnchanged(['uid', 'gameId', 'sessionId']);
       allow delete: if isDocOwner() || isAdmin();
     }
 
     match /games/{gameId} {
       allow read: if isDocOwner() || isAdmin();
-      allow create: if isAuthenticated() && isValidGame(request.resource.data) && uidUnchanged();
-      allow update: if isDocOwner() && isValidGame(request.resource.data) && uidNotModified() && areImmutableFieldsUnchanged(['uid', 'createdAt']);
+      allow create: if isAuthenticated() && isValidGame(request.resource.data);
+      allow update: if isDocOwner() && isValidGame(request.resource.data) && areImmutableFieldsUnchanged(['uid', 'createdAt']);
       allow delete: if isDocOwner() || isAdmin();
     }
 
     match /sessions/{sessionId} {
       allow read: if isDocOwner() || isAdmin();
-      allow create: if isAuthenticated() && isValidSession(request.resource.data) && uidUnchanged();
-      allow update: if isDocOwner();
+      allow create: if isAuthenticated() && isValidSession(request.resource.data);
+      allow update: if isDocOwner() && isValidSession(request.resource.data) && areImmutableFieldsUnchanged(['uid', 'gameId', 'startTime']);
       allow delete: if isDocOwner() || isAdmin();
     }
 
     match /sessionGroups/{groupId} {
       allow read: if isDocOwner() || isAdmin();
-      allow create: if isAuthenticated() && isValidSessionGroup(request.resource.data) && uidUnchanged();
-      allow update: if isDocOwner() && isValidSessionGroup(request.resource.data) && uidNotModified() && areImmutableFieldsUnchanged(['uid', 'gameId', 'createdAt']);
+      allow create: if isAuthenticated() && isValidSessionGroup(request.resource.data);
+      allow update: if isDocOwner() && isValidSessionGroup(request.resource.data) && areImmutableFieldsUnchanged(['uid', 'gameId', 'createdAt']);
       allow delete: if isDocOwner() || isAdmin();
     }
 
     match /notes/{noteId} {
       allow read: if isDocOwner() || isAdmin();
-      allow create: if isAuthenticated() && isValidNote(request.resource.data) && uidUnchanged();
-      allow update: if isDocOwner() && isValidNote(request.resource.data) && uidNotModified() && areImmutableFieldsUnchanged(['uid', 'gameId', 'timestamp']);
+      allow create: if isAuthenticated() && isValidNote(request.resource.data);
+      allow update: if isDocOwner() && isValidNote(request.resource.data) && areImmutableFieldsUnchanged(['uid', 'gameId', 'timestamp']);
       allow delete: if isDocOwner() || isAdmin();
     }
 
     match /feedback/{feedbackId} {
-      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow create: if isAuthenticated() && isValidFeedback(request.resource.data);
       allow read: if isAdmin();
       allow update, delete: if isAdmin();
     }
 
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow create: if isAuthenticated() && isOwner(userId) && request.resource.data.role == 'user';
-      allow update: if (isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin();
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if (isOwner(userId) && isValidUser(request.resource.data) && areImmutableFieldsUnchanged(['role'])) || isAdmin();
+      allow delete: if isAdmin();
     }
 
     match /api_usage/{usageId} {

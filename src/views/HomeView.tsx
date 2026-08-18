@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Gamepad2, User, Trophy, PenTool, ArrowRight, Sparkles, Target, Compass, Plus, X, BookOpen, PlayCircle, ExternalLink } from 'lucide-react';
 import { motion } from 'motion/react';
 import GameSearchModal from '../components/GameSearchModal';
-import { useGameContext } from '../contexts/GameContext';
+import { useGameLibrary } from '../contexts/GameContext';
 import { useUI } from '../contexts/UIContext';
 
 interface TopGame {
@@ -13,7 +13,7 @@ interface TopGame {
 }
 
 export default function HomeView() {
-  const { games } = useGameContext();
+  const { games } = useGameLibrary();
   const { navigateTo } = useUI();
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
   const [topGames, setTopGames] = useState<TopGame[]>([]);

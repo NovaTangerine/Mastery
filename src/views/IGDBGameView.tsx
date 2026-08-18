@@ -50,7 +50,12 @@ export default function IGDBGameView() {
       setError(null);
       
       try {
-        const response = await fetch(`/api/games/${selectedIgdbId}`);
+        const idToken = user ? await user.getIdToken() : '';
+        const response = await fetch(`/api/games/${selectedIgdbId}`, {
+          headers: {
+            "Authorization": `Bearer ${idToken}`
+          }
+        });
         if (!response.ok) {
           throw new Error('Failed to fetch game details');
         }

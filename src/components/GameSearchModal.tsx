@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Search, X, Loader2, Image as ImageIcon, Plus, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getPaletteSync } from 'colorthief';
+import { auth } from '../firebase';
 
 function SmoothImage({ src, alt, className, onLoad, ...props }: any) {
   const [loaded, setLoaded] = useState(false);
@@ -82,7 +83,12 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
     setButtonTextColor(null);
     
     try {
-      const response = await fetch(`/api/games/${game.id}`);
+      const idToken = await auth.currentUser?.getIdToken();
+      const response = await fetch(`/api/games/${game.id}`, {
+        headers: {
+          'Authorization': idToken ? `Bearer ${idToken}` : '',
+        }
+      });
       if (!response.ok) throw new Error('Failed to fetch game details');
       const details = await response.json();
       setSelectedPreviewGame(details);
@@ -106,10 +112,12 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
       setError(null);
 
       try {
+        const idToken = await auth.currentUser?.getIdToken();
         const response = await fetch('/api/games/search', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': idToken ? `Bearer ${idToken}` : '',
           },
           body: JSON.stringify({ query }),
         });

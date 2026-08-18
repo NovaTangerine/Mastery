@@ -30,6 +30,7 @@ import { GameProvider, useGameContext } from './contexts/GameContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { UIProvider, useUI } from './contexts/UIContext';
 import { UserJourneyProvider } from './contexts/UserJourneyContext';
+import { BrowserRouter } from 'react-router-dom';
 import { useNetworkStatus } from './hooks/useNetworkStatus';
 
 import HomeView from './views/HomeView';
@@ -110,6 +111,11 @@ function MainApp() {
     selectedGameId
   } = useUI();
   const { selectedGame, activeSession } = useGameContext();
+
+  const handleResetToDashboard = () => {
+    clearHistory();
+    navigateTo('dashboard', null, null);
+  };
 
   useEffect(() => {
     let t: NodeJS.Timeout;
@@ -480,13 +486,25 @@ function MainApp() {
         >
           <div className={`mx-auto w-full relative ${['session-view', 'note-editor'].includes(view) ? (view === 'note-editor' ? 'p-0 flex-1 min-h-0 flex flex-col' : 'p-2 sm:p-6 flex-1 min-h-0 flex flex-col max-w-[1440px]') : 'p-4 sm:p-6 max-w-6xl'}`}>
             {view === 'home' && <HomeView />}
-            {view === 'dashboard' && <DashboardView />}
+            {view === 'dashboard' && (
+              <ErrorBoundary onReturnToDashboard={handleResetToDashboard}>
+                <DashboardView />
+              </ErrorBoundary>
+            )}
             {view === 'all-insights' && <AllInsightsView />}
             {view === 'all-notes' && <AllNotesView />}
-            {view === 'session-view' && <SessionView />}
+            {view === 'session-view' && (
+              <ErrorBoundary onReturnToDashboard={handleResetToDashboard}>
+                <SessionView />
+              </ErrorBoundary>
+            )}
             {view === 'note-editor' && <NoteEditorView />}
             {view === 'profile' && <ProfileView />}
-            {view === 'igdb-game' && <IGDBGameView />}
+            {view === 'igdb-game' && (
+              <ErrorBoundary onReturnToDashboard={handleResetToDashboard}>
+                <IGDBGameView />
+              </ErrorBoundary>
+            )}
             {view === 'transition-mockups' && <TransitionMockupView />}
             {view === 'image-loading-mockups' && <ImageLoadingMockupView />}
             {view === 'hover-effect-mockups' && <HoverEffectMockupView />}
@@ -537,14 +555,18 @@ function MainApp() {
 
 export default function App() {
   return (
-    <ErrorBoundary><AuthProvider>
-      <UserJourneyProvider>
-        <UIProvider>
-          <GameProvider>
-            <MainApp />
-          </GameProvider>
-        </UIProvider>
-      </UserJourneyProvider>
-    </AuthProvider></ErrorBoundary>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <UserJourneyProvider>
+            <UIProvider>
+              <GameProvider>
+                <MainApp />
+              </GameProvider>
+            </UIProvider>
+          </UserJourneyProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }

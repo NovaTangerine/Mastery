@@ -3,7 +3,6 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import { GoogleGenAI, Type } from "@google/genai";
 import admin from "firebase-admin";
-import rateLimit from "express-rate-limit";
 import fs from "fs";
 
 // Initialize Firebase Admin
@@ -23,9 +22,6 @@ try {
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
-let twitchAccessToken: string | null = null;
-let twitchTokenExpiry: number = 0;
-
 async function getTwitchAccessToken() {
   const clientId = process.env.TWITCH_CLIENT_ID;
   const clientSecret = process.env.TWITCH_CLIENT_SECRET;
@@ -35,11 +31,20 @@ async function getTwitchAccessToken() {
     return null;
   }
 
-  if (twitchAccessToken && Date.now() < twitchTokenExpiry) {
-    return twitchAccessToken;
-  }
-
   try {
+    const db = admin.firestore();
+    const tokenDocRef = db.collection("system_config").doc("twitch_token");
+
+    // 1. Check Firestore centralized storage first
+    const docSnap = await tokenDocRef.get();
+    if (docSnap.exists) {
+      const cached = docSnap.data();
+      if (cached && cached.accessToken && cached.expiresAt && Date.now() < cached.expiresAt) {
+        return cached.accessToken as string;
+      }
+    }
+
+    // 2. Token is missing or expired, fetch a new one
     const response = await fetch(`https://id.twitch.tv/oauth2/token?client_id=${clientId}&client_secret=${clientSecret}&grant_type=client_credentials`, {
       method: 'POST'
     });
@@ -51,13 +56,20 @@ async function getTwitchAccessToken() {
     }
 
     const data = await response.json();
-    twitchAccessToken = data.access_token;
+    const token = data.access_token;
     // Expire 5 minutes early to be safe
-    twitchTokenExpiry = Date.now() + (data.expires_in - 300) * 1000;
+    const expiresAt = Date.now() + (data.expires_in - 300) * 1000;
 
-    return twitchAccessToken;
+    // 3. Centralize the token back into Firestore
+    await tokenDocRef.set({
+      accessToken: token,
+      expiresAt: expiresAt,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
+    return token;
   } catch (error) {
-    console.error("Error getting Twitch token:", error);
+    console.error("Error in getTwitchAccessToken (centralized storage):", error);
     return null;
   }
 }
@@ -80,15 +92,94 @@ async function startServer() {
 
   app.use(express.json());
 
-  // Rate limiter for the AI endpoint
-  // 50 requests per hour per IP (or we can use user ID if we extract it first, but IP is simpler for middleware)
-  const aiLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000, // 1 hour
-    max: 50, // Limit each IP to 50 requests per `window` (here, per hour)
-    message: { error: "Too many requests from this IP, please try again after an hour" },
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
+  // Middleware to verify Firebase ID Token
+  const verifyFirebaseToken = async (
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+  ) => {
+    if (req.path === "/health" || req.originalUrl === "/api/health") {
+      return next();
+    }
+
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized: Missing or invalid token" });
+      }
+
+      const idToken = authHeader.split("Bearer ")[1];
+      const decodedToken = await admin.auth().verifyIdToken(idToken, true);
+      (req as any).user = decodedToken;
+      next();
+    } catch (error) {
+      console.error("Token verification failed:", error);
+      return res.status(401).json({ error: "Unauthorized: Invalid token" });
+    }
+  };
+
+  app.use("/api", verifyFirebaseToken);
+
+  // Centralized Rate limiter for the AI endpoint using Firestore transactions (safe for multi-instance scaling)
+  const aiLimiter = async (
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+  ) => {
+    try {
+      // Safely extract client IP address (supporting reverse proxy headers)
+      const rawIp = req.headers["x-forwarded-for"] as string || req.socket.remoteAddress || "unknown_ip";
+      const ip = rawIp.split(",")[0].trim();
+      const safeIp = ip.replace(/[^a-zA-Z0-9_\-]/g, "_");
+
+      const db = admin.firestore();
+      const rateLimitRef = db.collection("rate_limits").doc(safeIp);
+      const windowMs = 60 * 60 * 1000; // 1 hour
+      const max = 50;
+
+      await db.runTransaction(async (transaction) => {
+        const docSnap = await transaction.get(rateLimitRef);
+        const now = Date.now();
+
+        let count = 1;
+        let windowStart = now;
+
+        if (docSnap.exists) {
+          const data = docSnap.data();
+          if (data && data.windowStart && now - data.windowStart < windowMs) {
+            windowStart = data.windowStart;
+            count = (data.count || 0) + 1;
+          }
+        }
+
+        if (count > max) {
+          const resetTime = new Date(windowStart + windowMs);
+          const limitErr = new Error("RateLimitExceeded");
+          (limitErr as any).resetTime = resetTime;
+          throw limitErr;
+        }
+
+        transaction.set(rateLimitRef, {
+          count,
+          windowStart,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+      });
+
+      next();
+    } catch (error: any) {
+      if (error?.message === "RateLimitExceeded") {
+        const formattedReset = error.resetTime ? error.resetTime.toISOString() : "";
+        return res.status(429).json({
+          error: "Too many requests from this IP, please try again after an hour",
+          resetTime: formattedReset
+        });
+      }
+      console.error("Centralized rate limiter error (bypassing for safety):", error);
+      // Fallback: If Firestore itself has an error or is unreachable, allow the call to pass so we don't block legitimate users
+      next();
+    }
+  };
 
   // API Routes
   app.get("/api/health", (req, res) => {
@@ -97,23 +188,7 @@ async function startServer() {
 
   app.post("/api/tags/suggest", aiLimiter, async (req, res) => {
     try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return res.status(401).json({ error: "Unauthorized: Missing or invalid token" });
-      }
-
-      const idToken = authHeader.split("Bearer ")[1];
-      
-      let uid: string;
-      try {
-        // Verify the Firebase Auth token and check if it was revoked
-        const decodedToken = await admin.auth().verifyIdToken(idToken, true);
-        uid = decodedToken.uid;
-      } catch (error) {
-        console.error("Token verification failed:", error);
-        return res.status(401).json({ error: "Unauthorized: Invalid token" });
-      }
-
+      const uid = (req as any).user.uid;
       const { noteContent } = req.body;
       if (!noteContent || typeof noteContent !== "string") {
         return res.status(400).json({ error: "Bad Request: Missing noteContent" });

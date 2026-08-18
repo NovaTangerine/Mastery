@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Search, X, Loader2, Image as ImageIcon, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Game as StoreGame } from '../types';
+import { auth } from '../firebase';
 
 interface IGDBGame {
   id: number;
@@ -55,9 +56,13 @@ export default function GameSyncModal({ gameToSync, onClose, onConfirmSync }: Ga
       setError(null);
 
       try {
+        const idToken = await auth.currentUser?.getIdToken();
         const response = await fetch('/api/games/search', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': idToken ? `Bearer ${idToken}` : '',
+          },
           body: JSON.stringify({ query }),
         });
 

@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ViewMode, Game, GameSession } from '../types';
 
 interface UIContextType {
@@ -15,49 +16,129 @@ interface UIContextType {
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
 
+// Helper to map view mode string to path
+export function getPathFromView(
+  newView: ViewMode, 
+  gameId?: string | null, 
+  igdbId?: number | null
+): string {
+  if (newView === 'dashboard') return '/';
+  if (newView === 'session-view' || newView === 'game-detail') {
+    return gameId ? `/game/${gameId}` : '/';
+  }
+  if (newView === 'profile') return '/profile';
+  if (newView === 'home') return '/home';
+  if (newView === 'all-insights') return '/insights';
+  if (newView === 'all-notes') return '/notes';
+  if (newView === 'note-editor') return '/notes/edit';
+  if (newView === 'igdb-game') {
+    return igdbId ? `/igdb/${igdbId}` : '/';
+  }
+  // Any other mockup view
+  return `/mockups/${newView}`;
+}
+
 export const UIProvider = ({ children }: { children: React.ReactNode }) => {
-  const [view, setView] = useState<ViewMode>('dashboard');
-  const [history, setHistory] = useState<{ view: ViewMode, gameId: string | null, sessionId: string | null, igdbId: number | null, state: any }[]>([]);
-  const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [selectedIgdbId, setSelectedIgdbId] = useState<number | null>(null);
-  const [viewState, setViewState] = useState<any>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  const navigateTo = (newView: ViewMode, game?: Game | null, session?: GameSession | null, igdbId?: number | null, state?: any) => {
-    const newGameId = game !== undefined ? (game?.id || null) : selectedGameId;
-    const newSessionId = session !== undefined ? (session?.id || null) : activeSessionId;
-    const newIgdbId = igdbId !== undefined ? igdbId : selectedIgdbId;
+  // Parse current view mode and state from path
+  const { view, selectedGameId, selectedIgdbId } = useMemo(() => {
+    // Strip trailing slash and decode
+    const pathname = decodeURIComponent(location.pathname).replace(/\/$/, '') || '/';
 
-    if (view !== newView || selectedGameId !== newGameId || selectedIgdbId !== newIgdbId || viewState !== state) {
-      setHistory(prev => [...prev, { view, gameId: selectedGameId, sessionId: activeSessionId, igdbId: selectedIgdbId, state: viewState }]);
+    if (pathname === '/') {
+      return { view: 'dashboard' as ViewMode, selectedGameId: null, selectedIgdbId: null };
     }
-    setView(newView);
-    if (game !== undefined) setSelectedGameId(game?.id || null);
-    if (session !== undefined) setActiveSessionId(session?.id || null);
-    if (igdbId !== undefined) setSelectedIgdbId(igdbId);
-    setViewState(state !== undefined ? state : null);
+    if (pathname === '/profile') {
+      return { view: 'profile' as ViewMode, selectedGameId: null, selectedIgdbId: null };
+    }
+    if (pathname === '/home') {
+      return { view: 'home' as ViewMode, selectedGameId: null, selectedIgdbId: null };
+    }
+    if (pathname === '/insights') {
+      return { view: 'all-insights' as ViewMode, selectedGameId: null, selectedIgdbId: null };
+    }
+    if (pathname === '/notes') {
+      return { view: 'all-notes' as ViewMode, selectedGameId: null, selectedIgdbId: null };
+    }
+    if (pathname === '/notes/edit') {
+      return { view: 'note-editor' as ViewMode, selectedGameId: null, selectedIgdbId: null };
+    }
+
+    // Match /game/:id
+    const gameMatch = pathname.match(/^\/game\/([^/]+)$/);
+    if (gameMatch) {
+      return { view: 'session-view' as ViewMode, selectedGameId: gameMatch[1], selectedIgdbId: null };
+    }
+
+    // Match /igdb/:id
+    const igdbMatch = pathname.match(/^\/igdb\/([^/]+)$/);
+    if (igdbMatch) {
+      return { view: 'igdb-game' as ViewMode, selectedGameId: null, selectedIgdbId: parseInt(igdbMatch[1], 10) || null };
+    }
+
+    // Match /mockups/:view
+    const mockupMatch = pathname.match(/^\/mockups\/([^/]+)$/);
+    if (mockupMatch) {
+      return { view: mockupMatch[1] as ViewMode, selectedGameId: null, selectedIgdbId: null };
+    }
+
+    // Default Fallback
+    return { view: 'dashboard' as ViewMode, selectedGameId: null, selectedIgdbId: null };
+  }, [location.pathname]);
+
+  // Extract activeSessionId from query parameter "?session=..."
+  const activeSessionId = useMemo(() => {
+    const searchParams = new URLSearchParams(location.search);
+    return searchParams.get('session');
+  }, [location.search]);
+
+  const viewState = location.state;
+
+  // Track simple history array for backward compatibility
+  const history = useMemo(() => {
+    return [] as { view: ViewMode, gameId: string | null, sessionId: string | null, igdbId: number | null, state: any }[];
+  }, []);
+
+  const navigateTo = (
+    newView: ViewMode,
+    game?: Game | null,
+    session?: GameSession | null,
+    igdbId?: number | null,
+    state?: any
+  ) => {
+    // Determine the target IDs
+    const targetGameId = game !== undefined ? (game?.id || null) : selectedGameId;
+    const targetIgdbId = igdbId !== undefined ? igdbId : selectedIgdbId;
+    
+    let targetSessionId: string | null = null;
+    if (session !== undefined) {
+      targetSessionId = session?.id || null;
+    } else {
+      targetSessionId = activeSessionId;
+    }
+
+    let targetPath = getPathFromView(newView, targetGameId, targetIgdbId);
+
+    if (targetSessionId) {
+      targetPath += `?session=${targetSessionId}`;
+    }
+
+    navigate(targetPath, { state });
   };
 
   const goBack = () => {
-    if (history.length === 0) {
-      setView('dashboard');
-      setSelectedGameId(null);
-      setActiveSessionId(null);
-      setSelectedIgdbId(null);
-      setViewState(null);
-      return;
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/', { replace: true });
     }
-
-    const last = history[history.length - 1];
-    setHistory(prev => prev.slice(0, -1));
-    setView(last.view);
-    setSelectedGameId(last.gameId);
-    setActiveSessionId(last.sessionId);
-    setSelectedIgdbId(last.igdbId);
-    setViewState(last.state);
   };
 
-  const clearHistory = () => setHistory([]);
+  const clearHistory = () => {
+    // Standard react-router navigations handle history natively
+  };
 
   return (
     <UIContext.Provider value={{

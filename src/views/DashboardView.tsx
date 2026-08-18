@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Game, GameSession } from '../types';
-import { useGameContext } from '../contexts/GameContext';
+import { useGameLibrary } from '../contexts/GameContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useUI } from '../contexts/UIContext';
 import GameSearchModal from '../components/GameSearchModal';
@@ -35,7 +35,7 @@ export default function DashboardView() {
     handleAddGame,
     handleDeleteGame,
     handleUpdateGameDetails
-  } = useGameContext();
+  } = useGameLibrary();
 
   const [isAddingGame, setIsAddingGame] = useState(false);
   const [justAddedGameId, setJustAddedGameId] = useState<string | null>(null);
