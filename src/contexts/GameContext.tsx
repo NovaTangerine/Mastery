@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { format } from 'date-fns';
 import { 
   collection, 
@@ -13,7 +13,9 @@ import {
   getDocs,
   getDoc,
   limit,
-  deleteField, serverTimestamp
+  deleteField, 
+  serverTimestamp,
+  startAfter
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType, logAppEvent } from '../firebase';
 import { Game, GameSession, Note, ViewMode, Draft, SessionGroup, TrackerItem, SessionMetric } from '../types';
@@ -41,11 +43,72 @@ export const GameLibraryProvider = ({ children }: { children: React.ReactNode })
   const { selectedGameId, navigateTo, clearHistory } = useUI();
   const { refreshStats } = useUserJourney();
 
-  const [games, setGames] = useState<Game[]>([]);
-  const [gamesLimit, setGamesLimit] = useState(50);
+  const [firstPageGames, setFirstPageGames] = React.useState<Game[]>([]);
+  const [historicalGames, setHistoricalGames] = React.useState<Game[]>([]);
+  const [firstPageLastDoc, setFirstPageLastDoc] = React.useState<any>(null);
+  const [historicalLastDoc, setHistoricalLastDoc] = React.useState<any>(null);
+  const [hasMoreGames, setHasMoreGames] = React.useState(true);
+  const [isLoadingMoreGames, setIsLoadingMoreGames] = React.useState(false);
 
-  const loadMoreGames = () => setGamesLimit(prev => prev + 50);
+  // Derived games state
+  const games = React.useMemo(() => {
+    const idMap = new Set<string>();
+    const merged: Game[] = [];
+    const combined = [...firstPageGames, ...historicalGames];
+    for (const g of combined) {
+      if (!idMap.has(g.id)) {
+        idMap.add(g.id);
+        merged.push(g);
+      }
+    }
+    return merged;
+  }, [firstPageGames, historicalGames]);
 
+  const gamesLimit = 50 + historicalGames.length;
+
+  const loadMoreGames = React.useCallback(async () => {
+    if (isLoadingMoreGames || !hasMoreGames || !user) return;
+    const cursor = historicalLastDoc || firstPageLastDoc;
+    if (!cursor) {
+      setHasMoreGames(false);
+      return;
+    }
+    setIsLoadingMoreGames(true);
+    try {
+      const q = query(
+        collection(db, 'games'),
+        where('uid', '==', user.uid),
+        orderBy('updatedAt', 'desc'),
+        startAfter(cursor),
+        limit(50)
+      );
+      const querySnapshot = await getDocs(q);
+      const gamesList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Game));
+      if (gamesList.length < 50) {
+        setHasMoreGames(false);
+      }
+      if (gamesList.length > 0) {
+        setHistoricalGames(prev => [...prev, ...gamesList]);
+        setHistoricalLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1]);
+      }
+    } catch (error) {
+      console.error("Error loading more games:", error);
+    } finally {
+      setIsLoadingMoreGames(false);
+    }
+  }, [user, historicalLastDoc, firstPageLastDoc, isLoadingMoreGames, hasMoreGames]);
+
+  // Reset games pagination on user change
+  useEffect(() => {
+    setFirstPageGames([]);
+    setHistoricalGames([]);
+    setFirstPageLastDoc(null);
+    setHistoricalLastDoc(null);
+    setHasMoreGames(true);
+    setIsLoadingMoreGames(false);
+  }, [user]);
+
+  // First page games subscription (limit 50)
   useEffect(() => {
     if (!user || !isAuthReady) return;
 
@@ -53,15 +116,25 @@ export const GameLibraryProvider = ({ children }: { children: React.ReactNode })
       collection(db, 'games'), 
       where('uid', '==', user.uid), 
       orderBy('updatedAt', 'desc'), 
-      limit(gamesLimit)
+      limit(50)
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const gamesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Game));
-      setGames(gamesList);
+      setFirstPageGames(gamesList);
+      if (snapshot.docs.length > 0) {
+        setFirstPageLastDoc(snapshot.docs[snapshot.docs.length - 1]);
+      } else {
+        setFirstPageLastDoc(null);
+      }
+      if (gamesList.length < 50) {
+        setHasMoreGames(false);
+      } else {
+        setHasMoreGames(true);
+      }
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'games'));
 
     return () => unsubscribe();
-  }, [user, isAuthReady, gamesLimit]);
+  }, [user, isAuthReady]);
 
   const handleAddGame = async (title: string, coverUrl?: string) => {
     if (!user || !title.trim()) return;
@@ -217,26 +290,108 @@ export const ActiveSessionProvider = ({ children }: { children: React.ReactNode 
   const { selectedGameId, activeSessionId, navigateTo, goBack } = useUI();
   const { refreshStats } = useUserJourney();
 
-  const [sessions, setSessions] = useState<GameSession[]>([]);
+  const [firstPageSessions, setFirstPageSessions] = useState<GameSession[]>([]);
+  const [historicalSessions, setHistoricalSessions] = useState<GameSession[]>([]);
+  const [firstPageLastDoc, setFirstPageLastDoc] = useState<any>(null);
+  const [historicalLastDoc, setHistoricalLastDoc] = useState<any>(null);
+  const [hasMoreSessions, setHasMoreSessions] = useState(true);
+  const [isLoadingMoreSessions, setIsLoadingMoreSessions] = useState(false);
+
   const [sessionGroups, setSessionGroups] = useState<SessionGroup[]>([]);
   const [drafts, setDrafts] = useState<Draft[]>([]);
 
-  const [sessionsLimit, setSessionsLimit] = useState(50);
-  const [sessionGroupsLimit, setSessionGroupsLimit] = useState(50);
-  const [draftsLimit, setDraftsLimit] = useState(50);
+  const [sessionGroupsLimit] = useState(50);
+  const [draftsLimit] = useState(50);
 
   const [isSessionsLoading, setIsSessionsLoading] = useState(false);
 
-  const loadMoreSessions = () => setSessionsLimit(prev => prev + 50);
-  const loadMoreSessionGroups = () => setSessionGroupsLimit(prev => prev + 50);
-  const loadMoreDrafts = () => setDraftsLimit(prev => prev + 50);
+  // Derived sessions state
+  const sessions = useMemo(() => {
+    const idMap = new Set<string>();
+    const merged: GameSession[] = [];
+    const combined = [...firstPageSessions, ...historicalSessions];
+    for (const session of combined) {
+      if (!idMap.has(session.id)) {
+        idMap.add(session.id);
+        merged.push(session);
+      }
+    }
+    return merged;
+  }, [firstPageSessions, historicalSessions]);
+
+  const sessionsLimit = 50 + historicalSessions.length;
 
   const selectedGame = games.find(g => g.id === selectedGameId) || null;
   const activeSession = sessions.find(s => s.id === activeSessionId) || null;
 
+  const loadMoreSessions = useCallback(async () => {
+    if (isLoadingMoreSessions || !hasMoreSessions || !user || !selectedGame) return;
+
+    const cursor = historicalLastDoc || firstPageLastDoc;
+    if (!cursor) {
+      setHasMoreSessions(false);
+      return;
+    }
+
+    setIsLoadingMoreSessions(true);
+    try {
+      const q = query(
+        collection(db, 'sessions'),
+        where('gameId', '==', selectedGame.id),
+        where('uid', '==', user.uid),
+        orderBy('startTime', 'desc'),
+        startAfter(cursor),
+        limit(50)
+      );
+
+      const querySnapshot = await getDocs(q);
+      const sessionsList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GameSession));
+
+      if (sessionsList.length < 50) {
+        setHasMoreSessions(false);
+      }
+
+      if (sessionsList.length > 0) {
+        setHistoricalSessions(prev => [...prev, ...sessionsList]);
+        setHistoricalLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1]);
+      }
+    } catch (error) {
+      console.error("Error loading more sessions:", error);
+    } finally {
+      setIsLoadingMoreSessions(false);
+    }
+  }, [user, selectedGame, historicalLastDoc, firstPageLastDoc, isLoadingMoreSessions, hasMoreSessions]);
+
+  const loadMoreSessionGroups = () => {};
+  const loadMoreDrafts = () => {};
+
+  // Optimistic session local update helpers
+  const updateSessionLocal = useCallback((sessionId: string, updates: Partial<GameSession>) => {
+    const updater = (prev: GameSession[]) => prev.map(s => s.id === sessionId ? { ...s, ...updates } : s);
+    setFirstPageSessions(updater);
+    setHistoricalSessions(updater);
+  }, []);
+
+  const deleteSessionLocal = useCallback((sessionId: string) => {
+    const filterer = (prev: GameSession[]) => prev.filter(s => s.id !== sessionId);
+    setFirstPageSessions(filterer);
+    setHistoricalSessions(filterer);
+  }, []);
+
+  // Reset sessions pagination when user or game changes
+  useEffect(() => {
+    setFirstPageSessions([]);
+    setHistoricalSessions([]);
+    setFirstPageLastDoc(null);
+    setHistoricalLastDoc(null);
+    setHasMoreSessions(true);
+    setIsLoadingMoreSessions(false);
+  }, [user, selectedGameId]);
+
+  // First page sessions subscription (limit 50)
   useEffect(() => {
     if (!user || !selectedGame) {
-      setSessions([]);
+      setFirstPageSessions([]);
       setIsSessionsLoading(false);
       return;
     }
@@ -247,19 +402,31 @@ export const ActiveSessionProvider = ({ children }: { children: React.ReactNode 
       where('gameId', '==', selectedGame.id), 
       where('uid', '==', user.uid), 
       orderBy('startTime', 'desc'), 
-      limit(sessionsLimit)
+      limit(50)
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const sessionsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GameSession));
-      setSessions(sessionsList);
+      setFirstPageSessions(sessionsList);
       setIsSessionsLoading(false);
+
+      if (snapshot.docs.length > 0) {
+        setFirstPageLastDoc(snapshot.docs[snapshot.docs.length - 1]);
+      } else {
+        setFirstPageLastDoc(null);
+      }
+
+      if (sessionsList.length < 50) {
+        setHasMoreSessions(false);
+      } else {
+        setHasMoreSessions(true);
+      }
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'sessions');
       setIsSessionsLoading(false);
     });
 
     return () => unsubscribe();
-  }, [user, selectedGame, sessionsLimit]);
+  }, [user, selectedGameId]);
 
   useEffect(() => {
     if (!user || !selectedGame) {
@@ -280,7 +447,7 @@ export const ActiveSessionProvider = ({ children }: { children: React.ReactNode 
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'sessionGroups'));
 
     return () => unsubscribe();
-  }, [user, selectedGame, sessionGroupsLimit]);
+  }, [user, selectedGameId, sessionGroupsLimit]);
 
   useEffect(() => {
     if (!user || !isAuthReady) return;
@@ -340,15 +507,19 @@ export const ActiveSessionProvider = ({ children }: { children: React.ReactNode 
     const sessionIdToUpdate = targetSessionId || activeSession?.id;
     if (!sessionIdToUpdate) return;
     
+    const updateData: any = {
+      name: name,
+      chapter: chapter,
+      hoursPlayed: hoursPlayed ? parseFloat(hoursPlayed) : null,
+    };
+    if (groupId !== undefined) {
+      updateData.groupId = groupId === '' ? null : groupId;
+    }
+
+    // Optimistic update
+    updateSessionLocal(sessionIdToUpdate, updateData);
+    
     try {
-      const updateData: any = {
-        name: name,
-        chapter: chapter,
-        hoursPlayed: hoursPlayed ? parseFloat(hoursPlayed) : null,
-      };
-      if (groupId !== undefined) {
-        updateData.groupId = groupId === '' ? null : groupId;
-      }
       await updateDoc(doc(db, 'sessions', sessionIdToUpdate), updateData);
       toast.success('Session details updated');
     } catch (error) {
@@ -358,6 +529,8 @@ export const ActiveSessionProvider = ({ children }: { children: React.ReactNode 
 
   const handleUpdateSessionTags = async (sessionId: string, tags: string[]) => {
     if (!user) return;
+    // Optimistic update
+    updateSessionLocal(sessionId, { tags, updatedAt: Date.now() });
     try {
       await updateDoc(doc(db, 'sessions', sessionId), { tags, updatedAt: Date.now() });
     } catch (error) {
@@ -392,6 +565,9 @@ export const ActiveSessionProvider = ({ children }: { children: React.ReactNode 
 
   const handleDeleteSession = async (sessionId: string) => {
     if (!user) return;
+    // Optimistic update
+    deleteSessionLocal(sessionId);
+
     const loadingToast = toast.loading('Deleting session and its notes...');
     
     try {
@@ -584,6 +760,8 @@ export const ActiveSessionProvider = ({ children }: { children: React.ReactNode 
       
       const updatedTrackers = [...(activeSession.trackers || []), newTracker];
       
+      updateSessionLocal(activeSession.id, { trackers: updatedTrackers, updatedAt: Date.now() });
+
       await updateDoc(doc(db, 'sessions', activeSession.id), {
         trackers: updatedTrackers, updatedAt: Date.now()
       });
@@ -602,6 +780,8 @@ export const ActiveSessionProvider = ({ children }: { children: React.ReactNode 
         return t;
       });
       
+      updateSessionLocal(activeSession.id, { trackers: updatedTrackers, updatedAt: Date.now() });
+
       await updateDoc(doc(db, 'sessions', activeSession.id), {
         trackers: updatedTrackers, updatedAt: Date.now()
       });
@@ -620,6 +800,8 @@ export const ActiveSessionProvider = ({ children }: { children: React.ReactNode 
         return t;
       });
       
+      updateSessionLocal(activeSession.id, { trackers: updatedTrackers, updatedAt: Date.now() });
+
       await updateDoc(doc(db, 'sessions', activeSession.id), {
         trackers: updatedTrackers, updatedAt: Date.now()
       });
@@ -645,6 +827,8 @@ export const ActiveSessionProvider = ({ children }: { children: React.ReactNode 
         return t;
       });
       
+      updateSessionLocal(activeSession.id, { trackers: updatedTrackers, updatedAt: Date.now() });
+
       await updateDoc(doc(db, 'sessions', activeSession.id), {
         trackers: updatedTrackers, updatedAt: Date.now()
       });
@@ -668,6 +852,8 @@ export const ActiveSessionProvider = ({ children }: { children: React.ReactNode 
         return t;
       });
       
+      updateSessionLocal(activeSession.id, { trackers: updatedTrackers, updatedAt: Date.now() });
+
       await updateDoc(doc(db, 'sessions', activeSession.id), {
         trackers: updatedTrackers, updatedAt: Date.now()
       });
@@ -681,6 +867,8 @@ export const ActiveSessionProvider = ({ children }: { children: React.ReactNode 
     try {
       const updatedTrackers = (activeSession.trackers || []).filter(t => t.id !== trackerId);
       
+      updateSessionLocal(activeSession.id, { trackers: updatedTrackers, updatedAt: Date.now() });
+
       await updateDoc(doc(db, 'sessions', activeSession.id), {
         trackers: updatedTrackers, updatedAt: Date.now()
       });
@@ -727,6 +915,7 @@ export const ActiveSessionProvider = ({ children }: { children: React.ReactNode 
         }
         
         const cleanedTrackers = JSON.parse(JSON.stringify(newTrackers));
+        updateSessionLocal(activeSession.id, { trackers: cleanedTrackers, updatedAt: Date.now() });
         await updateDoc(doc(db, 'sessions', activeSession.id), {
           trackers: cleanedTrackers, updatedAt: Date.now()
         });
@@ -735,6 +924,7 @@ export const ActiveSessionProvider = ({ children }: { children: React.ReactNode 
       
       const updatedMetrics = [...(activeSession.metrics || []), { ...metric, id: newId }];
       const cleanedMetrics = JSON.parse(JSON.stringify(updatedMetrics));
+      updateSessionLocal(activeSession.id, { metrics: cleanedMetrics, updatedAt: Date.now() });
       await updateDoc(doc(db, 'sessions', activeSession.id), {
         metrics: cleanedMetrics, updatedAt: Date.now()
       });
@@ -809,6 +999,7 @@ export const ActiveSessionProvider = ({ children }: { children: React.ReactNode 
           }
           
           const cleanedTrackers = JSON.parse(JSON.stringify(newTrackers));
+          updateSessionLocal(activeSession.id, { trackers: cleanedTrackers, updatedAt: Date.now() });
           await updateDoc(doc(db, 'sessions', activeSession.id), {
             trackers: cleanedTrackers, updatedAt: Date.now()
           });
@@ -840,6 +1031,7 @@ export const ActiveSessionProvider = ({ children }: { children: React.ReactNode 
         return m;
       });
       const cleanedMetrics = JSON.parse(JSON.stringify(updatedMetrics));
+      updateSessionLocal(activeSession.id, { metrics: cleanedMetrics, updatedAt: Date.now() });
       await updateDoc(doc(db, 'sessions', activeSession.id), {
         metrics: cleanedMetrics, updatedAt: Date.now()
       });
@@ -862,6 +1054,7 @@ export const ActiveSessionProvider = ({ children }: { children: React.ReactNode 
         }
         
         const cleanedTrackers = JSON.parse(JSON.stringify(newTrackers));
+        updateSessionLocal(activeSession.id, { trackers: cleanedTrackers, updatedAt: Date.now() });
         await updateDoc(doc(db, 'sessions', activeSession.id), {
           trackers: cleanedTrackers, updatedAt: Date.now()
         });
@@ -870,6 +1063,7 @@ export const ActiveSessionProvider = ({ children }: { children: React.ReactNode 
       
       const updatedMetrics = (activeSession.metrics || []).filter(m => m.id !== metricId);
       const cleanedMetrics = JSON.parse(JSON.stringify(updatedMetrics));
+      updateSessionLocal(activeSession.id, { metrics: cleanedMetrics, updatedAt: Date.now() });
       await updateDoc(doc(db, 'sessions', activeSession.id), {
         metrics: cleanedMetrics, updatedAt: Date.now()
       });

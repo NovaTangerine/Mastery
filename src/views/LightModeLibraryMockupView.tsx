@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useUI } from '../contexts/UIContext';
-import { useGameContext } from '../contexts/GameContext';
+import { useGameLibrary } from '../contexts/GameContext';
 import { ArrowLeft, Plus, Gamepad2, Trophy, MoreVertical } from 'lucide-react';
 
 // Light mode specific colors:
@@ -10,7 +10,7 @@ import { ArrowLeft, Plus, Gamepad2, Trophy, MoreVertical } from 'lucide-react';
 
 export default function LightModeLibraryMockupView() {
   const { navigateTo } = useUI();
-  const { games } = useGameContext();
+  const { games } = useGameLibrary();
   const [layout, setLayout] = useState<'3col' | '2col' | '3col-art'>('3col-art');
 
   return (

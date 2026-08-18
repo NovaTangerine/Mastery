@@ -83,6 +83,8 @@ export interface GameSession {
   trackers?: SessionTracker[];
   metrics?: SessionMetric[];
   tags?: string[];
+  updatedAt?: number;
+  createdAt?: number;
 }
 
 export interface Note {

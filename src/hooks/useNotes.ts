@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { collection, query, where, orderBy, limit, onSnapshot, addDoc, updateDoc, doc, deleteDoc, getDoc, serverTimestamp, startAfter } from 'firebase/firestore';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { collection, query, where, orderBy, limit, onSnapshot, addDoc, updateDoc, doc, deleteDoc, getDoc, startAfter, getDocs } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType, logAppEvent } from '../firebase';
 import { Note } from '../types';
 import { toast } from 'sonner';
@@ -10,62 +10,119 @@ import { DragEndEvent } from '@dnd-kit/core';
 import { useUserJourney } from '../contexts/UserJourneyContext';
 
 export function useNotes(gameId: string | null, sessionId?: string | null, tagFilter?: string | null) {
-  const [pages, setPages] = useState<Record<number, Note[]>>({});
-  const [lastDocs, setLastDocs] = useState<Record<number, any>>({});
-  const [loadedPagesCount, setLoadedPagesCount] = useState(1);
+  const [firstPageNotes, setFirstPageNotes] = useState<Note[]>([]);
+  const [historicalNotes, setHistoricalNotes] = useState<Note[]>([]);
+  const [firstPageLastDoc, setFirstPageLastDoc] = useState<any>(null);
+  const [historicalLastDoc, setHistoricalLastDoc] = useState<any>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isSubmittingNote, setIsSubmittingNote] = useState(false);
   const [taggingStatus, setTaggingStatus] = useState<Record<string, 'loading' | 'error'>>({});
 
-  const unsubscribesRef = useRef<Record<number, () => void>>({});
-  const activeCursorsRef = useRef<Record<number, string>>({});
-  
   const { refreshStats } = useUserJourney();
 
   // Reset pagination state when filters or game changes
   useEffect(() => {
-    Object.values(unsubscribesRef.current).forEach(unsub => unsub());
-    unsubscribesRef.current = {};
-    activeCursorsRef.current = {};
-    setPages({});
-    setLastDocs({});
-    setLoadedPagesCount(1);
+    setFirstPageNotes([]);
+    setHistoricalNotes([]);
+    setFirstPageLastDoc(null);
+    setHistoricalLastDoc(null);
+    setHasMore(true);
+    setIsLoadingMore(false);
   }, [gameId, sessionId, tagFilter]);
 
-  // Cleanup listeners on unmount
-  useEffect(() => {
-    return () => {
-      Object.values(unsubscribesRef.current).forEach(unsub => unsub());
-    };
-  }, []);
-
+  // Handle first page real-time listener subscription
   useEffect(() => {
     if (!gameId || !auth.currentUser) {
-      setPages({});
+      setFirstPageNotes([]);
       return;
     }
 
     const uid = auth.currentUser.uid;
+    let q = query(
+      collection(db, 'notes'),
+      where('gameId', '==', gameId),
+      where('uid', '==', uid)
+    );
 
-    for (let i = 0; i < loadedPagesCount; i++) {
-      if (unsubscribesRef.current[i]) {
-        const previousPageLastDoc = i > 0 ? lastDocs[i - 1] : null;
-        const previousPageLastDocId = previousPageLastDoc ? previousPageLastDoc.id : '';
-        if (i > 0 && activeCursorsRef.current[i] !== previousPageLastDocId) {
-          unsubscribesRef.current[i]();
-          delete unsubscribesRef.current[i];
-          activeCursorsRef.current[i] = previousPageLastDocId;
-        } else {
-          continue;
-        }
+    if (sessionId !== undefined) {
+      q = query(q, where('sessionId', '==', sessionId));
+    }
+
+    if (tagFilter) {
+      q = query(q, where('tags', 'array-contains', tagFilter));
+      q = query(q, limit(50));
+    } else {
+      q = query(q, orderBy('timestamp', 'desc'), limit(50));
+    }
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const notesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Note[];
+
+      setFirstPageNotes(notesData);
+
+      if (snapshot.docs.length > 0) {
+        setFirstPageLastDoc(snapshot.docs[snapshot.docs.length - 1]);
+      } else {
+        setFirstPageLastDoc(null);
       }
 
-      if (i > 0 && !lastDocs[i - 1]) {
-        break;
+      // If we got fewer than 50 notes on the first load, there is no more data to load
+      if (notesData.length < 50) {
+        setHasMore(false);
+      } else {
+        setHasMore(true);
       }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'notes');
+    });
 
+    return () => {
+      unsubscribe();
+    };
+  }, [gameId, sessionId, tagFilter]);
+
+  // Derived notes state across all pages, sorted appropriately
+  const notes = useMemo(() => {
+    const idMap = new Set<string>();
+    const merged: Note[] = [];
+
+    const combined = [...firstPageNotes, ...historicalNotes];
+    for (const note of combined) {
+      if (!idMap.has(note.id)) {
+        idMap.add(note.id);
+        merged.push(note);
+      }
+    }
+
+    return merged.sort((a, b) => {
+      if (typeof a.order === 'string' && typeof b.order === 'string') {
+        return a.order.localeCompare(b.order);
+      }
+      return a.timestamp - b.timestamp;
+    });
+  }, [firstPageNotes, historicalNotes]);
+
+  const notesLimit = 50 + historicalNotes.length;
+
+  const loadMoreNotes = useCallback(async () => {
+    if (isLoadingMore || !hasMore || !gameId || !auth.currentUser) return;
+
+    const cursor = historicalLastDoc || firstPageLastDoc;
+    if (!cursor) {
+      setHasMore(false);
+      return;
+    }
+
+    setIsLoadingMore(true);
+    try {
+      const uid = auth.currentUser.uid;
       let q = query(
         collection(db, 'notes'),
-        where('gameId', '==', gameId),  
+        where('gameId', '==', gameId),
         where('uid', '==', uid)
       );
 
@@ -74,62 +131,31 @@ export function useNotes(gameId: string | null, sessionId?: string | null, tagFi
       }
 
       if (tagFilter) {
-        q = query(q, where('tags', 'array-contains', tagFilter));
-        q = query(q, limit(200)); // Limit to 200 to be safe and avoid orderBy index
+        q = query(q, where('tags', 'array-contains', tagFilter), startAfter(cursor), limit(50));
       } else {
-        if (i === 0) {
-          q = query(q, orderBy('timestamp', 'desc'), limit(50));
-        } else {
-          q = query(q, orderBy('timestamp', 'desc'), startAfter(lastDocs[i - 1]), limit(50));
-        }
+        q = query(q, orderBy('timestamp', 'desc'), startAfter(cursor), limit(50));
       }
 
-      const pageIndex = i;
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const notesData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Note[];
-        
-        setPages(prev => ({
-          ...prev,
-          [pageIndex]: notesData
-        }));
+      const querySnapshot = await getDocs(q);
+      const notesData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Note[];
 
-        if (snapshot.docs.length > 0 && !tagFilter) {
-          const lastDoc = snapshot.docs[snapshot.docs.length - 1];
-          setLastDocs(prev => ({
-            ...prev,
-            [pageIndex]: lastDoc
-          }));
-        } else {
-          setLastDocs(prev => {
-            const next = { ...prev };
-            delete next[pageIndex];
-            return next;
-          });
-        }
-      }, (error) => {
-        handleFirestoreError(error, OperationType.LIST, 'notes');
-      });
+      if (notesData.length < 50) {
+        setHasMore(false);
+      }
 
-      unsubscribesRef.current[pageIndex] = unsubscribe;
+      if (notesData.length > 0) {
+        setHistoricalNotes(prev => [...prev, ...notesData]);
+        setHistoricalLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1]);
+      }
+    } catch (error) {
+      console.error("Error loading more notes:", error);
+    } finally {
+      setIsLoadingMore(false);
     }
-  }, [gameId, sessionId, tagFilter, loadedPagesCount, lastDocs]);
-
-  // Derived notes state across all pages, sorted appropriately
-  const notes = Object.values(pages).flat().sort((a, b) => {
-    if (typeof a.order === 'string' && typeof b.order === 'string') {
-      return a.order.localeCompare(b.order);
-    }
-    return a.timestamp - b.timestamp;
-  });
-
-  const notesLimit = loadedPagesCount * 50;
-
-  const loadMoreNotes = useCallback(() => {
-    setLoadedPagesCount(prev => prev + 1);
-  }, []);
+  }, [gameId, sessionId, tagFilter, historicalLastDoc, firstPageLastDoc, isLoadingMore, hasMore]);
 
   const handleAddNote = async (content: string, tags: string[] = []) => {
     if (!gameId || !auth.currentUser) return;
@@ -143,7 +169,7 @@ export function useNotes(gameId: string | null, sessionId?: string | null, tagFi
         newOrder = safeGenerateKeyBetween(lastNote.order, null);
       }
 
-      const docRef = await addDoc(collection(db, 'notes'), {
+      await addDoc(collection(db, 'notes'), {
         gameId,
         sessionId: sessionId || null,
         uid: auth.currentUser.uid,
@@ -165,41 +191,6 @@ export function useNotes(gameId: string | null, sessionId?: string | null, tagFi
       });
 
       setIsSubmittingNote(false);
-
-      // AI tagging disabled for now
-      /*
-      if (tags.length === 0) {
-        setTaggingStatus(prev => ({ ...prev, [docRef.id]: 'loading' }));
-        suggestTags(content).then(async (suggestion) => {
-          try {
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-              await updateDoc(docRef, {
-                tags: suggestion.tags,
-                isGlobal: suggestion.isGlobal, updatedAt: Date.now()
-              });
-              setTaggingStatus(prev => {
-                const newStatus = { ...prev };
-                delete newStatus[docRef.id];
-                return newStatus;
-              });
-              logAppEvent('ai_tagging_success');
-            }
-          } catch (err) {
-            console.error("Failed to update note with AI tags:", err);
-            setTaggingStatus(prev => ({ ...prev, [docRef.id]: 'error' }));
-            logAppEvent('ai_tagging_error', { reason: 'firestore_update_failed' });
-          }
-        }).catch(err => {
-          console.error("AI tagging failed:", err);
-          setTaggingStatus(prev => ({ ...prev, [docRef.id]: 'error' }));
-          logAppEvent('ai_tagging_error', { reason: 'api_failed' });
-          if (err instanceof Error && err.message.includes("Too many requests")) {
-            toast.error("AI tagging rate limit reached. Please try again later.");
-          }
-        });
-      }
-      */
     } catch (error) {
       setIsSubmittingNote(false);
       handleFirestoreError(error, OperationType.CREATE, 'notes');
@@ -240,6 +231,10 @@ export function useNotes(gameId: string | null, sessionId?: string | null, tagFi
   };
 
   const handleUpdateNote = async (noteId: string, content: string) => {
+    const updateLocal = (prev: Note[]) => prev.map(n => n.id === noteId ? { ...n, content, updatedAt: Date.now() } : n);
+    setFirstPageNotes(updateLocal);
+    setHistoricalNotes(updateLocal);
+
     try {
       await updateDoc(doc(db, 'notes', noteId), { content, updatedAt: Date.now() });
       toast.success('Note updated');
@@ -249,6 +244,10 @@ export function useNotes(gameId: string | null, sessionId?: string | null, tagFi
   };
 
   const handleMoveNote = async (noteId: string, newSessionId: string | null) => {
+    const updateLocal = (prev: Note[]) => prev.map(n => n.id === noteId ? { ...n, sessionId: newSessionId, isGlobal: newSessionId === null, updatedAt: Date.now() } : n);
+    setFirstPageNotes(updateLocal);
+    setHistoricalNotes(updateLocal);
+
     try {
       await updateDoc(doc(db, 'notes', noteId), { 
         sessionId: newSessionId,
@@ -261,6 +260,10 @@ export function useNotes(gameId: string | null, sessionId?: string | null, tagFi
   };
 
   const handleDeleteNote = async (noteId: string) => {
+    const filterLocal = (prev: Note[]) => prev.filter(n => n.id !== noteId);
+    setFirstPageNotes(filterLocal);
+    setHistoricalNotes(filterLocal);
+
     try {
       await deleteDoc(doc(db, 'notes', noteId));
       refreshStats();
@@ -276,6 +279,10 @@ export function useNotes(gameId: string | null, sessionId?: string | null, tagFi
     if (!note) return;
     if (note.tags.includes(tag)) return;
 
+    const updateLocal = (prev: Note[]) => prev.map(n => n.id === noteId ? { ...n, tags: [...n.tags, tag], updatedAt: Date.now() } : n);
+    setFirstPageNotes(updateLocal);
+    setHistoricalNotes(updateLocal);
+
     try {
       await updateDoc(doc(db, 'notes', noteId), {
         tags: [...note.tags, tag], updatedAt: Date.now()
@@ -288,6 +295,10 @@ export function useNotes(gameId: string | null, sessionId?: string | null, tagFi
   const handleRemoveTag = async (noteId: string, tagToRemove: string) => {
     const note = notes.find(n => n.id === noteId);
     if (!note) return;
+
+    const updateLocal = (prev: Note[]) => prev.map(n => n.id === noteId ? { ...n, tags: n.tags.filter(t => t !== tagToRemove), updatedAt: Date.now() } : n);
+    setFirstPageNotes(updateLocal);
+    setHistoricalNotes(updateLocal);
 
     try {
       await updateDoc(doc(db, 'notes', noteId), {
@@ -314,6 +325,10 @@ export function useNotes(gameId: string | null, sessionId?: string | null, tagFi
     const prevOrder = prevNote && typeof prevNote.order === 'string' ? prevNote.order : null;
     const nextOrder = nextNote && typeof nextNote.order === 'string' ? nextNote.order : null;
     newOrderKey = safeGenerateKeyBetween(prevOrder, nextOrder);
+
+    const updateLocal = (prev: Note[]) => prev.map(n => n.id === active.id ? { ...n, order: newOrderKey, updatedAt: Date.now() } : n);
+    setFirstPageNotes(updateLocal);
+    setHistoricalNotes(updateLocal);
 
     try {
       await updateDoc(doc(db, 'notes', active.id as string), { order: newOrderKey, updatedAt: Date.now() });

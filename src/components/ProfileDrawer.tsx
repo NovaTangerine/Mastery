@@ -4,7 +4,7 @@ import { X, LogOut, LayoutGrid, Gamepad2, FileText, Sparkles, Trophy, Shield, Ca
 import { useAuth } from '../contexts/AuthContext';
 import { useUI } from '../contexts/UIContext';
 import { useUserJourney } from '../contexts/UserJourneyContext';
-import { useGameContext } from '../contexts/GameContext';
+import { useGameLibrary } from '../contexts/GameContext';
 import { signOut } from '../firebase';
 
 interface ProfileDrawerProps {
@@ -16,7 +16,7 @@ export default function ProfileDrawer({ isOpen, onClose }: ProfileDrawerProps) {
   const { user } = useAuth();
   const { navigateTo } = useUI();
   const { totalGames, totalSessions, totalNotes, isPowerUser } = useUserJourney();
-  const { games } = useGameContext();
+  const { games } = useGameLibrary();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

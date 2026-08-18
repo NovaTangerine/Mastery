@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useUI } from '../contexts/UIContext';
-import { useGameContext } from '../contexts/GameContext';
+import { useGameLibrary } from '../contexts/GameContext';
 import { useAuth } from '../contexts/AuthContext';
 import { ArrowLeft, Plus, PlayCircle, Calendar, Star, Loader2, Info } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -34,7 +34,7 @@ interface IGDBGameDetails {
 export default function IGDBGameView() {
   const { selectedIgdbId, navigateTo } = useUI();
   const { user } = useAuth();
-  const { handleAddGame, games } = useGameContext();
+  const { handleAddGame, games } = useGameLibrary();
   const [game, setGame] = useState<IGDBGameDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
