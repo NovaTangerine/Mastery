@@ -6,7 +6,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Gamepad2, 
-  LogOut, 
+  LogOut,
+  MessageSquarePlus, 
   ChevronRight,
   Eye,
   EyeOff,
@@ -62,6 +63,7 @@ import ProfileDropdown from './components/ProfileDropdown';
 import ProfileDrawer from './components/ProfileDrawer';
 import ProfileModal from './components/ProfileModal';
 import ProfileHoverCard from './components/ProfileHoverCard';
+import { FeedbackModal } from './components/FeedbackModal';
 
 // --- Components ---
 
@@ -72,6 +74,7 @@ function MainApp() {
   const [headerBlur, setHeaderBlur] = useState('24px');
 
   // Profile UX States (5 Options)
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isProfileDrawerOpen, setIsProfileDrawerOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -103,7 +106,8 @@ function MainApp() {
     view,
     navigateTo,
     goBack,
-    clearHistory
+    clearHistory,
+    selectedGameId
   } = useUI();
   const { selectedGame, activeSession } = useGameContext();
 
@@ -368,6 +372,13 @@ function MainApp() {
                     </button>
                   )}
                   <button 
+                    onClick={() => setIsFeedbackModalOpen(true)}
+                    className="p-2 text-zinc-500 hover:text-zinc-100 transition-colors"
+                    title="Send Feedback"
+                  >
+                    <MessageSquarePlus className="w-5 h-5" />
+                  </button>
+                  <button 
                     onClick={signOut}
                     className="p-2 text-zinc-500 hover:text-zinc-100 transition-colors"
                     title="Sign Out"
@@ -496,6 +507,13 @@ function MainApp() {
 
         <ProfileDrawer isOpen={isProfileDrawerOpen} onClose={() => setIsProfileDrawerOpen(false)} />
         <ProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} />
+        <FeedbackModal 
+          isOpen={isFeedbackModalOpen} 
+          onClose={() => setIsFeedbackModalOpen(false)} 
+          user={user} 
+          currentView={view} 
+          activeGameId={selectedGameId} 
+        />
 
         <style>{`
           .custom-scrollbar::-webkit-scrollbar {

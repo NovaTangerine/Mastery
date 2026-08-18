@@ -856,7 +856,7 @@ export default function SessionView() {
     <div 
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      className="flex-1 min-h-0 pb-[58px] sm:pb-[58px] lg:pb-0 flex flex-row justify-start lg:justify-center animate-in fade-in slide-in-from-bottom-4 duration-500 relative overflow-x-hidden"
+      className="flex-1 min-h-0 pb-[58px] sm:pb-[58px] lg:pb-0 grid grid-cols-1 grid-rows-1 lg:flex lg:flex-row justify-start lg:justify-center animate-in fade-in slide-in-from-bottom-4 duration-500 relative overflow-x-hidden"
     >
       {groupToDelete && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
@@ -981,16 +981,15 @@ export default function SessionView() {
         </div>
       )}
 
-      {/* Inner Sliding Wrapper */}
+      {/* Sidebar for Sessions */}
       <div 
-        className="flex-1 flex flex-row w-full min-h-0 transition-transform duration-300 ease-out max-lg:[transform:translateX(var(--mobile-translate))]"
-        style={{ '--mobile-translate': `-${['sessions', 'notes', 'trackers'].indexOf(activeMobileTab) * 100}%` } as React.CSSProperties}
+        id="mobile-tab-sessions" 
+        className={cn(
+          "col-start-1 row-start-1 flex group/sidebar w-full h-full lg:h-auto shrink-0 lg:w-[320px] flex-col lg:border-r border-zinc-800/50 min-h-0 relative transition-transform duration-300 ease-out lg:!transform-none",
+          activeMobileTab === 'sessions' ? "z-10" : "z-0 pointer-events-none lg:pointer-events-auto"
+        )}
+        style={{ transform: `translateX(${(0 - ['sessions', 'notes', 'trackers'].indexOf(activeMobileTab)) * 100}%)` }}
       >
-        {/* Sidebar for Sessions */}
-        <div 
-          id="mobile-tab-sessions" 
-          className="flex group/sidebar w-full shrink-0 lg:w-[320px] flex-col lg:border-r border-zinc-800/50 min-h-0 relative"
-        >
         
         <div className="w-full flex flex-col h-full min-h-0 flex-1 relative z-10">
         <div className="flex items-center justify-between px-5 lg:px-6 pt-5 pb-5 z-10">
@@ -1358,12 +1357,16 @@ export default function SessionView() {
       {/* Main Session View or Filtered View */}
       <div 
         id="mobile-tab-notes" 
-        className="flex w-full shrink-0 lg:flex-1 lg:max-w-3xl xl:max-w-4xl flex-col min-w-0 min-h-0 lg:px-6"
+        className={cn(
+          "col-start-1 row-start-1 flex w-full h-full lg:h-auto shrink-0 lg:flex-1 lg:max-w-3xl xl:max-w-4xl flex-col min-w-0 min-h-0 transition-transform duration-300 ease-out lg:!transform-none",
+          activeMobileTab === 'notes' ? "z-10" : "z-0 pointer-events-none lg:pointer-events-auto"
+        )}
+        style={{ transform: `translateX(${(1 - ['sessions', 'notes', 'trackers'].indexOf(activeMobileTab)) * 100}%)` }}
       >
-        <div className="w-full md:max-w-2xl lg:max-w-none mx-auto flex flex-col h-full min-h-0 flex-1 pl-4 pr-4 sm:pl-6 sm:pr-6 lg:pl-0 lg:pr-0 pt-4 lg:pt-6">
+        <div className="w-full mx-auto flex flex-col h-full min-h-0 flex-1 pt-4 lg:pt-0">
         {filteredTag ? (
           <>
-            <div className="mb-3 sm:mb-6 bg-zinc-900 border border-zinc-700/50 rounded-2xl p-4 shrink-0 flex items-center justify-between shadow-lg">
+            <div className="mb-3 sm:mb-6 bg-zinc-900 border border-zinc-700/50 rounded-2xl p-4 mx-4 sm:mx-6 lg:mx-8 shrink-0 flex items-center justify-between shadow-lg mt-4 lg:mt-6">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center shrink-0">
                   <TagIcon className="w-5 h-5 text-zinc-400" />
@@ -1411,17 +1414,17 @@ export default function SessionView() {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-8 pr-2">
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
               {Object.entries(filteredNotesBySession)
                 .filter(([sid]) => filterScope === 'global' ? true : sid === (activeSession?.id || 'global'))
                 .map(([sessionId, groupNotes]) => (
-                <div key={sessionId} className="space-y-4">
-                  <div className="sticky top-0 z-10 bg-zinc-950/90 backdrop-blur pb-2 pt-1 border-b border-zinc-800/50 mb-2">
+                <div key={sessionId} className="flex flex-col">
+                  <div className="sticky top-0 z-10 bg-zinc-950/90 backdrop-blur pb-2 pt-1 border-y border-zinc-800/50 px-4 sm:px-6 lg:px-8 bg-zinc-900/20">
                     <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">{getSessionName(sessionId === 'global' ? null : sessionId)}</h3>
                   </div>
-                  <div className="space-y-4">
+                  <div className="flex flex-col gap-0 divide-y divide-zinc-800/50">
                     {groupNotes.map(note => (
-                      <div key={note.id} className="relative pb-4">
+                      <div key={note.id} className="relative">
                         <SortableNote 
                           note={note}
                           onUpdate={handleUpdateNote}
@@ -1456,7 +1459,7 @@ export default function SessionView() {
           <>
             {/* Compact Session Header */}
             <div className={`grid transition-[grid-template-rows,margin,opacity] duration-300 ease-in-out lg:!grid-rows-[1fr] lg:!opacity-100 lg:!mb-6 lg:!pointer-events-auto ${isEditingSessionDetails ? 'grid-rows-[1fr] opacity-100 mb-3 sm:mb-6 pointer-events-auto' : 'grid-rows-[0fr] opacity-0 mb-0 pointer-events-none'}`}>
-              <div className="overflow-hidden min-h-0">
+              <div className="overflow-hidden min-h-0 mx-4 sm:mx-6 lg:mx-8">
                 <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-3 sm:p-4 flex flex-col shrink-0">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2 min-w-0 group/title flex-1">
@@ -1766,7 +1769,7 @@ export default function SessionView() {
                 items={sessionNotes.map(n => n.id)}
                 strategy={verticalListSortingStrategy}
               >
-                <div className="w-full flex flex-col gap-4">
+                <div className="w-full flex flex-col gap-0 divide-y divide-zinc-800/50 border-t border-zinc-800/50 mt-2 lg:mt-0">
                   {sessionNotes.map((note) => (
                     <div key={note.id} className="w-full">
                       <SortableNote 
@@ -1791,7 +1794,7 @@ export default function SessionView() {
         </div>
 
         {/* Input Area */}
-        <div className="shrink-0 bg-zinc-950 pt-2 hidden lg:block">
+        <div className="shrink-0 bg-zinc-950 pt-2 hidden lg:block px-4 sm:px-6 lg:px-8 pb-4 lg:pb-8">
           <LayoutGroup>
             <div 
               ref={noteInputContainerRef}
@@ -1917,7 +1920,11 @@ export default function SessionView() {
       {/* Right Column: Trackers */}
       <div 
         id="mobile-tab-trackers" 
-        className="flex w-full shrink-0 lg:w-[320px] flex-col lg:border-l border-zinc-800/50 min-h-0 relative"
+        className={cn(
+          "col-start-1 row-start-1 flex w-full h-full lg:h-auto shrink-0 lg:w-[320px] flex-col lg:border-l border-zinc-800/50 min-h-0 relative transition-transform duration-300 ease-out lg:!transform-none",
+          activeMobileTab === 'trackers' ? "z-10" : "z-0 pointer-events-none lg:pointer-events-auto"
+        )}
+        style={{ transform: `translateX(${(2 - ['sessions', 'notes', 'trackers'].indexOf(activeMobileTab)) * 100}%)` }}
       >
         <div className="w-full flex flex-col h-full min-h-0 flex-1 relative z-10">
         <div className="flex items-center justify-between px-5 lg:px-6 pt-5 pb-5 z-10">
@@ -2250,9 +2257,6 @@ export default function SessionView() {
           </div>
           </div>
         </div>
-      </div>
-      
-      {/* End of Inner Sliding Wrapper */}
       </div>
 
       {/* Mobile Bottom Navigation */}

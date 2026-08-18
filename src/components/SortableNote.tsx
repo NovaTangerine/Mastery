@@ -351,10 +351,10 @@ export const SortableNote = memo(({
         duration: showDropFeedback ? 0.4 : 0.2
       }}
       className={cn(
-        "group relative bg-zinc-900 border border-zinc-800 rounded-2xl transition-all cursor-pointer p-5 hover:bg-zinc-800/80 hover:border-zinc-700",
-        isDragging && "shadow-2xl opacity-50 border-zinc-500",
+        "group relative transition-all cursor-pointer px-4 py-5 sm:px-6 lg:px-8 hover:bg-zinc-900/50",
+        isDragging && "shadow-2xl opacity-50 bg-zinc-900",
         isDragOver && "bg-indigo-500/5 ring-4 ring-indigo-500/10",
-        isMenuOpen && "z-[9999] shadow-2xl"
+        isMenuOpen && "z-[9999]"
       )}
     >
       {/* Drop Feedback Particles */}
@@ -395,7 +395,7 @@ export const SortableNote = memo(({
             {...listeners} 
             className={cn(
               "p-1 text-zinc-700 hover:text-zinc-400 cursor-grab active:cursor-grabbing transition-opacity shrink-0",
-              isExpanded ? "opacity-100" : "opacity-0"
+              isExpanded ? "opacity-100" : "opacity-0 group-hover:opacity-100 lg:group-hover:opacity-100"
             )}
           >
             <GripVertical className="w-4 h-4" />
