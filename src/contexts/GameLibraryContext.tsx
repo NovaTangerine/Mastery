@@ -158,11 +158,14 @@ export const GameLibraryProvider = ({ children }: { children: React.ReactNode })
 
   const handleUpdateGameDetails = async (gameId: string, title: string, coverUrl?: string | null) => {
     try {
+      const { deleteField } = await import('firebase/firestore');
       const updateData: any = {
         title,
         updatedAt: Date.now()
       };
-      if (coverUrl !== undefined) {
+      if (coverUrl === null) {
+        updateData.coverUrl = deleteField();
+      } else if (coverUrl !== undefined) {
         updateData.coverUrl = coverUrl;
       }
       

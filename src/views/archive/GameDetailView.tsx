@@ -266,11 +266,11 @@ export default function GameDetailView() {
                     <p className="text-zinc-300 text-sm leading-relaxed">{note.content}</p>
                     {note.tags && note.tags.length > 0 && (
                       <div className="flex flex-wrap items-center gap-[2px] mt-3 pt-2 border-t border-zinc-800/40">
-                        <span className="text-[10px] font-mono text-zinc-600 group-hover:text-zinc-400 transition-colors duration-200 uppercase tracking-wide shrink-0 select-none mr-0.5">
+                        <span className="text-[10px] font-mono text-zinc-600 group-hover:text-zinc-500 transition-colors duration-200 uppercase tracking-wide shrink-0 select-none mr-0.5">
                           Tags:
                         </span>
                         {note.tags.map(tag => (
-                          <span key={tag} className="group-hover:text-indigo-300/90 transition-all px-1.5 py-0.5 bg-transparent border border-transparent rounded text-[10px] font-mono font-medium text-zinc-500 uppercase tracking-wide">
+                          <span key={tag} className="group-hover:text-zinc-300 hover:!bg-indigo-500/15 hover:!border-indigo-500/30 hover:!text-indigo-200 transition-all px-1.5 py-0.5 bg-transparent border border-transparent rounded text-[10px] font-mono font-medium text-zinc-500 uppercase tracking-wide">
                             #{tag.replace(/^#/, '')}
                           </span>
                         ))}
@@ -311,7 +311,7 @@ export default function GameDetailView() {
                   >
                     <div className="text-left">
                       <p className="font-bold text-sm group-hover:text-zinc-100 transition-colors">{session.name || session.progressMarker}</p>
-                      <p className="text-zinc-500 text-[10px]">{format(session.startTime, 'MMM d, yyyy')}</p>
+                      <p className="text-zinc-500 text-[10px]">{format(session.startTime, 'MM-dd-yy')}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <button

@@ -6,8 +6,13 @@ import {
   ChevronRight, 
   ChevronDown, 
   Tag as TagIcon,
-  X 
+  X,
+  Edit2,
+  Trash2,
+  MoreVertical,
+  Check
 } from 'lucide-react';
+import { useFloating, offset, flip, shift, autoUpdate, FloatingPortal } from '@floating-ui/react';
 import { cn } from '../../lib/utils';
 import { MetricCard } from '../MetricCard';
 import { TrackerCard } from '../TrackerCard';
@@ -15,18 +20,119 @@ import { AddTrackerMenu } from '../AddTrackerMenu';
 import { TagAutocompleteInput } from '../TagAutocompleteInput';
 import { Game, GameSession, SessionMetric } from '../../types';
 
-export function SessionTagItem({ tag, count, setFilteredTag, scrollToTab, handleDeleteSessionTag }: { 
+export function SessionTagItem({ tag, count, setFilteredTag, scrollToTab, onRequestDeleteTag, handleRenameTag }: { 
   tag: string; 
   count: number; 
   setFilteredTag: (tag: string) => void; 
   scrollToTab: (tab: any) => void;
-  handleDeleteSessionTag: (tag: string, e: React.MouseEvent) => void;
+  onRequestDeleteTag: (tag: string, count: number) => void;
+  handleRenameTag?: (oldTag: string, newTag: string) => void;
 }) {
   const [isBouncing, setIsBouncing] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(tag.replace(/^#/, ''));
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const { refs, floatingStyles } = useFloating({
+    open: isMenuOpen,
+    onOpenChange: setIsMenuOpen,
+    middleware: [offset(4), flip(), shift({ padding: 8 })],
+    whileElementsMounted: autoUpdate,
+    placement: 'bottom-start'
+  });
+
+  React.useEffect(() => {
+    if (!isMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
+      if (refs.reference.current && (refs.reference.current as HTMLElement).contains(target)) {
+        return;
+      }
+      if (refs.floating.current && (refs.floating.current as HTMLElement).contains(target)) {
+        return;
+      }
+      setIsMenuOpen(false);
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isMenuOpen, refs]);
+
+  const handleSaveRename = () => {
+    const trimmed = editValue.trim().toLowerCase().replace(/^#/, '');
+    if (trimmed && trimmed !== tag.replace(/^#/, '')) {
+      handleRenameTag?.(tag, trimmed);
+    }
+    setIsEditing(false);
+  };
+
+  if (isEditing) {
+    return (
+      <div 
+        className="relative flex items-center rounded-full border border-zinc-700 bg-zinc-900 px-2 h-[26px] z-30 gap-1"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <span className="text-[10px] font-mono text-zinc-500 select-none">#</span>
+        <input
+          type="text"
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleSaveRename();
+            } else if (e.key === 'Escape') {
+              setIsEditing(false);
+              setEditValue(tag.replace(/^#/, ''));
+            }
+          }}
+          autoFocus
+          className="bg-transparent text-zinc-100 text-[10px] font-mono outline-none w-16 px-0.5 py-0"
+        />
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleSaveRename();
+          }}
+          className="text-zinc-400 hover:text-emerald-400 p-0.5 transition-colors"
+          title="Save tag"
+        >
+          <Check className="w-3 h-3" />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsEditing(false);
+            setEditValue(tag.replace(/^#/, ''));
+          }}
+          className="text-zinc-400 hover:text-red-400 p-0.5 transition-colors"
+          title="Cancel"
+        >
+          <X className="w-3 h-3" />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <motion.div 
-      className="group relative flex overflow-hidden rounded-full border border-zinc-800 bg-zinc-950 transition-colors hover:border-zinc-700 hover:bg-zinc-800 has-[button:hover]:!bg-red-500/15 has-[button:hover]:!border-red-500/30 h-[26px] z-10 lg:hover:z-20 cursor-grab active:cursor-grabbing"
+      ref={refs.setReference}
+      className={cn(
+        "group relative flex overflow-hidden rounded-full border border-zinc-800 bg-zinc-950 transition-colors hover:border-zinc-700 hover:bg-zinc-800 h-[26px] z-10 lg:hover:z-20 cursor-grab active:cursor-grabbing",
+        isMenuOpen && "!border-zinc-600 !bg-zinc-800"
+      )}
       onHoverStart={() => {
         if (!isBouncing) setIsBouncing(true);
       }}
@@ -60,44 +166,84 @@ export function SessionTagItem({ tag, count, setFilteredTag, scrollToTab, handle
             scrollToTab('notes');
           }}
         >
-          <span className="text-[10px] font-mono font-medium text-zinc-400 uppercase tracking-wide transition-colors group-hover:text-zinc-300 group-has-[button:hover]:!text-red-400">{tag}</span>
+          <span className="text-[10px] font-mono font-medium text-zinc-400 uppercase tracking-wide transition-colors group-hover:text-zinc-300">{tag}</span>
         </div>
         
-        {/* Sliding Container for Count / Delete */}
+        {/* Container for Count / Ellipsis Button */}
         <div className="overflow-hidden h-full w-[26px] relative shrink-0">
-          <div className="flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:-translate-y-[26px] w-full">
-            {/* Default State (Count) */}
-            <div 
-              className="h-[26px] flex items-center shrink-0 cursor-pointer w-full"
-              onClick={() => {
-                setFilteredTag(tag);
-                scrollToTab('notes');
-              }}
-            >
-              <div className="w-4 flex items-center justify-center">
-                {count > 0 && (
-                  <span className="text-[10px] font-mono font-bold text-zinc-600 transition-colors group-hover:text-zinc-500">{count}</span>
-                )}
-              </div>
+          {/* Default State (Count) */}
+          <div 
+            className={cn(
+              "absolute inset-0 flex items-center shrink-0 cursor-pointer w-full transition-opacity duration-300 group-hover:opacity-0",
+              isMenuOpen && "opacity-0"
+            )}
+            onClick={() => {
+              setFilteredTag(tag);
+              scrollToTab('notes');
+            }}
+          >
+            <div className="w-4 flex items-center justify-center">
+              {count > 0 && (
+                <span className="text-[10px] font-mono font-bold text-zinc-600 transition-colors group-hover:text-zinc-500">{count}</span>
+              )}
             </div>
-            
-            {/* Hover State (Delete Button) */}
-            <div className="h-[26px] flex items-center shrink-0 w-full">
-              <div className="w-4 flex items-center justify-center">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteSessionTag(tag, e);
-                  }}
-                  className="text-zinc-500 hover:text-red-400 transition-colors flex items-center justify-center h-5 w-5"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
+          </div>
+          
+          {/* Hover State (Ellipsis Menu Button) */}
+          <div className={cn(
+            "absolute inset-0 flex items-center shrink-0 w-full transition-opacity duration-300 opacity-0 group-hover:opacity-100",
+            isMenuOpen && "opacity-100"
+          )}>
+            <div className="w-4 flex items-center justify-center">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsMenuOpen(!isMenuOpen);
+                }}
+                className="text-zinc-500 hover:text-zinc-200 transition-colors flex items-center justify-center h-5 w-5"
+                title="Tag options"
+              >
+                <MoreVertical className="w-2.5 h-2.5" />
+              </button>
             </div>
           </div>
         </div>
       </div>
+
+      <FloatingPortal>
+        {isMenuOpen && (
+          <div 
+            ref={refs.setFloating}
+            style={floatingStyles}
+            className="w-36 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl z-[9999] py-1 flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => {
+                setIsMenuOpen(false);
+                setIsEditing(true);
+                setEditValue(tag.replace(/^#/, ''));
+              }}
+              className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors text-left"
+            >
+              <Edit2 className="w-3.5 h-3.5 text-zinc-400" />
+              Edit tag
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMenuOpen(false);
+                onRequestDeleteTag(tag, count);
+              }}
+              className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors text-left border-t border-zinc-800/60 mt-0.5 pt-1.5"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Delete tag
+            </button>
+          </div>
+        )}
+      </FloatingPortal>
     </motion.div>
   );
 }
@@ -137,6 +283,7 @@ export interface TrackersPanelProps {
   setFilteredTag: React.Dispatch<React.SetStateAction<string | null>>;
   scrollToTab: (tab: 'sessions' | 'notes' | 'trackers') => void;
   handleDeleteSessionTag: (tag: string, e: React.MouseEvent) => Promise<void>;
+  handleRenameTag?: (oldTag: string, newTag: string) => Promise<void> | void;
   showTagsExpandButton: boolean;
 }
 
@@ -176,8 +323,35 @@ export function TrackersPanel(props: TrackersPanelProps) {
     setFilteredTag,
     scrollToTab,
     handleDeleteSessionTag,
+    handleRenameTag,
     showTagsExpandButton
   } = props;
+
+  const [tagToDelete, setTagToDelete] = useState<{ tag: string; count: number } | null>(null);
+
+  const handleRequestDeleteTag = async (tag: string, localCount: number) => {
+    const cleanTag = tag.trim().toLowerCase().replace(/^#/, '');
+    // Check total count across all notes in the game
+    try {
+      const { getCountFromServer, query, collection, where } = await import('firebase/firestore');
+      const { db, auth } = await import('../../firebase');
+      if (auth.currentUser && selectedGame?.id) {
+        const q = query(
+          collection(db, 'notes'),
+          where('gameId', '==', selectedGame.id),
+          where('uid', '==', auth.currentUser.uid),
+          where('tags', 'array-contains', cleanTag)
+        );
+        const snapshot = await getCountFromServer(q);
+        const totalCount = snapshot.data().count;
+        setTagToDelete({ tag: cleanTag, count: totalCount });
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to get total tag count', err);
+    }
+    setTagToDelete({ tag: cleanTag, count: localCount });
+  };
 
   return (
     <div 
@@ -470,7 +644,8 @@ export function TrackersPanel(props: TrackersPanelProps) {
                           count={tagCounts[tag] || 0}
                           setFilteredTag={setFilteredTag}
                           scrollToTab={scrollToTab}
-                          handleDeleteSessionTag={handleDeleteSessionTag}
+                          onRequestDeleteTag={handleRequestDeleteTag}
+                          handleRenameTag={handleRenameTag}
                         />
                       ))}
 
@@ -495,7 +670,8 @@ export function TrackersPanel(props: TrackersPanelProps) {
                               count={tagCounts[tag] || 0}
                               setFilteredTag={setFilteredTag}
                               scrollToTab={scrollToTab}
-                              handleDeleteSessionTag={handleDeleteSessionTag}
+                              onRequestDeleteTag={handleRequestDeleteTag}
+                              handleRenameTag={handleRenameTag}
                             />
                           ))}
                         </React.Fragment>
@@ -525,6 +701,65 @@ export function TrackersPanel(props: TrackersPanelProps) {
           </div>
         </div>
       </div>
+
+      <FloatingPortal>
+        {tagToDelete && (
+          <div 
+            className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={() => setTagToDelete(null)}
+          >
+            <div 
+              className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6">
+                <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center mb-4">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg font-bold text-zinc-100 mb-1">
+                  Delete #{tagToDelete.tag}
+                </h3>
+                <p className="text-sm text-zinc-400 leading-relaxed">
+                  {tagToDelete.count > 1 ? (
+                    <>
+                      This tag is currently used on <span className="font-semibold text-zinc-200">{tagToDelete.count} notes</span>. Deleting it will permanently remove the tag from all notes in this game.
+                    </>
+                  ) : tagToDelete.count === 1 ? (
+                    <>
+                      This tag is used on <span className="font-semibold text-zinc-200">1 note</span>. Deleting it will remove the tag from the note and your game tags.
+                    </>
+                  ) : (
+                    <>
+                      Are you sure you want to delete <span className="font-semibold text-zinc-200">#{tagToDelete.tag}</span> from your game tags?
+                    </>
+                  )}
+                </p>
+              </div>
+              <div className="p-4 bg-zinc-950/50 border-t border-zinc-800/50 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setTagToDelete(null)}
+                  className="px-4 py-2 text-sm font-semibold text-zinc-400 hover:text-zinc-100 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const tag = tagToDelete.tag;
+                    setTagToDelete(null);
+                    await handleDeleteSessionTag(tag, undefined as any);
+                  }}
+                  className="px-4 py-2 text-sm font-semibold bg-red-500 hover:bg-red-600 text-white rounded-xl transition-colors flex items-center gap-1.5 shadow-sm"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete Tag
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </FloatingPortal>
     </div>
   );
 }

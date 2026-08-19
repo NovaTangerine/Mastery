@@ -202,12 +202,16 @@ export default function DashboardView() {
     
     if (isSwapped) {
       const originalCover = localStorage.getItem(`originalCover_${game.id}`);
-      await handleUpdateGameDetails(game.id, game.title, originalCover || null);
+      if (originalCover === "null" || !originalCover) {
+         await handleUpdateGameDetails(game.id, game.title, null);
+      } else {
+         await handleUpdateGameDetails(game.id, game.title, originalCover);
+      }
     } else {
-      if (game.coverUrl) {
+      if (game.coverUrl && game.coverUrl !== "null") {
         localStorage.setItem(`originalCover_${game.id}`, game.coverUrl);
       } else {
-        localStorage.removeItem(`originalCover_${game.id}`);
+        localStorage.setItem(`originalCover_${game.id}`, "null");
       }
       await handleUpdateGameDetails(game.id, game.title, dsCover);
     }
@@ -255,7 +259,7 @@ export default function DashboardView() {
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Your Library</h2>
         <div className="flex gap-3">
-          <div className="flex bg-zinc-900 border border-zinc-800 rounded-full p-1 self-center hidden sm:flex">
+          <div className="flex bg-zinc-900 border border-zinc-800 rounded-full p-1 self-center hidden">
             <button
               onClick={() => handleLayoutChange('2col')}
               className={`p-1.5 rounded-full transition-all ${layout === '2col' ? 'bg-zinc-800 text-amber-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
@@ -296,7 +300,7 @@ export default function DashboardView() {
                 await resumeOrCreateSession({ id: newGameId, title: "Acme Gaming" } as Game);
               }
             }}
-            className="bg-indigo-500/20 text-indigo-400 px-5 py-2 rounded-full font-bold flex items-center gap-2 hover:bg-indigo-500/30 transition-all active:scale-95 hidden lg:flex"
+            className="bg-indigo-500/20 text-indigo-400 px-5 py-2 rounded-full font-bold items-center gap-2 hover:bg-indigo-500/30 transition-all active:scale-95 hidden"
           >
             Acme Test
           </button>
@@ -342,7 +346,7 @@ export default function DashboardView() {
 
               <div className="absolute inset-0 bg-zinc-900 rounded-md overflow-hidden">
                 <div className="absolute inset-0 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.15)] rounded-md z-20 pointer-events-none" />
-                {game.coverUrl ? (
+                {game.coverUrl && game.coverUrl !== "null" ? (
                   <BlurRevealImage 
                     url={game.coverUrl.replace('t_cover_big', 't_720p')} 
                     alt={game.title} 

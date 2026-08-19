@@ -64,7 +64,7 @@ export default function AllNotesView() {
             <div key={note.id} className="w-full">
               <div className="bg-zinc-900/50 border border-zinc-900 rounded-2xl p-6 group hover:border-zinc-800 transition-colors">
                 <div className="flex justify-between items-start mb-3">
-                  <span className="text-[10px] font-mono text-zinc-600 group-hover:text-indigo-400 group-hover:font-semibold transition-colors duration-200 shrink-0 select-none uppercase tracking-wider">
+                  <span className="text-[10px] font-mono text-zinc-600 group-hover:text-indigo-400 transition-colors duration-200 shrink-0 select-none uppercase tracking-wider">
                     {format(note.timestamp, 'MMM d, yyyy · HH:mm')}
                   </span>
                   {note.isGlobal && (
@@ -76,14 +76,14 @@ export default function AllNotesView() {
                 <p className="text-zinc-300 text-base leading-relaxed">{note.content}</p>
                 {note.tags && note.tags.length > 0 && (
                   <div className="flex flex-wrap items-center gap-[2px] mt-5 pt-3 border-t border-zinc-800/40">
-                    <span className="text-[10px] font-mono text-zinc-600 group-hover:text-zinc-400 transition-colors duration-200 uppercase tracking-wide shrink-0 select-none mr-0.5">
+                    <span className="text-[10px] font-mono text-zinc-600 group-hover:text-zinc-500 transition-colors duration-200 uppercase tracking-wide shrink-0 select-none mr-0.5">
                       Tags:
                     </span>
                     {note.tags.map(tag => (
                       <span 
                         key={tag} 
                         onClick={() => setFilteredTag(tag)}
-                        className="cursor-pointer group-hover:text-indigo-300/90 hover:!bg-indigo-500/15 hover:!border-indigo-500/30 hover:!text-indigo-200 transition-all px-1.5 py-0.5 bg-transparent border border-transparent rounded text-[10px] font-mono font-medium text-zinc-500 uppercase tracking-wide"
+                        className="cursor-pointer group-hover:text-zinc-300 hover:!bg-indigo-500/15 hover:!border-indigo-500/30 hover:!text-indigo-200 transition-all px-1.5 py-0.5 bg-transparent border border-transparent rounded text-[10px] font-mono font-medium text-zinc-500 uppercase tracking-wide"
                       >
                         #{tag.replace(/^#/, '')}
                       </span>

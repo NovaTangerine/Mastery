@@ -127,16 +127,16 @@ export function SidebarSessionItem({ session, ctx }: { session: GameSession, ctx
           }`}
         >
           <div className="flex-1 min-w-0 pr-4">
-            <p className={`font-semibold text-sm line-clamp-1 mb-0.5 ${activeSession?.id === session.id ? 'bg-gradient-to-r from-white to-zinc-500 text-transparent bg-clip-text' : 'text-zinc-300'}`}>
+            <p className={`font-semibold text-sm line-clamp-1 mb-1.5 ${activeSession?.id === session.id ? 'bg-gradient-to-r from-white to-zinc-500 text-transparent bg-clip-text' : 'text-zinc-300'}`}>
               {session.name || session.progressMarker || 'Unnamed Session'}
             </p>
             <div className="flex items-center gap-3">
-              <span className={`text-xs ${activeSession?.id === session.id ? 'text-zinc-300' : 'text-zinc-500'}`}>
-                {format(session.startTime, 'MMM d, yyyy')}
+              <span className={`text-xs font-mono ${activeSession?.id === session.id ? 'text-zinc-300' : 'text-zinc-500'}`}>
+                {format(session.startTime, 'MM-dd-yy')}
               </span>
               {(session.hoursPlayed !== undefined && session.hoursPlayed !== null) && (
-                <span className={`text-xs font-medium ${activeSession?.id === session.id ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                  {decimalToHoursStr(session.hoursPlayed)} hrs
+                <span className={`text-xs font-mono font-medium ${activeSession?.id === session.id ? 'text-zinc-400' : 'text-zinc-600'}`}>
+                  {decimalToHoursStr(session.hoursPlayed)}
                 </span>
               )}
             </div>

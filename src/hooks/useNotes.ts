@@ -309,6 +309,73 @@ export function useNotes(gameId: string | null, sessionId?: string | null, tagFi
     }
   };
 
+  const handleRenameTag = async (oldTag: string, newTag: string) => {
+    const trimmedNew = newTag.trim().toLowerCase().replace(/^#/, '');
+    const trimmedOld = oldTag.trim().toLowerCase().replace(/^#/, '');
+    if (!trimmedNew || trimmedNew === trimmedOld || !gameId || !auth.currentUser) return;
+
+    const updateLocal = (prev: Note[]) => prev.map(n => {
+      if (!n.tags || !n.tags.includes(trimmedOld)) return n;
+      const newTags = Array.from(new Set(n.tags.map(t => t === trimmedOld ? trimmedNew : t)));
+      return { ...n, tags: newTags, updatedAt: Date.now() };
+    });
+    setFirstPageNotes(updateLocal);
+    setHistoricalNotes(updateLocal);
+
+    try {
+      const q = query(
+        collection(db, 'notes'),
+        where('gameId', '==', gameId),
+        where('uid', '==', auth.currentUser.uid),
+        where('tags', 'array-contains', trimmedOld)
+      );
+      const snapshot = await getDocs(q);
+      for (const noteDoc of snapshot.docs) {
+        const currentTags = noteDoc.data().tags || [];
+        const newTags = Array.from(new Set(currentTags.map((t: string) => t === trimmedOld ? trimmedNew : t)));
+        await updateDoc(doc(db, 'notes', noteDoc.id), {
+          tags: newTags,
+          updatedAt: Date.now()
+        });
+      }
+      toast.success(`Tag renamed to #${trimmedNew}`);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'notes');
+    }
+  };
+
+  const handleDeleteTagGlobally = async (tagToDelete: string) => {
+    const trimmed = tagToDelete.trim().toLowerCase().replace(/^#/, '');
+    if (!trimmed || !gameId || !auth.currentUser) return;
+
+    const updateLocal = (prev: Note[]) => prev.map(n => {
+      if (!n.tags || !n.tags.includes(trimmed)) return n;
+      return { ...n, tags: n.tags.filter(t => t !== trimmed), updatedAt: Date.now() };
+    });
+    setFirstPageNotes(updateLocal);
+    setHistoricalNotes(updateLocal);
+
+    try {
+      const q = query(
+        collection(db, 'notes'),
+        where('gameId', '==', gameId),
+        where('uid', '==', auth.currentUser.uid),
+        where('tags', 'array-contains', trimmed)
+      );
+      const snapshot = await getDocs(q);
+      for (const noteDoc of snapshot.docs) {
+        const currentTags = noteDoc.data().tags || [];
+        await updateDoc(doc(db, 'notes', noteDoc.id), {
+          tags: currentTags.filter((t: string) => t !== trimmed),
+          updatedAt: Date.now()
+        });
+      }
+      toast.success(`Tag #${trimmed} deleted`);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'notes');
+    }
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -351,6 +418,8 @@ export function useNotes(gameId: string | null, sessionId?: string | null, tagFi
     handleDeleteNote,
     handleAddTag,
     handleRemoveTag,
+    handleRenameTag,
+    handleDeleteTagGlobally,
     handleDragEnd
   };
 }

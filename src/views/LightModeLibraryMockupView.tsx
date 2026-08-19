@@ -98,7 +98,7 @@ export default function LightModeLibraryMockupView() {
                    className={`relative group aspect-[264/374] rounded-md cursor-pointer transition-all block shadow-[0_4px_12px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] border border-zinc-200/50`}
                  >
                    <div className="absolute inset-0 bg-zinc-100 rounded-md overflow-hidden">
-                     {game.coverUrl ? (
+                     {game.coverUrl && game.coverUrl !== "null" ? (
                        <img src={game.coverUrl.replace('t_cover_big', 't_720p')} alt={game.title} className="w-full h-full object-cover transition-all duration-700 ease-out group-hover:scale-[1.03]" />
                      ) : (
                        <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-100 text-zinc-400 font-bold p-4 text-center transition-all duration-700 ease-out group-hover:scale-[1.03]">

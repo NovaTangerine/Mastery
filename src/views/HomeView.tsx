@@ -151,7 +151,7 @@ export default function HomeView() {
               <div className="flex -space-x-4 shrink-0">
                 {games.slice(0, 3).map((game, i) => (
                   <div key={game.id} className="w-12 h-12 rounded-full border-2 border-zinc-950 bg-zinc-800 overflow-hidden relative z-10" style={{ zIndex: 10 - i }}>
-                    {game.coverUrl ? (
+                    {game.coverUrl && game.coverUrl !== "null" ? (
                       <img src={game.coverUrl} alt={game.title} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-emerald-900/50 text-emerald-400 text-xs font-bold">

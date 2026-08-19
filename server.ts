@@ -3,13 +3,19 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import { GoogleGenAI, Type } from "@google/genai";
 import admin from "firebase-admin";
+import { getFirestore } from "firebase-admin/firestore";
 import fs from "fs";
+
+let firestoreDatabaseId = "(default)";
 
 // Initialize Firebase Admin
 try {
   const configPath = path.join(process.cwd(), "firebase-applet-config.json");
   if (fs.existsSync(configPath)) {
     const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+    if (config.firestoreDatabaseId) {
+      firestoreDatabaseId = config.firestoreDatabaseId;
+    }
     admin.initializeApp({
       projectId: config.projectId,
     });
@@ -22,6 +28,9 @@ try {
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
+let memoryTwitchToken: string | null = null;
+let memoryTwitchTokenExpiresAt: number = 0;
+
 async function getTwitchAccessToken() {
   const clientId = process.env.TWITCH_CLIENT_ID;
   const clientSecret = process.env.TWITCH_CLIENT_SECRET;
@@ -32,16 +41,9 @@ async function getTwitchAccessToken() {
   }
 
   try {
-    const db = admin.firestore();
-    const tokenDocRef = db.collection("system_config").doc("twitch_token");
-
-    // 1. Check Firestore centralized storage first
-    const docSnap = await tokenDocRef.get();
-    if (docSnap.exists) {
-      const cached = docSnap.data();
-      if (cached && cached.accessToken && cached.expiresAt && Date.now() < cached.expiresAt) {
-        return cached.accessToken as string;
-      }
+    // 1. Check in-memory cache first
+    if (memoryTwitchToken && Date.now() < memoryTwitchTokenExpiresAt) {
+      return memoryTwitchToken;
     }
 
     // 2. Token is missing or expired, fetch a new one
@@ -60,16 +62,13 @@ async function getTwitchAccessToken() {
     // Expire 5 minutes early to be safe
     const expiresAt = Date.now() + (data.expires_in - 300) * 1000;
 
-    // 3. Centralize the token back into Firestore
-    await tokenDocRef.set({
-      accessToken: token,
-      expiresAt: expiresAt,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
+    // 3. Cache the token in memory
+    memoryTwitchToken = token;
+    memoryTwitchTokenExpiresAt = expiresAt;
 
     return token;
   } catch (error) {
-    console.error("Error in getTwitchAccessToken (centralized storage):", error);
+    console.error("Error in getTwitchAccessToken (memory storage):", error);
     return null;
   }
 }
@@ -109,7 +108,7 @@ async function startServer() {
       }
 
       const idToken = authHeader.split("Bearer ")[1];
-      const decodedToken = await admin.auth().verifyIdToken(idToken, true);
+      const decodedToken = await admin.auth().verifyIdToken(idToken);
       (req as any).user = decodedToken;
       next();
     } catch (error) {
@@ -132,7 +131,7 @@ async function startServer() {
       const ip = rawIp.split(",")[0].trim();
       const safeIp = ip.replace(/[^a-zA-Z0-9_\-]/g, "_");
 
-      const db = admin.firestore();
+      const db = getFirestore(firestoreDatabaseId);
       const rateLimitRef = db.collection("rate_limits").doc(safeIp);
       const windowMs = 60 * 60 * 1000; // 1 hour
       const max = 50;
@@ -246,6 +245,9 @@ Note: "${noteContent}"`,
     }
   });
 
+  const searchCache = new Map<string, { data: any; timestamp: number }>();
+  const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
   app.post("/api/games/search", async (req, res) => {
     try {
       const { query } = req.body;
@@ -253,11 +255,16 @@ Note: "${noteContent}"`,
         return res.status(400).json({ error: "Bad Request: Missing query" });
       }
 
+      const lowercaseQuery = query.toLowerCase().trim();
+      const cached = searchCache.get(lowercaseQuery);
+      if (cached && (Date.now() - cached.timestamp < CACHE_TTL_MS)) {
+        return res.json(cached.data);
+      }
+
       const clientId = process.env.TWITCH_CLIENT_ID;
       const token = await getTwitchAccessToken();
 
       const getMockResults = () => {
-        const lowercaseQuery = query.toLowerCase();
         return MOCK_GAMES.filter(game => 
           game.name.toLowerCase().includes(lowercaseQuery)
         );
@@ -266,7 +273,9 @@ Note: "${noteContent}"`,
       // Fallback to mock data if no credentials or token fetching failed
       if (!clientId || !token) {
         console.log("Using mock IGDB data for query (no credentials):", query);
-        return res.json(getMockResults());
+        const mockResults = getMockResults();
+        searchCache.set(lowercaseQuery, { data: mockResults, timestamp: Date.now() });
+        return res.json(mockResults);
       }
 
       try {
@@ -284,14 +293,19 @@ Note: "${noteContent}"`,
         if (!response.ok) {
           const errText = await response.text();
           console.error("IGDB API error, falling back to mock:", errText);
-          return res.json(getMockResults());
+          const mockResults = getMockResults();
+          searchCache.set(lowercaseQuery, { data: mockResults, timestamp: Date.now() });
+          return res.json(mockResults);
         }
 
         const data = await response.json();
+        searchCache.set(lowercaseQuery, { data, timestamp: Date.now() });
         res.json(data);
       } catch (apiErr) {
         console.error("IGDB fetch exception, falling back to mock:", apiErr);
-        res.json(getMockResults());
+        const mockResults = getMockResults();
+        searchCache.set(lowercaseQuery, { data: mockResults, timestamp: Date.now() });
+        res.json(mockResults);
       }
     } catch (error) {
       console.error("Error searching games:", error);

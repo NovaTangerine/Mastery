@@ -76,6 +76,8 @@ export default function SessionView() {
     handleDeleteNote,
     handleAddTag,
     handleRemoveTag,
+    handleRenameTag: hookRenameTag,
+    handleDeleteTagGlobally: hookDeleteTagGlobally,
     handleDragEnd,
     isSubmittingNote,
     taggingStatus,
@@ -114,7 +116,12 @@ export default function SessionView() {
   const activeSessionTags = activeSession?.tags || [];
   
   const structuredTags = React.useMemo(() => {
-    const combined = new Set([...gameTags, ...globalSessionTags, ...activeSessionTags]);
+    const combined = new Set([
+      ...gameTags, 
+      ...globalSessionTags, 
+      ...activeSessionTags,
+      ...Object.keys(tagCounts)
+    ]);
     const allTags = Array.from(combined);
     
     const sessionTags: string[] = [];
@@ -300,23 +307,37 @@ export default function SessionView() {
     });
   };
 
-  const handleDeleteSessionTag = async (tagToDelete: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleRenameTag = async (oldTag: string, newTag: string) => {
+    const trimmedNew = newTag.trim().toLowerCase().replace(/^#/, '');
+    const trimmedOld = oldTag.trim().toLowerCase().replace(/^#/, '');
+    if (!trimmedNew || trimmedNew === trimmedOld) return;
+
+    if (activeSession && activeSessionTags.includes(trimmedOld)) {
+      const updated = Array.from(new Set(activeSessionTags.map(t => t === trimmedOld ? trimmedNew : t)));
+      handleUpdateSessionTags(activeSession.id, updated);
+    }
+
+    if (filteredTag === trimmedOld) {
+      setFilteredTag(trimmedNew);
+    }
+
+    await hookRenameTag(trimmedOld, trimmedNew);
+  };
+
+  const handleDeleteSessionTag = async (tagToDelete: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const trimmed = tagToDelete.trim().toLowerCase().replace(/^#/, '');
     
     if (activeSession) {
-      handleUpdateSessionTags(activeSession.id, activeSessionTags.filter(t => t !== tagToDelete));
+      handleUpdateSessionTags(activeSession.id, activeSessionTags.filter(t => t !== trimmed));
     }
     
     // Clear filter if active
-    if (filteredTag === tagToDelete) {
-      setFilteredTag(undefined);
+    if (filteredTag === trimmed) {
+      setFilteredTag(null);
     }
     
-    // Find all notes containing this tag across the session
-    const notesWithTag = allSessionNotes.filter(n => n.tags && n.tags.includes(tagToDelete));
-    for (const note of notesWithTag) {
-      await handleRemoveTag(note.id, tagToDelete);
-    }
+    await hookDeleteTagGlobally(trimmed);
   };
 
   const touchStartX = useRef<number | null>(null);
@@ -745,6 +766,8 @@ export default function SessionView() {
         handleDeleteNote={handleDeleteNote}
         handleAddTag={handleAddTag}
         handleRemoveTag={handleRemoveTag}
+        handleRenameTag={handleRenameTag}
+        handleDeleteTagGlobally={hookDeleteTagGlobally}
         taggingStatus={taggingStatus}
         handleRetryTagging={handleRetryTagging}
         availableSessions={availableSessions}
@@ -833,6 +856,7 @@ export default function SessionView() {
         setFilteredTag={setFilteredTag}
         scrollToTab={scrollToTab}
         handleDeleteSessionTag={handleDeleteSessionTag}
+        handleRenameTag={handleRenameTag}
         showTagsExpandButton={showTagsExpandButton}
       />
 

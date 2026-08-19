@@ -219,7 +219,7 @@ export default function GameSyncModal({ gameToSync, onClose, onConfirmSync }: Ga
                               <div className="absolute inset-0 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.15)] rounded-md z-20 pointer-events-none" />
                               {game.cover?.image_id ? (
                                 <img 
-                                  src={`https://images.igdb.com/igdb/image/upload/t_cover_big/${game.cover.image_id}.jpg`}
+                                  src={`https://images.igdb.com/igdb/image/upload/t_cover_small/${game.cover.image_id}.jpg`}
                                   alt={game.name}
                                   className="w-full h-full object-cover"
                                   referrerPolicy="no-referrer"

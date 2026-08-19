@@ -3,12 +3,195 @@ import { createPortal } from 'react-dom';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { format } from 'date-fns';
-import { X, Edit3, Trash2, Sparkles, AlertCircle, RefreshCw, MoreVertical, FolderOutput, ArrowRight, Tag } from 'lucide-react';
+import { X, Edit2, Edit3, Trash2, Sparkles, AlertCircle, RefreshCw, MoreVertical, Check, FolderOutput, ArrowRight, Tag } from 'lucide-react';
 import { Note } from '../types';
 import { cn } from '../lib/utils';
 import { TagAutocompleteInput } from './TagAutocompleteInput';
 import { motion, AnimatePresence } from 'motion/react';
 import { useFloating, offset, flip, shift, autoUpdate, FloatingPortal } from '@floating-ui/react';
+
+function NoteTagPill({
+  tag,
+  noteId,
+  onTagClick,
+  onRemoveTag,
+  onRenameTag
+}: {
+  tag: string;
+  noteId: string;
+  onTagClick?: (tag: string) => void;
+  onRemoveTag: (noteId: string, tag: string) => void;
+  onRenameTag?: (oldTag: string, newTag: string) => void;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(tag.replace(/^#/, ''));
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isButtonHovered, setIsButtonHovered] = useState(false);
+
+  const { refs, floatingStyles } = useFloating({
+    open: isMenuOpen,
+    onOpenChange: setIsMenuOpen,
+    middleware: [offset(4), flip(), shift({ padding: 8 })],
+    whileElementsMounted: autoUpdate,
+    placement: 'bottom-start'
+  });
+
+  React.useEffect(() => {
+    if (!isMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
+      if (refs.reference.current && (refs.reference.current as HTMLElement).contains(target)) {
+        return;
+      }
+      if (refs.floating.current && (refs.floating.current as HTMLElement).contains(target)) {
+        return;
+      }
+      setIsMenuOpen(false);
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isMenuOpen, refs]);
+
+  const handleSaveRename = () => {
+    const trimmed = editValue.trim().toLowerCase().replace(/^#/, '');
+    if (trimmed && trimmed !== tag.replace(/^#/, '')) {
+      onRenameTag?.(tag, trimmed);
+    }
+    setIsEditing(false);
+  };
+
+  if (isEditing) {
+    return (
+      <div 
+        className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-zinc-900 border border-zinc-700 rounded text-[10px] font-mono shrink-0 select-none z-20"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <span className="text-zinc-500 select-none">#</span>
+        <input
+          type="text"
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleSaveRename();
+            } else if (e.key === 'Escape') {
+              setIsEditing(false);
+              setEditValue(tag.replace(/^#/, ''));
+            }
+          }}
+          autoFocus
+          className="bg-transparent text-zinc-100 text-[10px] font-mono outline-none w-16 px-0.5 py-0"
+        />
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleSaveRename();
+          }}
+          className="text-zinc-400 hover:text-emerald-400 p-0.5 transition-colors"
+          title="Save tag"
+        >
+          <Check className="w-3 h-3" />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsEditing(false);
+            setEditValue(tag.replace(/^#/, ''));
+          }}
+          className="text-zinc-400 hover:text-red-400 p-0.5 transition-colors"
+          title="Cancel"
+        >
+          <X className="w-3 h-3" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="group/tag relative inline-flex items-center">
+      <span 
+        ref={refs.setReference}
+        className={cn(
+          "inline-flex items-center pl-1.5 pr-1.5 group-hover/tag:pr-1 py-0.5 border rounded text-[10px] font-mono font-medium uppercase tracking-wide shrink-0 transition-all select-none",
+          "group-hover:text-zinc-300",
+          !isButtonHovered && !isMenuOpen ? (
+            "bg-transparent border-transparent text-zinc-500 hover:bg-indigo-500/15 hover:border-indigo-500/30 hover:text-indigo-200"
+          ) : (
+            "border-indigo-400 bg-indigo-500/20 text-indigo-200 shadow-[0_0_8px_rgba(99,102,241,0.2)]"
+          ),
+          isMenuOpen && "!pr-1",
+          onTagClick && "cursor-pointer"
+        )}
+        onClick={() => onTagClick?.(tag)}
+      >
+        <span className="transition-colors">#{tag.replace(/^#/, '')}</span>
+        <button 
+          type="button"
+          onMouseEnter={() => setIsButtonHovered(true)}
+          onMouseLeave={() => setIsButtonHovered(false)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsMenuOpen(!isMenuOpen);
+          }}
+          className={cn(
+            "w-0 opacity-0 overflow-hidden group-hover/tag:w-3.5 group-hover/tag:h-4 group-hover/tag:opacity-100 group-hover/tag:ml-[2px] -mr-0.5 text-zinc-500 hover:text-zinc-100 transition-all duration-150 shrink-0 flex items-center justify-center rounded cursor-pointer",
+            isMenuOpen && "w-3.5 h-4 opacity-100 ml-[2px] -mr-0.5 text-zinc-100"
+          )}
+          title={`Tag options for "${tag}"`}
+        >
+          <MoreVertical className="w-2.5 h-2.5 shrink-0" />
+        </button>
+      </span>
+
+      <FloatingPortal>
+        {isMenuOpen && (
+          <div 
+            ref={refs.setFloating}
+            style={floatingStyles}
+            className="w-36 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl z-[9999] py-1 flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => {
+                setIsMenuOpen(false);
+                setIsEditing(true);
+                setEditValue(tag.replace(/^#/, ''));
+              }}
+              className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors text-left"
+            >
+              <Edit2 className="w-3.5 h-3.5 text-zinc-400" />
+              Edit tag
+            </button>
+            <button
+              onClick={() => {
+                setIsMenuOpen(false);
+                onRemoveTag(noteId, tag);
+              }}
+              className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors text-left border-t border-zinc-800/60 mt-0.5 pt-1.5"
+            >
+              <X className="w-3.5 h-3.5" />
+              Remove from note
+            </button>
+          </div>
+        )}
+      </FloatingPortal>
+    </div>
+  );
+}
 
 export const SortableNote = memo(({ 
   note, 
@@ -16,6 +199,7 @@ export const SortableNote = memo(({
   onDelete, 
   onAddTag, 
   onRemoveTag,
+  onRenameTag,
   taggingStatus,
   onRetryTagging,
   onTagClick,
@@ -27,6 +211,7 @@ export const SortableNote = memo(({
   onDelete: (id: string) => void;
   onAddTag: (id: string, tag: string) => void;
   onRemoveTag: (id: string, tag: string) => void;
+  onRenameTag?: (oldTag: string, newTag: string) => void;
   taggingStatus?: 'loading' | 'error';
   onRetryTagging?: (id: string, content: string) => void;
   onTagClick?: (tag: string) => void;
@@ -181,38 +366,23 @@ export const SortableNote = memo(({
   const renderTags = () => (
     <div className="flex flex-wrap items-center gap-[2px] pb-1 -mb-1">
       {note.tags.length > 0 || isManagingTags || taggingStatus ? (
-        <span className="text-[10px] font-mono text-zinc-600 group-hover:text-zinc-400 transition-colors duration-200 uppercase tracking-wide shrink-0 select-none mr-0.5">
+        <span className="text-[10px] font-mono text-zinc-600 group-hover:text-zinc-500 transition-colors duration-200 uppercase tracking-wide shrink-0 select-none mr-0.5">
           Tags:
         </span>
       ) : (
-        <span className="text-[10px] font-mono text-zinc-600 group-hover:text-zinc-400 transition-all duration-200 uppercase tracking-wide shrink-0 select-none mr-0.5 opacity-0 group-hover:opacity-100">
+        <span className="text-[10px] font-mono text-zinc-600 group-hover:text-zinc-500 transition-all duration-200 uppercase tracking-wide shrink-0 select-none mr-0.5 opacity-0 group-hover:opacity-100">
           Tags:
         </span>
       )}
       {note.tags.map(tag => (
-        <span 
-          key={tag} 
-          className={cn(
-            "group/tag inline-flex items-center pl-1.5 pr-1.5 group-hover/tag:pr-1 py-0.5 bg-transparent border border-transparent rounded text-[10px] font-mono font-medium text-zinc-500 uppercase tracking-wide shrink-0 transition-all select-none",
-            "group-hover:text-indigo-300/90",
-            "hover:!bg-indigo-500/15 hover:!border-indigo-500/30 hover:!text-indigo-200",
-            "has-[button:hover]:!bg-red-500/15 has-[button:hover]:!border-red-500/30 has-[button:hover]:!text-red-400",
-            onTagClick && "cursor-pointer"
-          )}
-          onClick={() => onTagClick?.(tag)}
-        >
-          <span className="transition-colors">#{tag.replace(/^#/, '')}</span>
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              onRemoveTag(note.id, tag);
-            }}
-            className="w-0 opacity-0 overflow-hidden group-hover/tag:w-3 group-hover/tag:opacity-100 group-hover/tag:ml-1 text-zinc-500 hover:text-red-400 transition-all duration-150 shrink-0 flex items-center justify-center"
-            title={`Remove tag "${tag}"`}
-          >
-            <X className="w-3 h-3 shrink-0" />
-          </button>
-        </span>
+        <NoteTagPill
+          key={tag}
+          tag={tag}
+          noteId={note.id}
+          onTagClick={onTagClick}
+          onRemoveTag={onRemoveTag}
+          onRenameTag={onRenameTag}
+        />
       ))}
       
       {taggingStatus === 'loading' && (
@@ -401,7 +571,7 @@ export const SortableNote = memo(({
         isMenuOpen ? "overflow-visible" : "overflow-hidden"
       )}>
         <div className="flex items-center gap-2 min-w-0 flex-1 relative h-6">
-          <span className="text-[10px] font-mono text-zinc-600 group-hover:text-indigo-400 group-hover:font-semibold transition-colors duration-200 shrink-0 select-none uppercase tracking-wider">
+          <span className="text-[10px] font-mono text-zinc-600 group-hover:text-indigo-400 transition-colors duration-200 shrink-0 select-none uppercase tracking-wider">
             {format(note.timestamp, 'MMM d, yyyy · HH:mm')}
           </span>
           

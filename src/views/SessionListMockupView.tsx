@@ -93,20 +93,20 @@ export default function SessionListMockupView() {
                 
                 <div className="space-y-1">
                   {[
-                    { time: 'Today', duration: '2h 15m', title: 'Explored the Northern Wastes', notes: 3, isActive: true },
-                    { time: 'Yesterday', duration: '45m', title: 'Quick quest cleanup', notes: 1, isActive: false }
+                    { time: '04-25-24', duration: '2h 15m', title: 'Explored the Northern Wastes', notes: 3, isActive: true },
+                    { time: '04-24-24', duration: '45m', title: 'Quick quest cleanup', notes: 1, isActive: false }
                   ].map((s, i) => (
                     <div key={i} className={`group p-3 sm:p-4 rounded-2xl transition-colors flex items-center justify-between cursor-pointer border ${s.isActive ? 'bg-zinc-800/50 border-zinc-700' : 'hover:bg-zinc-800/30 border-transparent hover:border-zinc-700/50'}`}>
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-1">
-                          <span className={`font-semibold ${s.isActive ? 'text-amber-400' : 'text-zinc-300'}`}>{s.time}</span>
-                          <span className="text-zinc-600 text-sm font-medium">{s.duration}</span>
+                        <div className="flex items-center gap-3 mb-1.5">
+                          <span className={`font-semibold font-mono ${s.isActive ? 'text-amber-400' : 'text-zinc-300'}`}>{s.time}</span>
+                          <span className="text-zinc-600 font-mono text-sm font-medium">{s.duration}</span>
                         </div>
                         <p className="text-sm text-zinc-400 line-clamp-1">{s.title}</p>
                       </div>
                       <div className="flex items-center gap-4 shrink-0 transition-opacity">
                         <div className={`hidden sm:flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg ${s.notes > 0 ? 'bg-zinc-800 text-zinc-400' : 'text-transparent'}`}>
-                          {s.notes > 0 && <span>{s.notes} notes</span>}
+                          {s.notes > 0 && <span className="font-mono">{s.notes} notes</span>}
                         </div>
                         <div className="w-8 h-8 rounded-full bg-zinc-800/50 group-hover:bg-zinc-700 flex items-center justify-center transition-colors">
                           <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-zinc-300" />
@@ -133,21 +133,21 @@ export default function SessionListMockupView() {
                 
                 <div className="space-y-1">
                   {[
-                    { time: 'Apr 24', duration: '1h 30m', title: 'Boss fight attempts at the Great Citadel', notes: 5 },
-                    { time: 'Apr 18', duration: '3h 10m', title: 'Main story progression and side quests', notes: 12 },
-                    { time: 'Apr 02', duration: '50m', title: 'Started the game, character creation', notes: 0 }
+                    { time: '04-24-24', duration: '1h 30m', title: 'Boss fight attempts at the Great Citadel', notes: 5 },
+                    { time: '04-18-24', duration: '3h 10m', title: 'Main story progression and side quests', notes: 12 },
+                    { time: '04-02-24', duration: '50m', title: 'Started the game, character creation', notes: 0 }
                   ].map((s, i) => (
                     <div key={i} className="group p-3 sm:p-4 rounded-2xl hover:bg-zinc-800/30 transition-colors flex items-center justify-between cursor-pointer border border-transparent hover:border-zinc-700/50">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-1">
-                          <span className="text-zinc-300 font-semibold">{s.time}</span>
-                          <span className="text-zinc-600 text-sm font-medium">{s.duration}</span>
+                        <div className="flex items-center gap-3 mb-1.5">
+                          <span className="text-zinc-300 font-mono font-semibold">{s.time}</span>
+                          <span className="text-zinc-600 font-mono text-sm font-medium">{s.duration}</span>
                         </div>
                         <p className="text-sm text-zinc-500 line-clamp-1">{s.title}</p>
                       </div>
                       <div className="flex items-center gap-4 shrink-0 transition-opacity">
                         <div className={`hidden sm:flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg ${s.notes > 0 ? 'bg-zinc-800 text-zinc-400' : 'text-transparent'}`}>
-                          {s.notes > 0 && <span>{s.notes} notes</span>}
+                          {s.notes > 0 && <span className="font-mono">{s.notes} notes</span>}
                         </div>
                         <div className="w-8 h-8 rounded-full bg-zinc-800/50 group-hover:bg-zinc-700 flex items-center justify-center transition-colors opacity-50 group-hover:opacity-100">
                           <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-zinc-300" />
@@ -174,19 +174,19 @@ export default function SessionListMockupView() {
                 
                 <div className="space-y-1">
                   {[
-                    { time: 'Mar 28', duration: '2h 45m', title: 'Farming materials in the Dark Woods', notes: 2 }
+                    { time: '03-28-24', duration: '2h 45m', title: 'Farming materials in the Dark Woods', notes: 2 }
                   ].map((s, i) => (
                     <div key={i} className="group p-3 sm:p-4 rounded-2xl hover:bg-zinc-800/30 transition-colors flex items-center justify-between cursor-pointer border border-transparent hover:border-zinc-700/50">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-1">
-                          <span className="text-zinc-300 font-semibold">{s.time}</span>
-                          <span className="text-zinc-600 text-sm font-medium">{s.duration}</span>
+                        <div className="flex items-center gap-3 mb-1.5">
+                          <span className="text-zinc-300 font-mono font-semibold">{s.time}</span>
+                          <span className="text-zinc-600 font-mono text-sm font-medium">{s.duration}</span>
                         </div>
                         <p className="text-sm text-zinc-500 line-clamp-1">{s.title}</p>
                       </div>
                       <div className="flex items-center gap-4 shrink-0 transition-opacity">
                         <div className={`hidden sm:flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg ${s.notes > 0 ? 'bg-zinc-800 text-zinc-400' : 'text-transparent'}`}>
-                          {s.notes > 0 && <span>{s.notes} notes</span>}
+                          {s.notes > 0 && <span className="font-mono">{s.notes} notes</span>}
                         </div>
                         <div className="w-8 h-8 rounded-full bg-zinc-800/50 group-hover:bg-zinc-700 flex items-center justify-center transition-colors opacity-50 group-hover:opacity-100">
                           <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-zinc-300" />
@@ -243,20 +243,20 @@ export default function SessionListMockupView() {
                 </div>
                 <div className="space-y-1">
                   {[
-                    { time: 'Today', duration: '2h 15m', title: 'Explored the Northern Wastes', notes: 3, isActive: true },
-                    { time: 'Yesterday', duration: '45m', title: 'Quick quest cleanup', notes: 1, isActive: false }
+                    { time: '04-25-24', duration: '2h 15m', title: 'Explored the Northern Wastes', notes: 3, isActive: true },
+                    { time: '04-24-24', duration: '45m', title: 'Quick quest cleanup', notes: 1, isActive: false }
                   ].map((s, i) => (
                     <div key={i} className={`group p-3 sm:p-4 rounded-2xl transition-colors flex items-center justify-between cursor-pointer border ${s.isActive ? 'bg-zinc-800/50 border-zinc-700' : 'hover:bg-zinc-800/30 border-transparent hover:border-zinc-700/50'}`}>
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-1">
-                          <span className={`font-semibold ${s.isActive ? 'text-amber-400' : 'text-zinc-300'}`}>{s.time}</span>
-                          <span className="text-zinc-600 text-sm font-medium">{s.duration}</span>
+                        <div className="flex items-center gap-3 mb-1.5">
+                          <span className={`font-semibold font-mono ${s.isActive ? 'text-amber-400' : 'text-zinc-300'}`}>{s.time}</span>
+                          <span className="text-zinc-600 font-mono text-sm font-medium">{s.duration}</span>
                         </div>
                         <p className="text-sm text-zinc-400 line-clamp-1">{s.title}</p>
                       </div>
                       <div className="flex items-center gap-4 shrink-0 transition-opacity">
                         <div className={`hidden sm:flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg ${s.notes > 0 ? 'bg-zinc-800 text-zinc-400' : 'text-transparent'}`}>
-                          {s.notes > 0 && <span>{s.notes}</span>}
+                          {s.notes > 0 && <span className="font-mono">{s.notes}</span>}
                         </div>
                         <div className="w-8 h-8 rounded-full bg-zinc-800/50 group-hover:bg-zinc-700 flex items-center justify-center transition-colors">
                           <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-zinc-300" />
@@ -282,21 +282,21 @@ export default function SessionListMockupView() {
                 </div>
                 <div className="space-y-1">
                   {[
-                    { time: 'Apr 24', duration: '1h 30m', title: 'Boss fight attempts at the Great Citadel', notes: 5 },
-                    { time: 'Apr 18', duration: '3h 10m', title: 'Main story progression and side quests', notes: 12 },
-                    { time: 'Apr 02', duration: '50m', title: 'Started the game, character creation', notes: 0 }
+                    { time: '04-24-24', duration: '1h 30m', title: 'Boss fight attempts at the Great Citadel', notes: 5 },
+                    { time: '04-18-24', duration: '3h 10m', title: 'Main story progression and side quests', notes: 12 },
+                    { time: '04-02-24', duration: '50m', title: 'Started the game, character creation', notes: 0 }
                   ].map((s, i) => (
                     <div key={i} className="group p-3 sm:p-4 rounded-2xl hover:bg-zinc-800/30 transition-colors flex items-center justify-between cursor-pointer border border-transparent hover:border-zinc-700/50">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-1">
-                          <span className="text-zinc-300 font-semibold">{s.time}</span>
-                          <span className="text-zinc-600 text-sm font-medium">{s.duration}</span>
+                        <div className="flex items-center gap-3 mb-1.5">
+                          <span className="text-zinc-300 font-mono font-semibold">{s.time}</span>
+                          <span className="text-zinc-600 font-mono text-sm font-medium">{s.duration}</span>
                         </div>
                         <p className="text-sm text-zinc-500 line-clamp-1">{s.title}</p>
                       </div>
                       <div className="flex items-center gap-4 shrink-0 transition-opacity">
                         <div className={`hidden sm:flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg ${s.notes > 0 ? 'bg-zinc-800 text-zinc-400' : 'text-transparent'}`}>
-                          {s.notes > 0 && <span>{s.notes}</span>}
+                          {s.notes > 0 && <span className="font-mono">{s.notes}</span>}
                         </div>
                         <div className="w-8 h-8 rounded-full bg-zinc-800/50 group-hover:bg-zinc-700 flex items-center justify-center transition-colors opacity-50 group-hover:opacity-100">
                           <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-zinc-300" />
@@ -322,19 +322,19 @@ export default function SessionListMockupView() {
                 </div>
                 <div className="space-y-1">
                   {[
-                    { time: 'Mar 28', duration: '2h 45m', title: 'Farming materials in the Dark Woods', notes: 2 }
+                    { time: '03-28-24', duration: '2h 45m', title: 'Farming materials in the Dark Woods', notes: 2 }
                   ].map((s, i) => (
                     <div key={i} className="group p-3 sm:p-4 rounded-2xl hover:bg-zinc-800/30 transition-colors flex items-center justify-between cursor-pointer border border-transparent hover:border-zinc-700/50">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-1">
-                          <span className="text-zinc-300 font-semibold">{s.time}</span>
-                          <span className="text-zinc-600 text-sm font-medium">{s.duration}</span>
+                        <div className="flex items-center gap-3 mb-1.5">
+                          <span className="text-zinc-300 font-mono font-semibold">{s.time}</span>
+                          <span className="text-zinc-600 font-mono text-sm font-medium">{s.duration}</span>
                         </div>
                         <p className="text-sm text-zinc-500 line-clamp-1">{s.title}</p>
                       </div>
                       <div className="flex items-center gap-4 shrink-0 transition-opacity">
                         <div className={`hidden sm:flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg ${s.notes > 0 ? 'bg-zinc-800 text-zinc-400' : 'text-transparent'}`}>
-                          {s.notes > 0 && <span>{s.notes}</span>}
+                          {s.notes > 0 && <span className="font-mono">{s.notes}</span>}
                         </div>
                         <div className="w-8 h-8 rounded-full bg-zinc-800/50 group-hover:bg-zinc-700 flex items-center justify-center transition-colors opacity-50 group-hover:opacity-100">
                           <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-zinc-300" />
@@ -438,7 +438,7 @@ export default function SessionListMockupView() {
                         </div>
                         <div className="flex items-center gap-3">
                           <button className="w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center text-zinc-400 font-bold">-</button>
-                          <span className="text-xl font-black w-6 text-center tabular-nums text-white">4</span>
+                          <span className="text-xl font-black w-6 text-center tabular-nums font-mono text-white">4</span>
                           <button className="w-8 h-8 rounded-full bg-zinc-100 hover:bg-white flex items-center justify-center text-zinc-950 font-bold">+</button>
                         </div>
                       </div>
@@ -448,7 +448,7 @@ export default function SessionListMockupView() {
                         </div>
                         <div className="flex items-center gap-3">
                           <button className="w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center text-zinc-400 font-bold">-</button>
-                          <span className="text-xl font-black w-6 text-center tabular-nums text-white">12</span>
+                          <span className="text-xl font-black w-6 text-center tabular-nums font-mono text-white">12</span>
                           <button className="w-8 h-8 rounded-full bg-zinc-100 hover:bg-white flex items-center justify-center text-zinc-950 font-bold">+</button>
                         </div>
                       </div>

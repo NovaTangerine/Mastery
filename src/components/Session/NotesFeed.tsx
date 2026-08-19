@@ -31,6 +31,8 @@ export interface NotesFeedProps {
   handleDeleteNote: any;
   handleAddTag: any;
   handleRemoveTag: any;
+  handleRenameTag?: (oldTag: string, newTag: string) => Promise<void> | void;
+  handleDeleteTagGlobally?: (tag: string) => Promise<void> | void;
   taggingStatus: any;
   handleRetryTagging: any;
   availableSessions: any[];
@@ -99,6 +101,8 @@ export function NotesFeed(props: NotesFeedProps) {
     handleDeleteNote,
     handleAddTag,
     handleRemoveTag,
+    handleRenameTag,
+    handleDeleteTagGlobally,
     taggingStatus,
     handleRetryTagging,
     availableSessions,
@@ -212,7 +216,13 @@ export function NotesFeed(props: NotesFeedProps) {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
+            <div 
+              className="flex-1 overflow-y-auto custom-scrollbar"
+              style={{
+                maskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0px, rgba(0,0,0,1) 120px)',
+                WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0px, rgba(0,0,0,1) 120px)'
+              }}
+            >
               {Object.entries(filteredNotesBySession)
                 .filter(([sid]) => filterScope === 'global' ? true : sid === (activeSession?.id || 'global'))
                 .map(([sessionId, groupNotes]) => (
@@ -229,6 +239,7 @@ export function NotesFeed(props: NotesFeedProps) {
                             onDelete={handleDeleteNote}
                             onAddTag={handleAddTag}
                             onRemoveTag={handleRemoveTag}
+                            onRenameTag={handleRenameTag}
                             taggingStatus={taggingStatus[note.id]}
                             onRetryTagging={handleRetryTagging}
                             onTagClick={setFilteredTag}
@@ -256,13 +267,13 @@ export function NotesFeed(props: NotesFeedProps) {
         ) : (
           <>
             {/* Compact Session Header */}
-            <div className={`grid transition-[grid-template-rows,margin,opacity] duration-300 ease-in-out lg:!grid-rows-[1fr] lg:!opacity-100 lg:!mb-6 lg:!pointer-events-auto ${isEditingSessionDetails ? 'grid-rows-[1fr] opacity-100 mb-3 sm:mb-6 pointer-events-auto' : 'grid-rows-[0fr] opacity-0 mb-0 pointer-events-none'}`}>
-              <div className="overflow-hidden min-h-0 mx-4 sm:mx-6 lg:mx-8">
-                <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-3 sm:p-4 flex flex-col shrink-0">
+            <div className={`grid transition-[grid-template-rows,margin,opacity] duration-300 ease-in-out lg:!grid-rows-[1fr] lg:!opacity-100 lg:!mb-0 lg:!pointer-events-auto ${isEditingSessionDetails ? 'grid-rows-[1fr] opacity-100 mb-0 pointer-events-auto' : 'grid-rows-[0fr] opacity-0 mb-0 pointer-events-none'}`}>
+              <div className="overflow-hidden min-h-0 border-b border-zinc-800/50">
+                <div className="px-4 py-4 sm:px-6 lg:px-8 flex flex-col shrink-0">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2 min-w-0 group/title flex-1">
                       {isEditingTitleInline ? (
-                        <div className="flex items-center gap-1 w-full bg-zinc-950 border border-zinc-800 focus-within:border-zinc-600 rounded pr-0.5">
+                        <div className="flex items-center gap-1 w-full max-w-md bg-zinc-900 border border-zinc-700 focus-within:border-zinc-500 rounded-lg pr-0.5 shadow-sm overflow-hidden">
                           <input
                             type="text"
                             value={inlineTitleInput}
@@ -278,7 +289,7 @@ export function NotesFeed(props: NotesFeedProps) {
                               }
                             }}
                             autoFocus
-                            className="text-xl font-medium bg-transparent px-2 py-0.5 focus:outline-none w-full text-white"
+                            className="text-xl font-medium bg-transparent px-3 py-1.5 focus:outline-none w-full text-white"
                           />
                           <button
                             onClick={async (e) => {
@@ -288,7 +299,7 @@ export function NotesFeed(props: NotesFeedProps) {
                               }
                               setIsEditingTitleInline(false);
                             }}
-                            className="p-1.5 text-zinc-400 hover:text-green-400 hover:bg-zinc-800 rounded transition-colors"
+                            className="p-2 text-zinc-400 hover:text-green-400 hover:bg-zinc-800 transition-colors shrink-0"
                           >
                             <Check className="w-4 h-4" />
                           </button>
@@ -297,7 +308,7 @@ export function NotesFeed(props: NotesFeedProps) {
                               e.stopPropagation();
                               setIsEditingTitleInline(false);
                             }}
-                            className="p-1.5 text-zinc-400 hover:text-red-400 hover:bg-zinc-800 rounded transition-colors"
+                            className="p-2 text-zinc-400 hover:text-red-400 hover:bg-zinc-800 transition-colors shrink-0"
                           >
                             <X className="w-4 h-4" />
                           </button>
@@ -366,7 +377,7 @@ export function NotesFeed(props: NotesFeedProps) {
 
                   <div className={`grid transition-all duration-300 ease-in-out border-zinc-800/50 ${isEditingSessionDetails ? 'grid-rows-[1fr] opacity-100 mt-3 pt-3 sm:mt-4 sm:pt-4 border-t' : 'grid-rows-[0fr] opacity-0 pointer-events-none mt-0 pt-0 border-t-0'}`}>
                     <div className="overflow-hidden min-h-0">
-                      <div className="flex flex-col max-w-sm mx-auto w-full gap-4 sm:gap-5 pt-4 pb-6 sm:py-4">
+                      <div className="flex flex-col w-full max-w-sm mx-auto gap-4 sm:gap-5 pt-4 pb-6 sm:py-4">
                         <div className="flex flex-col justify-end space-y-1.5">
                           <div className="flex items-center justify-between min-h-[16px]">
                             <label className="text-[11px] font-normal text-zinc-500 uppercase tracking-[.072em]">Session Hours</label>
@@ -467,7 +478,7 @@ export function NotesFeed(props: NotesFeedProps) {
                           )}
                         </div>
                       </div>
-                      <div className="flex justify-end gap-3 mt-3 pt-3 sm:mt-4 sm:pt-4 border-t border-zinc-800/50">
+                      <div className="flex justify-end gap-3 mt-3 pt-3 sm:mt-4 sm:pt-4 border-t border-zinc-800/50 w-full max-w-sm mx-auto">
                         <button
                           onClick={() => {
                             setIsEditingSessionDetails(false);
@@ -495,6 +506,10 @@ export function NotesFeed(props: NotesFeedProps) {
             <div 
               ref={parentRef} 
               className="flex-1 overflow-y-auto pr-2 custom-scrollbar"
+              style={{
+                maskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0px, rgba(0,0,0,1) 120px)',
+                WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0px, rgba(0,0,0,1) 120px)'
+              }}
             >
               {sessionNotes.length >= notesLimit && (
                 <div className="flex justify-center mb-6 mt-2">
@@ -543,6 +558,7 @@ export function NotesFeed(props: NotesFeedProps) {
                             onDelete={handleDeleteNote}
                             onAddTag={handleAddTag}
                             onRemoveTag={handleRemoveTag}
+                            onRenameTag={handleRenameTag}
                             taggingStatus={taggingStatus[note.id]}
                             onRetryTagging={handleRetryTagging}
                             onTagClick={setFilteredTag}
