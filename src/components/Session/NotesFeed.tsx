@@ -165,7 +165,7 @@ export function NotesFeed(props: NotesFeedProps) {
       )}
       style={{ transform: `translateX(${(1 - ['sessions', 'notes', 'trackers'].indexOf(activeMobileTab)) * 100}%)` }}
     >
-      <div className="w-full mx-auto flex flex-col h-full min-h-0 flex-1 pt-4 lg:pt-0">
+      <div className="w-full mx-auto flex flex-col h-full min-h-0 flex-1">
         {filteredTag ? (
           <>
             <div className="mb-3 sm:mb-6 bg-zinc-900 border border-zinc-700/50 rounded-2xl p-4 mx-4 sm:mx-6 lg:mx-8 shrink-0 flex items-center justify-between shadow-lg mt-4 lg:mt-6">
@@ -218,10 +218,12 @@ export function NotesFeed(props: NotesFeedProps) {
 
             <div 
               className="flex-1 overflow-y-auto custom-scrollbar"
+              /* Opacity fade under header (disabled for now):
               style={{
                 maskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0px, rgba(0,0,0,1) 120px)',
                 WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0px, rgba(0,0,0,1) 120px)'
               }}
+              */
             >
               {Object.entries(filteredNotesBySession)
                 .filter(([sid]) => filterScope === 'global' ? true : sid === (activeSession?.id || 'global'))
@@ -273,7 +275,7 @@ export function NotesFeed(props: NotesFeedProps) {
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2 min-w-0 group/title flex-1">
                       {isEditingTitleInline ? (
-                        <div className="flex items-center gap-1 w-full max-w-md bg-zinc-900 border border-zinc-700 focus-within:border-zinc-500 rounded-lg pr-0.5 shadow-sm overflow-hidden">
+                        <div className="flex items-center gap-1 w-full max-w-md bg-transparent border border-zinc-700 focus-within:border-zinc-500 rounded-lg pr-0.5 shadow-sm overflow-hidden">
                           <input
                             type="text"
                             value={inlineTitleInput}
@@ -289,7 +291,7 @@ export function NotesFeed(props: NotesFeedProps) {
                               }
                             }}
                             autoFocus
-                            className="text-xl font-medium bg-transparent px-3 py-1.5 focus:outline-none w-full text-white"
+                            className="text-xl lg:text-[22px] font-normal bg-transparent px-3 py-1.5 focus:outline-none w-full text-white"
                           />
                           <button
                             onClick={async (e) => {
@@ -323,7 +325,7 @@ export function NotesFeed(props: NotesFeedProps) {
                           }}
                           title="Edit Session Title"
                         >
-                          <h2 className="text-xl font-medium truncate border-b border-transparent group-hover/heading:border-zinc-700 transition-colors pb-0.5 text-white">
+                          <h2 className="text-xl lg:text-[22px] font-normal truncate border-b border-transparent group-hover/heading:border-zinc-700 transition-colors pb-0.5 text-white">
                             {activeSession.name || activeSession.progressMarker}
                           </h2>
                           <PenLine className="w-4 h-4 text-zinc-500 opacity-100 sm:opacity-0 sm:group-hover/title:opacity-100 transition-opacity shrink-0" />
@@ -506,10 +508,12 @@ export function NotesFeed(props: NotesFeedProps) {
             <div 
               ref={parentRef} 
               className="flex-1 overflow-y-auto pr-2 custom-scrollbar"
+              /* Opacity fade under session header (disabled for now):
               style={{
                 maskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0px, rgba(0,0,0,1) 120px)',
                 WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0px, rgba(0,0,0,1) 120px)'
               }}
+              */
             >
               {sessionNotes.length >= notesLimit && (
                 <div className="flex justify-center mb-6 mt-2">
@@ -549,7 +553,7 @@ export function NotesFeed(props: NotesFeedProps) {
                     items={sessionNotes.map(n => n.id)}
                     strategy={verticalListSortingStrategy}
                   >
-                    <div className="w-full flex flex-col gap-0 divide-y divide-zinc-800/50 border-t border-zinc-800/50 mt-2 lg:mt-0">
+                    <div className="w-full flex flex-col gap-0 divide-y divide-zinc-800/50">
                       {sessionNotes.map((note) => (
                         <div key={note.id} className="w-full">
                           <SortableNote 
@@ -575,7 +579,7 @@ export function NotesFeed(props: NotesFeedProps) {
             </div>
 
             {/* Input Area */}
-            <div className="shrink-0 bg-zinc-950 pt-2 hidden lg:block px-4 sm:px-6 lg:px-8 pb-4 lg:pb-8">
+            <div className="shrink-0 bg-transparent pt-2 hidden lg:block px-4 sm:px-6 lg:px-8 pb-4 lg:pb-8">
               <LayoutGroup>
                 <div 
                   ref={noteInputContainerRef}
