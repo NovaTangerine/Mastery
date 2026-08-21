@@ -166,7 +166,7 @@ export function SidebarSessionItem({ session, ctx }: { session: GameSession, ctx
                   <MoreVertical className="w-4 h-4" />
                 </button>
                 {activeMenuId === session.id && activeMenuType === 'session' && (
-                  <div className="absolute right-0 top-full mt-1 w-32 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl overflow-hidden z-[100] py-1" onClick={(e) => e.stopPropagation()}>
+                  <div className="absolute right-0 top-full mt-1 min-w-[130px] w-auto bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl overflow-hidden z-[100] py-1 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={async (e) => {
                         e.stopPropagation();
@@ -175,9 +175,9 @@ export function SidebarSessionItem({ session, ctx }: { session: GameSession, ctx
                         setActiveMenuId(null);
                         setActiveMenuType(null);
                       }}
-                      className="w-full text-left px-3 py-1.5 text-xs text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 flex items-center gap-2"
+                      className="w-full text-left px-3 py-1.5 text-xs text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 flex items-center gap-2 whitespace-nowrap"
                     >
-                      <PenLine className="w-3.5 h-3.5" /> Rename
+                      <PenLine className="w-3.5 h-3.5 shrink-0" /> <span>Rename</span>
                     </button>
                     <button
                       onClick={async (e) => {
@@ -187,9 +187,9 @@ export function SidebarSessionItem({ session, ctx }: { session: GameSession, ctx
                         setActiveMenuId(null);
                         setActiveMenuType(null);
                       }}
-                      className="w-full text-left px-3 py-1.5 text-xs text-red-500 hover:text-red-400 hover:bg-zinc-800 flex items-center gap-2 border-t border-zinc-800/50 mt-1 pt-1.5"
+                      className="w-full text-left px-3 py-1.5 text-xs text-red-500 hover:text-red-400 hover:bg-zinc-800 flex items-center gap-2 border-t border-zinc-800/50 mt-1 pt-1.5 whitespace-nowrap"
                     >
-                      <Trash2 className="w-3.5 h-3.5" /> Delete
+                      <Trash2 className="w-3.5 h-3.5 shrink-0" /> <span>Delete</span>
                     </button>
                   </div>
                 )}
@@ -515,7 +515,7 @@ export function SessionSidebar(props: SessionSidebarProps) {
                               <MoreVertical className="w-3.5 h-3.5" />
                             </button>
                             {activeMenuId === group.id && activeMenuType === 'group' && (
-                              <div className="absolute right-0 top-full mt-1 w-36 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl overflow-hidden z-50 py-1" onClick={(e) => e.stopPropagation()}>
+                              <div className="absolute right-0 top-full mt-1 min-w-[140px] w-auto bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl overflow-hidden z-50 py-1 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -523,9 +523,9 @@ export function SessionSidebar(props: SessionSidebarProps) {
                                     setActiveMenuId(null);
                                     setActiveMenuType(null);
                                   }}
-                                  className="sm:hidden w-full text-left px-3 py-1.5 text-xs text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 flex items-center gap-2"
+                                  className="sm:hidden w-full text-left px-3 py-1.5 text-xs text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 flex items-center gap-2 whitespace-nowrap"
                                 >
-                                  <Plus className="w-3.5 h-3.5" /> Add Session
+                                  <Plus className="w-3.5 h-3.5 shrink-0" /> <span>Add Session</span>
                                 </button>
                                 <button
                                   onClick={(e) => {
@@ -536,9 +536,9 @@ export function SessionSidebar(props: SessionSidebarProps) {
                                     setActiveMenuId(null);
                                     setActiveMenuType(null);
                                   }}
-                                  className="w-full text-left px-3 py-1.5 text-xs text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 flex items-center gap-2"
+                                  className="w-full text-left px-3 py-1.5 text-xs text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 flex items-center gap-2 whitespace-nowrap"
                                 >
-                                  <PenLine className="w-3.5 h-3.5" /> Edit Group
+                                  <PenLine className="w-3.5 h-3.5 shrink-0" /> <span>Edit Group</span>
                                 </button>
                                 <button
                                   onClick={(e) => {
@@ -547,9 +547,9 @@ export function SessionSidebar(props: SessionSidebarProps) {
                                     setActiveMenuId(null);
                                     setActiveMenuType(null);
                                   }}
-                                  className="w-full text-left px-3 py-1.5 text-xs text-red-500 hover:text-red-400 hover:bg-zinc-800 flex items-center gap-2 border-t border-zinc-800/50 mt-1 pt-1.5"
+                                  className="w-full text-left px-3 py-1.5 text-xs text-red-500 hover:text-red-400 hover:bg-zinc-800 flex items-center gap-2 border-t border-zinc-800/50 mt-1 pt-1.5 whitespace-nowrap"
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" /> Delete
+                                  <Trash2 className="w-3.5 h-3.5 shrink-0" /> <span>Delete</span>
                                 </button>
                               </div>
                             )}

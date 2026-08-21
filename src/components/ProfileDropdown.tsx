@@ -101,9 +101,9 @@ export default function ProfileDropdown({ isOpen, onClose }: ProfileDropdownProp
                 onClose();
                 navigateTo('dashboard');
               }}
-              className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:text-white hover:bg-zinc-800/80 rounded-xl transition-colors text-left"
+              className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:text-white hover:bg-zinc-800/80 rounded-xl transition-colors text-left whitespace-nowrap"
             >
-              <LayoutGrid className="w-4 h-4 text-zinc-400" />
+              <LayoutGrid className="w-4 h-4 text-zinc-400 shrink-0" />
               <span>Library Dashboard</span>
             </button>
           </div>
@@ -115,13 +115,13 @@ export default function ProfileDropdown({ isOpen, onClose }: ProfileDropdownProp
                 onClose();
                 navigateTo('profile-mockups');
               }}
-              className="w-full flex items-center justify-between px-3 py-2 text-sm text-amber-400/90 hover:text-amber-300 hover:bg-amber-400/10 rounded-xl transition-colors text-left font-medium"
+              className="w-full flex items-center justify-between px-3 py-2 text-sm text-amber-400/90 hover:text-amber-300 hover:bg-amber-400/10 rounded-xl transition-colors text-left font-medium whitespace-nowrap gap-2"
             >
-              <span className="flex items-center gap-3">
-                <Sparkles className="w-4 h-4 text-amber-400" />
+              <span className="flex items-center gap-3 whitespace-nowrap">
+                <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
                 <span>Profile Options Lab</span>
               </span>
-              <span className="text-[10px] bg-amber-400/20 text-amber-300 px-1.5 py-0.5 rounded font-bold">5 UX</span>
+              <span className="text-[10px] bg-amber-400/20 text-amber-300 px-1.5 py-0.5 rounded font-bold shrink-0">5 UX</span>
             </button>
           </div>
 
@@ -132,9 +132,9 @@ export default function ProfileDropdown({ isOpen, onClose }: ProfileDropdownProp
                 onClose();
                 signOut();
               }}
-              className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-colors text-left font-medium"
+              className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-colors text-left font-medium whitespace-nowrap"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-4 h-4 shrink-0" />
               <span>Sign Out</span>
             </button>
           </div>

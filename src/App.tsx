@@ -59,6 +59,7 @@ import NoteVisualsMockupView from './views/NoteVisualsMockupView';
 import TrackersV2PostMortemView from './views/TrackersV2PostMortemView';
 import UXDocumentationView from './views/UXDocumentationView';
 import ProfileMockupView from './views/ProfileMockupView';
+import TagGroupingMockupView from './views/TagGroupingMockupView';
 
 import ProfileDropdown from './components/ProfileDropdown';
 import ProfileDrawer from './components/ProfileDrawer';
@@ -214,96 +215,102 @@ function MainApp() {
                       </button>
                       
                       {/* Dropdown Menu */}
-                      <div className="absolute top-full left-0 mt-2 w-48 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all flex flex-col overflow-hidden z-50">
+                      <div className="absolute top-full left-0 mt-2 min-w-max w-52 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all flex flex-col overflow-hidden z-50 whitespace-nowrap">
                         <button 
                           onClick={() => { clearHistory(); navigateTo('home', null, null); }}
-                          className={`px-4 py-2 text-left text-sm transition-colors ${view === 'home' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                          className={`px-4 py-2 text-left text-sm transition-colors whitespace-nowrap ${view === 'home' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
                         >
                           Cartridge Home
                         </button>
                         <button 
                           onClick={() => { clearHistory(); navigateTo('transition-mockups', null, null); }}
-                          className={`px-4 py-2 text-left text-sm transition-colors ${view === 'transition-mockups' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                          className={`px-4 py-2 text-left text-sm transition-colors whitespace-nowrap ${view === 'transition-mockups' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
                         >
                           Transition Mockups
                         </button>
                         <button 
                           onClick={() => { clearHistory(); navigateTo('image-loading-mockups', null, null); }}
-                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 ${view === 'image-loading-mockups' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 whitespace-nowrap ${view === 'image-loading-mockups' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
                         >
                           Box Art Mockups
                         </button>
                         <button 
                           onClick={() => { clearHistory(); navigateTo('hover-effect-mockups', null, null); }}
-                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 ${view === 'hover-effect-mockups' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 whitespace-nowrap ${view === 'hover-effect-mockups' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
                         >
                           Hover Effect Mockups
                         </button>
                         <button 
                           onClick={() => { clearHistory(); navigateTo('texture-mockups', null, null); }}
-                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 ${view === 'texture-mockups' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 whitespace-nowrap ${view === 'texture-mockups' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
                         >
                           Background Textures
                         </button>
                         <button 
                           onClick={() => { clearHistory(); navigateTo('pill-nav-mockups', null, null); }}
-                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 ${view === 'pill-nav-mockups' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 whitespace-nowrap ${view === 'pill-nav-mockups' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
                         >
                           Pill Nav Bar
                         </button>
                         <button 
                           onClick={() => { clearHistory(); navigateTo('image-reveal-logic', null, null); }}
-                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 ${view === 'image-reveal-logic' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 whitespace-nowrap ${view === 'image-reveal-logic' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
                         >
                           Image Reveal Logic
                         </button>
                         <button 
                           onClick={() => { clearHistory(); navigateTo('light-mode-library-mockup', null, null); }}
-                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 ${view === 'light-mode-library-mockup' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 whitespace-nowrap ${view === 'light-mode-library-mockup' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
                         >
                           Light Theme Library
                         </button>
                         <button 
                           onClick={() => { clearHistory(); navigateTo('session-list-mockup', null, null); }}
-                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 ${view === 'session-list-mockup' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 whitespace-nowrap ${view === 'session-list-mockup' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
                         >
                           Session List UI
                         </button>
                         <button 
                           onClick={() => { clearHistory(); navigateTo('trackers-sidebar-mockup', null, null); }}
-                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 ${view === 'trackers-sidebar-mockup' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 whitespace-nowrap ${view === 'trackers-sidebar-mockup' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
                         >
                           Trackers UI
                         </button>
                         <button 
                           onClick={() => { clearHistory(); navigateTo('tracker-modal-mockup', null, null); }}
-                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 ${view === 'tracker-modal-mockup' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 whitespace-nowrap ${view === 'tracker-modal-mockup' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
                         >
                           Tracker Modal UI
                         </button>
                         <button 
                           onClick={() => { clearHistory(); navigateTo('tracker-sync-mockup', null, null); }}
-                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 ${view === 'tracker-sync-mockup' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 whitespace-nowrap ${view === 'tracker-sync-mockup' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
                         >
                           Tracker Sync UI
                         </button>
                         <button 
                           onClick={() => { clearHistory(); navigateTo('note-visuals-mockup', null, null); }}
-                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 ${view === 'note-visuals-mockup' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 whitespace-nowrap ${view === 'note-visuals-mockup' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
                         >
                           Note Visuals UI
                         </button>
                         <button 
                           onClick={() => { clearHistory(); navigateTo('profile-mockups', null, null); }}
-                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 text-amber-400/90 font-medium ${view === 'profile-mockups' ? 'bg-zinc-800 text-amber-300' : 'hover:text-amber-300 hover:bg-amber-400/10'}`}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 text-amber-400/90 font-medium whitespace-nowrap ${view === 'profile-mockups' ? 'bg-zinc-800 text-amber-300' : 'hover:text-amber-300 hover:bg-amber-400/10'}`}
                         >
                           Profile Mockups (5 UX)
                         </button>
                         <button 
                           onClick={() => { clearHistory(); navigateTo('trackers-v2-post-mortem', null, null); }}
-                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 rounded-b-xl ${view === 'trackers-v2-post-mortem' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 whitespace-nowrap ${view === 'trackers-v2-post-mortem' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
                         >
                           Trackers V2 Post-Mortem
+                        </button>
+                        <button 
+                          onClick={() => { clearHistory(); navigateTo('tag-grouping-mockup', null, null); }}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 rounded-b-xl text-indigo-400 font-medium whitespace-nowrap ${view === 'tag-grouping-mockup' ? 'bg-zinc-800 text-indigo-300' : 'hover:text-indigo-300 hover:bg-indigo-500/10'}`}
+                        >
+                          Tag Grouping Heuristic
                         </button>
                       </div>
                     </div>
@@ -321,10 +328,10 @@ function MainApp() {
                       </button>
                       
                       {/* Dropdown Menu */}
-                      <div className="absolute top-full left-0 mt-2 w-56 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all flex flex-col overflow-hidden z-50">
+                      <div className="absolute top-full left-0 mt-2 min-w-max w-56 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all flex flex-col overflow-hidden z-50 whitespace-nowrap">
                         <button 
                           onClick={() => { clearHistory(); navigateTo('ux-documentation', null, null); }}
-                          className={`px-4 py-2 text-left text-sm transition-colors rounded-lg ${view === 'ux-documentation' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
+                          className={`px-4 py-2 text-left text-sm transition-colors rounded-lg whitespace-nowrap ${view === 'ux-documentation' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50'}`}
                         >
                           User Journey Architecture
                         </button>
@@ -520,6 +527,7 @@ function MainApp() {
             {view === 'trackers-v2-post-mortem' && <TrackersV2PostMortemView />}
             {view === 'ux-documentation' && <UXDocumentationView />}
             {view === 'profile-mockups' && <ProfileMockupView />}
+            {view === 'tag-grouping-mockup' && <TagGroupingMockupView />}
           </div>
         </main>
 

@@ -87,7 +87,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
                 <div 
                   ref={refs.setFloating}
                   style={floatingStyles}
-                  className="w-32 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl overflow-hidden z-[9999] py-1"
+                  className="min-w-[140px] w-auto bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl overflow-hidden z-[9999] py-1 whitespace-nowrap"
                 >
                   <button
                     onClick={(e) => {
@@ -95,10 +95,10 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
                       onEdit(metric.id);
                       setIsMenuOpen(false);
                     }}
-                    className="w-full px-3 py-2 text-left text-xs text-zinc-300 hover:bg-zinc-800 flex items-center transition-colors gap-2"
+                    className="w-full px-3 py-2 text-left text-xs text-zinc-300 hover:bg-zinc-800 flex items-center transition-colors gap-2 whitespace-nowrap"
                   >
-                    <Edit2 className="w-3.5 h-3.5" />
-                    Edit Tracker
+                    <Edit2 className="w-3.5 h-3.5 shrink-0" />
+                    <span>Edit Tracker</span>
                   </button>
                   <div className="h-px bg-zinc-800 my-1 font-bold" />
                   <button
@@ -107,10 +107,10 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
                       onDelete(metric.id);
                       setIsMenuOpen(false);
                     }}
-                    className="w-full px-3 py-2 text-left text-xs text-red-500 font-medium hover:bg-zinc-800 flex items-center transition-colors gap-2"
+                    className="w-full px-3 py-2 text-left text-xs text-red-500 font-medium hover:bg-zinc-800 flex items-center transition-colors gap-2 whitespace-nowrap"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    Delete Tracker
+                    <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                    <span>Delete Tracker</span>
                   </button>
                 </div>
               )}
@@ -196,7 +196,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
                 <div 
                   ref={refs.setFloating}
                   style={floatingStyles}
-                  className="w-32 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl overflow-hidden z-[9999] py-1"
+                  className="min-w-[140px] w-auto bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl overflow-hidden z-[9999] py-1 whitespace-nowrap"
                 >
                   <button
                     onClick={(e) => {
@@ -204,24 +204,24 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
                       onEdit(metric.id);
                       setIsMenuOpen(false);
                     }}
-                    className="w-full px-3 py-2 text-left text-xs text-zinc-300 hover:bg-zinc-800 flex items-center transition-colors gap-2"
+                    className="w-full px-3 py-2 text-left text-xs text-zinc-300 hover:bg-zinc-800 flex items-center transition-colors gap-2 whitespace-nowrap"
                   >
-                  <Edit2 className="w-3.5 h-3.5" />
-                  Edit Tracker
-                </button>
-                <div className="h-px bg-zinc-800 my-1 font-bold" />
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(metric.id);
-                    setIsMenuOpen(false);
-                  }}
-                  className="w-full px-3 py-2 text-left text-xs text-red-500 font-medium hover:bg-zinc-800 flex items-center transition-colors gap-2"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  Delete Tracker
-                </button>
-              </div>
+                    <Edit2 className="w-3.5 h-3.5 shrink-0" />
+                    <span>Edit Tracker</span>
+                  </button>
+                  <div className="h-px bg-zinc-800 my-1 font-bold" />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(metric.id);
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs text-red-500 font-medium hover:bg-zinc-800 flex items-center transition-colors gap-2 whitespace-nowrap"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                    <span>Delete Tracker</span>
+                  </button>
+                </div>
               )}
             </FloatingPortal>
           </div>

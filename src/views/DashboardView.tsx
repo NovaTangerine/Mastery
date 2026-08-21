@@ -384,25 +384,25 @@ export default function DashboardView() {
                 </button>
                 
                 {openMenuId === game.id && (
-                  <div className="absolute left-0 top-full mt-2 w-48 bg-zinc-800 rounded-xl shadow-xl z-[60] border border-zinc-700 overflow-hidden">
+                  <div className="absolute left-0 top-full mt-2 min-w-[180px] w-auto bg-zinc-800 rounded-xl shadow-xl z-[60] border border-zinc-700 overflow-hidden whitespace-nowrap">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         setOpenMenuId(null);
                         setSyncTargetGame(game);
                       }}
-                      className="hidden sm:flex w-full text-left px-4 py-3 text-zinc-300 hover:text-amber-400 hover:bg-zinc-700/50 items-center gap-2 transition-colors font-bold text-sm border-b border-zinc-700/50"
+                      className="hidden sm:flex w-full text-left px-4 py-3 text-zinc-300 hover:text-amber-400 hover:bg-zinc-700/50 items-center gap-2 transition-colors font-bold text-sm border-b border-zinc-700/50 whitespace-nowrap"
                     >
-                      <RefreshCw className="w-4 h-4" />
-                      Sync with IGDB
+                      <RefreshCw className="w-4 h-4 shrink-0" />
+                      <span>Sync with IGDB</span>
                     </button>
                     {game.title === 'Zero Parades: For Dead Spies' && (
                       <button
                         onClick={(e) => handleToggleBoxArt(e, game)}
-                        className="w-full text-left px-4 py-3 text-zinc-300 hover:bg-zinc-700/50 flex items-center gap-2 transition-colors font-semibold text-sm border-b border-zinc-700/50"
+                        className="w-full text-left px-4 py-3 text-zinc-300 hover:bg-zinc-700/50 flex items-center gap-2 transition-colors font-semibold text-sm border-b border-zinc-700/50 whitespace-nowrap"
                       >
-                        <RefreshCw className="w-4 h-4" />
-                        Swap Box Art
+                        <RefreshCw className="w-4 h-4 shrink-0" />
+                        <span>Swap Box Art</span>
                       </button>
                     )}
                     <button
@@ -411,10 +411,10 @@ export default function DashboardView() {
                         setOpenMenuId(null);
                         handleDeleteClick(e, game);
                       }}
-                      className="w-full text-left px-4 py-3 text-red-400 hover:bg-zinc-700/50 flex items-center gap-2 transition-colors font-bold text-sm"
+                      className="w-full text-left px-4 py-3 text-red-400 hover:bg-zinc-700/50 flex items-center gap-2 transition-colors font-bold text-sm whitespace-nowrap"
                     >
-                      <Trash2 className="w-4 h-4" />
-                      Delete Game
+                      <Trash2 className="w-4 h-4 shrink-0" />
+                      <span>Delete Game</span>
                     </button>
                   </div>
                 )}
@@ -456,7 +456,7 @@ export default function DashboardView() {
                   
                   {openMenuId === game.id && (
                     <div 
-                      className="absolute right-0 top-full mt-2 w-48 bg-zinc-800 rounded-xl shadow-xl z-[60] border border-zinc-700 overflow-hidden"
+                      className="absolute right-0 top-full mt-2 min-w-[180px] w-auto bg-zinc-800 rounded-xl shadow-xl z-[60] border border-zinc-700 overflow-hidden whitespace-nowrap"
                     >
                       <button
                         onClick={(e) => {
@@ -464,18 +464,18 @@ export default function DashboardView() {
                           setOpenMenuId(null);
                           setSyncTargetGame(game);
                         }}
-                        className="hidden sm:flex w-full text-left px-4 py-3 text-zinc-300 hover:text-amber-400 hover:bg-zinc-700/50 items-center gap-2 transition-colors font-bold text-sm border-b border-zinc-700/50"
+                        className="hidden sm:flex w-full text-left px-4 py-3 text-zinc-300 hover:text-amber-400 hover:bg-zinc-700/50 items-center gap-2 transition-colors font-bold text-sm border-b border-zinc-700/50 whitespace-nowrap"
                       >
-                        <RefreshCw className="w-4 h-4" />
-                        Sync with IGDB
+                        <RefreshCw className="w-4 h-4 shrink-0" />
+                        <span>Sync with IGDB</span>
                       </button>
                     {game.title === 'Zero Parades: For Dead Spies' && (
                       <button
                         onClick={(e) => handleToggleBoxArt(e, game)}
-                        className="w-full text-left px-4 py-3 text-zinc-300 hover:bg-zinc-700/50 flex items-center gap-2 transition-colors font-semibold text-sm border-b border-zinc-700/50"
+                        className="w-full text-left px-4 py-3 text-zinc-300 hover:bg-zinc-700/50 flex items-center gap-2 transition-colors font-semibold text-sm border-b border-zinc-700/50 whitespace-nowrap"
                       >
-                        <RefreshCw className="w-4 h-4" />
-                        Swap Box Art
+                        <RefreshCw className="w-4 h-4 shrink-0" />
+                        <span>Swap Box Art</span>
                       </button>
                     )}
                       <button
@@ -484,10 +484,10 @@ export default function DashboardView() {
                           setOpenMenuId(null);
                           handleDeleteClick(e, game);
                         }}
-                        className="w-full text-left px-4 py-3 text-red-400 hover:bg-zinc-700/50 flex items-center gap-2 transition-colors font-bold text-sm"
+                        className="w-full text-left px-4 py-3 text-red-400 hover:bg-zinc-700/50 flex items-center gap-2 transition-colors font-bold text-sm whitespace-nowrap"
                       >
-                        <Trash2 className="w-4 h-4" />
-                        Delete Game
+                        <Trash2 className="w-4 h-4 shrink-0" />
+                        <span>Delete Game</span>
                       </button>
                     </div>
                   )}

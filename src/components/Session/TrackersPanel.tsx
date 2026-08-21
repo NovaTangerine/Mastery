@@ -216,7 +216,7 @@ export function SessionTagItem({ tag, count, setFilteredTag, scrollToTab, onRequ
           <div 
             ref={refs.setFloating}
             style={floatingStyles}
-            className="w-36 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl z-[9999] py-1 flex flex-col"
+            className="min-w-[140px] w-auto bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl z-[9999] py-1 flex flex-col whitespace-nowrap"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -225,10 +225,10 @@ export function SessionTagItem({ tag, count, setFilteredTag, scrollToTab, onRequ
                 setIsEditing(true);
                 setEditValue(tag.replace(/^#/, ''));
               }}
-              className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors text-left"
+              className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors text-left whitespace-nowrap"
             >
-              <Edit2 className="w-3.5 h-3.5 text-zinc-400" />
-              Edit tag
+              <Edit2 className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+              <span>Edit tag</span>
             </button>
             <button
               onClick={(e) => {
@@ -236,10 +236,10 @@ export function SessionTagItem({ tag, count, setFilteredTag, scrollToTab, onRequ
                 setIsMenuOpen(false);
                 onRequestDeleteTag(tag, count);
               }}
-              className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors text-left border-t border-zinc-800/60 mt-0.5 pt-1.5"
+              className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors text-left border-t border-zinc-800/60 mt-0.5 pt-1.5 whitespace-nowrap"
             >
-              <Trash2 className="w-3.5 h-3.5" />
-              Delete tag
+              <Trash2 className="w-3.5 h-3.5 shrink-0" />
+              <span>Delete tag</span>
             </button>
           </div>
         )}

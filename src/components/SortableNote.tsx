@@ -162,7 +162,7 @@ function NoteTagPill({
           <div 
             ref={refs.setFloating}
             style={floatingStyles}
-            className="w-36 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl z-[9999] py-1 flex flex-col"
+            className="min-w-[150px] w-auto bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl z-[9999] py-1 flex flex-col whitespace-nowrap"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -171,20 +171,20 @@ function NoteTagPill({
                 setIsEditing(true);
                 setEditValue(tag.replace(/^#/, ''));
               }}
-              className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors text-left"
+              className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors text-left whitespace-nowrap"
             >
-              <Edit2 className="w-3.5 h-3.5 text-zinc-400" />
-              Edit tag
+              <Edit2 className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+              <span>Edit tag</span>
             </button>
             <button
               onClick={() => {
                 setIsMenuOpen(false);
                 onRemoveTag(noteId, tag);
               }}
-              className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors text-left border-t border-zinc-800/60 mt-0.5 pt-1.5"
+              className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors text-left border-t border-zinc-800/60 mt-0.5 pt-1.5 whitespace-nowrap"
             >
-              <X className="w-3.5 h-3.5" />
-              Remove from note
+              <X className="w-3.5 h-3.5 shrink-0" />
+              <span>Remove from note</span>
             </button>
           </div>
         )}
@@ -612,7 +612,7 @@ export const SortableNote = memo(({
                 <div 
                   ref={refs.setFloating}
                   style={floatingStyles}
-                  className="w-48 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl z-[9999] py-1 flex flex-col"
+                  className="min-w-[180px] w-auto bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl z-[9999] py-1 flex flex-col whitespace-nowrap"
                 >
                   <button
                     onClick={(e) => {
@@ -621,10 +621,10 @@ export const SortableNote = memo(({
                       setEditingContent(note.content);
                       setIsMenuOpen(false);
                     }}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors whitespace-nowrap"
                   >
-                    <Edit3 className="w-4 h-4" />
-                    Edit Note
+                    <Edit3 className="w-4 h-4 shrink-0" />
+                    <span>Edit Note</span>
                   </button>
 
                   <button
@@ -634,10 +634,10 @@ export const SortableNote = memo(({
                       setNewTagInput('');
                       setIsMenuOpen(false);
                     }}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors whitespace-nowrap"
                   >
-                    <Tag className="w-4 h-4" />
-                    Add Tag
+                    <Tag className="w-4 h-4 shrink-0" />
+                    <span>Add Tag</span>
                   </button>
                   
                   {availableSessions && availableSessions.filter(s => s.id !== (note.sessionId || 'global') && s.id !== (note.isGlobal ? 'global' : null)).length > 0 && onMoveNote && (
@@ -654,22 +654,22 @@ export const SortableNote = memo(({
                       }}
                     >
                       <button
-                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors whitespace-nowrap gap-4"
                         onClick={(e) => {
                           e.stopPropagation();
                           // For touch devices, toggle submenu
                           setIsHoveringMove(!isHoveringMove);
                         }}
                       >
-                        <div className="flex items-center gap-3">
-                          <FolderOutput className="w-4 h-4" />
-                          Move to Session
+                        <div className="flex items-center gap-3 shrink-0 whitespace-nowrap">
+                          <FolderOutput className="w-4 h-4 shrink-0" />
+                          <span>Move to Session</span>
                         </div>
-                        <ArrowRight className="w-3.5 h-3.5" />
+                        <ArrowRight className="w-3.5 h-3.5 shrink-0" />
                       </button>
                       
                       {isHoveringMove && (
-                        <div className="absolute right-full top-0 mr-1 w-48 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl py-1 max-h-64 overflow-y-auto z-[10000]">
+                        <div className="absolute right-full top-0 mr-1 min-w-[180px] w-auto bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl py-1 max-h-64 overflow-y-auto z-[10000] whitespace-nowrap">
                           {availableSessions.filter(s => s.id !== (note.sessionId || 'global') && s.id !== (note.isGlobal ? 'global' : null)).map(session => (
                             <button
                               key={session.id}
@@ -679,7 +679,7 @@ export const SortableNote = memo(({
                                 setIsMenuOpen(false);
                                 setIsHoveringMove(false);
                               }}
-                              className="w-full text-left px-3 py-2 text-sm text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors truncate"
+                              className="w-full text-left px-3 py-2 text-sm text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors truncate whitespace-nowrap"
                             >
                               {session.name}
                             </button>
@@ -695,10 +695,10 @@ export const SortableNote = memo(({
                       setShowDeleteConfirm(true);
                       setIsMenuOpen(false);
                     }}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-500 hover:text-red-400 hover:bg-red-500/10 transition-colors whitespace-nowrap"
                   >
-                    <Trash2 className="w-4 h-4" />
-                    Delete Note
+                    <Trash2 className="w-4 h-4 shrink-0" />
+                    <span>Delete Note</span>
                   </button>
                 </div>
               )}

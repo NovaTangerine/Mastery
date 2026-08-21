@@ -81,7 +81,7 @@ export const AddTrackerMenu: React.FC<AddTrackerMenuProps> = ({ onAddTracker, ex
                     <button
                       key={preset}
                       onClick={() => handleSelectPreset(preset)}
-                      className="w-full px-5 md:px-4 py-4 md:py-2 text-base md:text-sm text-left text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 transition-colors"
+                      className="w-full px-5 md:px-4 py-4 md:py-2 text-base md:text-sm text-left text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 transition-colors whitespace-nowrap truncate"
                     >
                       {preset}
                     </button>
@@ -90,10 +90,10 @@ export const AddTrackerMenu: React.FC<AddTrackerMenuProps> = ({ onAddTracker, ex
                 <div className="h-px bg-zinc-800/50 my-1 md:my-1" />
                 <button
                   onClick={() => setIsCustom(true)}
-                  className="px-5 md:px-4 py-4 md:py-2 text-base md:text-sm text-left text-zinc-400 font-medium hover:bg-zinc-800 hover:text-zinc-100 transition-colors flex items-center justify-between group"
+                  className="px-5 md:px-4 py-4 md:py-2 text-base md:text-sm text-left text-zinc-400 font-medium hover:bg-zinc-800 hover:text-zinc-100 transition-colors flex items-center justify-between group whitespace-nowrap"
                 >
-                  Custom...
-                  <Plus className="w-5 h-5 md:w-4 md:h-4 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity text-zinc-500 md:text-inherit" />
+                  <span>Custom...</span>
+                  <Plus className="w-5 h-5 md:w-4 md:h-4 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity text-zinc-500 md:text-inherit shrink-0" />
                 </button>
               </div>
             ) : (

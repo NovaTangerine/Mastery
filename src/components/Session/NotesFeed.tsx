@@ -379,7 +379,7 @@ export function NotesFeed(props: NotesFeedProps) {
 
                   <div className={`grid transition-all duration-300 ease-in-out border-zinc-800/50 ${isEditingSessionDetails ? 'grid-rows-[1fr] opacity-100 mt-3 pt-3 sm:mt-4 sm:pt-4 border-t' : 'grid-rows-[0fr] opacity-0 pointer-events-none mt-0 pt-0 border-t-0'}`}>
                     <div className="overflow-hidden min-h-0">
-                      <div className="flex flex-col w-full max-w-sm mx-auto gap-4 sm:gap-5 pt-4 pb-6 sm:py-4">
+                      <div className="flex flex-col w-full max-w-sm mx-auto gap-4 sm:gap-5 pt-4 pb-3 sm:pb-4">
                         <div className="flex flex-col justify-end space-y-1.5">
                           <div className="flex items-center justify-between min-h-[16px]">
                             <label className="text-[11px] font-normal text-zinc-500 uppercase tracking-[.072em]">Session Hours</label>
@@ -480,7 +480,7 @@ export function NotesFeed(props: NotesFeedProps) {
                           )}
                         </div>
                       </div>
-                      <div className="flex justify-end gap-3 mt-3 pt-3 sm:mt-4 sm:pt-4 border-t border-zinc-800/50 w-full max-w-sm mx-auto">
+                      <div className="flex justify-end gap-3 mt-6 pt-3 sm:mt-8 sm:pt-4 border-t border-zinc-800/50 w-full">
                         <button
                           onClick={() => {
                             setIsEditingSessionDetails(false);
@@ -504,78 +504,88 @@ export function NotesFeed(props: NotesFeedProps) {
               </div>
             </div>
 
-            {/* Notes Feed List */}
-            <div 
-              ref={parentRef} 
-              className="flex-1 overflow-y-auto pr-2 custom-scrollbar"
-              /* Opacity fade under session header (disabled for now):
-              style={{
-                maskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0px, rgba(0,0,0,1) 120px)',
-                WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0px, rgba(0,0,0,1) 120px)'
-              }}
-              */
-            >
-              {sessionNotes.length >= notesLimit && (
-                <div className="flex justify-center mb-6 mt-2">
-                  <button 
-                    onClick={loadMoreNotes}
-                    className="bg-zinc-900 border border-zinc-800 text-zinc-400 px-6 py-2 rounded-full font-bold text-xs hover:text-zinc-100 hover:bg-zinc-800 transition-all"
-                  >
-                    Load Older Notes
-                  </button>
-                </div>
-              )}
-              {sessionNotes.length === 0 ? (
-                hasCreatedAnyNote ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center p-8 animate-in fade-in zoom-in-95 duration-700">
-                    <p className="text-zinc-600 text-sm font-medium italic">
-                      No notes yet. Start typing below.
-                    </p>
+            {/* Notes Feed Container with Progressive Opacity Overlay */}
+            <div className="relative flex-1 min-h-0 flex flex-col">
+              {/* Progressive opacity overlay below expanded header */}
+              <div 
+                className={cn(
+                  "pointer-events-none absolute inset-x-0 top-0 h-24 sm:h-32 bg-gradient-to-b from-zinc-950/40 via-zinc-950/15 to-transparent z-10 transition-opacity duration-300 ease-in-out",
+                  isEditingSessionDetails ? "opacity-100" : "opacity-0"
+                )}
+              />
+
+              {/* Notes Feed List */}
+              <div 
+                ref={parentRef} 
+                className={cn(
+                  "flex-1 pr-2 custom-scrollbar transition-all duration-300",
+                  isEditingSessionDetails 
+                    ? "overflow-y-hidden select-none pointer-events-none opacity-50" 
+                    : "overflow-y-auto opacity-100"
+                )}
+              >
+                {sessionNotes.length >= notesLimit && (
+                  <div className="flex justify-center mb-6 mt-2">
+                    <button 
+                      onClick={loadMoreNotes}
+                      className="bg-zinc-900 border border-zinc-800 text-zinc-400 px-6 py-2 rounded-full font-bold text-xs hover:text-zinc-100 hover:bg-zinc-800 transition-all"
+                    >
+                      Load Older Notes
+                    </button>
                   </div>
+                )}
+                {sessionNotes.length === 0 ? (
+                  hasCreatedAnyNote ? (
+                    <div className="h-full flex flex-col items-center justify-center text-center p-8 animate-in fade-in zoom-in-95 duration-700">
+                      <p className="text-zinc-600 text-sm font-medium italic">
+                        No notes yet. Start typing below.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-center p-8 animate-in fade-in zoom-in-95 duration-700">
+                      <div className="w-16 h-16 bg-zinc-900/50 rounded-2xl flex items-center justify-center mb-6 rotate-3">
+                        <PenLine className="w-8 h-8 text-zinc-500" />
+                      </div>
+                      <h3 className="text-xl font-bold text-zinc-100 mb-3">Your Journey Begins</h3>
+                      <p className="text-zinc-500 max-w-xs text-sm leading-relaxed mb-8">
+                        Every great adventure deserves to be remembered. Start typing below to capture your first thought, discovery, or strategy.
+                      </p>
+                    </div>
+                  )
                 ) : (
-                  <div className="h-full flex flex-col items-center justify-center text-center p-8 animate-in fade-in zoom-in-95 duration-700">
-                    <div className="w-16 h-16 bg-zinc-900/50 rounded-2xl flex items-center justify-center mb-6 rotate-3">
-                      <PenLine className="w-8 h-8 text-zinc-500" />
-                    </div>
-                    <h3 className="text-xl font-bold text-zinc-100 mb-3">Your Journey Begins</h3>
-                    <p className="text-zinc-500 max-w-xs text-sm leading-relaxed mb-8">
-                      Every great adventure deserves to be remembered. Start typing below to capture your first thought, discovery, or strategy.
-                    </p>
-                  </div>
-                )
-              ) : (
-                <DndContext 
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                  <SortableContext 
-                    items={sessionNotes.map(n => n.id)}
-                    strategy={verticalListSortingStrategy}
+                  <DndContext 
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
                   >
-                    <div className="w-full flex flex-col gap-0 divide-y divide-zinc-800/50">
-                      {sessionNotes.map((note) => (
-                        <div key={note.id} className="w-full">
-                          <SortableNote 
-                            note={note}
-                            onUpdate={handleUpdateNote}
-                            onDelete={handleDeleteNote}
-                            onAddTag={handleAddTag}
-                            onRemoveTag={handleRemoveTag}
-                            onRenameTag={handleRenameTag}
-                            taggingStatus={taggingStatus[note.id]}
-                            onRetryTagging={handleRetryTagging}
-                            onTagClick={setFilteredTag}
-                            availableSessions={availableSessions}
-                            onMoveNote={(targetSessionId) => handleMoveNote(note.id, targetSessionId === 'global' ? null : targetSessionId)}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </SortableContext>
-                </DndContext>
-              )}
-              <div ref={notesEndRef} />
+                    <SortableContext 
+                      items={sessionNotes.map(n => n.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="w-full flex flex-col gap-0 divide-y divide-zinc-800/50">
+                        {sessionNotes.map((note) => (
+                          <div key={note.id} className="w-full">
+                            <SortableNote 
+                              note={note}
+                              onUpdate={handleUpdateNote}
+                              onDelete={handleDeleteNote}
+                              onAddTag={handleAddTag}
+                              onRemoveTag={handleRemoveTag}
+                              onRenameTag={handleRenameTag}
+                              taggingStatus={taggingStatus[note.id]}
+                              onRetryTagging={handleRetryTagging}
+                              onTagClick={setFilteredTag}
+                              availableSessions={availableSessions}
+                              onMoveNote={(targetSessionId) => handleMoveNote(note.id, targetSessionId === 'global' ? null : targetSessionId)}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
+                )}
+                <div ref={notesEndRef} />
+              </div>
             </div>
 
             {/* Input Area */}
