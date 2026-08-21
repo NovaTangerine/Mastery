@@ -95,19 +95,19 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
                       onEdit(metric.id);
                       setIsMenuOpen(false);
                     }}
-                    className="w-full px-3 py-2 text-left text-xs text-zinc-300 hover:bg-zinc-800 flex items-center transition-colors gap-2 whitespace-nowrap"
+                    className="w-full px-3 py-2 text-left text-xs text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 flex items-center transition-colors gap-2 whitespace-nowrap"
                   >
                     <Edit2 className="w-3.5 h-3.5 shrink-0" />
                     <span>Edit Tracker</span>
                   </button>
-                  <div className="h-px bg-zinc-800 my-1 font-bold" />
+                  <div className="h-px bg-zinc-800 my-1" />
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       onDelete(metric.id);
                       setIsMenuOpen(false);
                     }}
-                    className="w-full px-3 py-2 text-left text-xs text-red-500 font-medium hover:bg-zinc-800 flex items-center transition-colors gap-2 whitespace-nowrap"
+                    className="w-full px-3 py-2 text-left text-xs text-red-400 font-medium hover:text-red-300 hover:bg-red-500/10 flex items-center transition-colors gap-2 whitespace-nowrap"
                   >
                     <Trash2 className="w-3.5 h-3.5 shrink-0" />
                     <span>Delete Tracker</span>
@@ -204,19 +204,19 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric, onUpdate, onDele
                       onEdit(metric.id);
                       setIsMenuOpen(false);
                     }}
-                    className="w-full px-3 py-2 text-left text-xs text-zinc-300 hover:bg-zinc-800 flex items-center transition-colors gap-2 whitespace-nowrap"
+                    className="w-full px-3 py-2 text-left text-xs text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 flex items-center transition-colors gap-2 whitespace-nowrap"
                   >
                     <Edit2 className="w-3.5 h-3.5 shrink-0" />
                     <span>Edit Tracker</span>
                   </button>
-                  <div className="h-px bg-zinc-800 my-1 font-bold" />
+                  <div className="h-px bg-zinc-800 my-1" />
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       onDelete(metric.id);
                       setIsMenuOpen(false);
                     }}
-                    className="w-full px-3 py-2 text-left text-xs text-red-500 font-medium hover:bg-zinc-800 flex items-center transition-colors gap-2 whitespace-nowrap"
+                    className="w-full px-3 py-2 text-left text-xs text-red-400 font-medium hover:text-red-300 hover:bg-red-500/10 flex items-center transition-colors gap-2 whitespace-nowrap"
                   >
                     <Trash2 className="w-3.5 h-3.5 shrink-0" />
                     <span>Delete Tracker</span>

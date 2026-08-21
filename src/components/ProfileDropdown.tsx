@@ -50,12 +50,12 @@ export default function ProfileDropdown({ isOpen, onClose }: ProfileDropdownProp
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: -6 }}
           transition={{ duration: 0.15, ease: 'easeOut' }}
-          className="absolute right-0 top-full mt-2 w-72 bg-zinc-900 border border-zinc-800/90 rounded-2xl shadow-2xl overflow-hidden z-50 text-zinc-100 divide-y divide-zinc-800/60"
+          className="absolute right-0 top-full mt-2 w-72 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden z-50 text-zinc-100 divide-y divide-zinc-800/80"
         >
           {/* User Info Header */}
-          <div className="p-4 bg-zinc-900/80">
+          <div className="p-4 bg-zinc-950/40">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full border border-zinc-700/80 overflow-hidden bg-zinc-800 shrink-0 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full border border-zinc-800 overflow-hidden bg-zinc-800 shrink-0 flex items-center justify-center">
                 {user?.photoURL ? (
                   <img src={user.photoURL} alt={displayName} className="w-full h-full object-cover" />
                 ) : (
@@ -78,7 +78,7 @@ export default function ProfileDropdown({ isOpen, onClose }: ProfileDropdownProp
             </div>
 
             {/* Quick Stats Pill */}
-            <div className="mt-3 grid grid-cols-3 gap-1 bg-zinc-950/60 p-2 rounded-xl border border-zinc-800/80 text-center">
+            <div className="mt-3 grid grid-cols-3 gap-1 bg-zinc-900/90 p-2 rounded-xl border border-zinc-800 text-center">
               <div>
                 <p className="text-xs font-bold text-zinc-200">{totalGames}</p>
                 <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Games</p>
@@ -101,7 +101,7 @@ export default function ProfileDropdown({ isOpen, onClose }: ProfileDropdownProp
                 onClose();
                 navigateTo('dashboard');
               }}
-              className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:text-white hover:bg-zinc-800/80 rounded-xl transition-colors text-left whitespace-nowrap"
+              className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/80 rounded-xl transition-colors text-left whitespace-nowrap"
             >
               <LayoutGrid className="w-4 h-4 text-zinc-400 shrink-0" />
               <span>Library Dashboard</span>
@@ -115,7 +115,7 @@ export default function ProfileDropdown({ isOpen, onClose }: ProfileDropdownProp
                 onClose();
                 navigateTo('profile-mockups');
               }}
-              className="w-full flex items-center justify-between px-3 py-2 text-sm text-amber-400/90 hover:text-amber-300 hover:bg-amber-400/10 rounded-xl transition-colors text-left font-medium whitespace-nowrap gap-2"
+              className="w-full flex items-center justify-between px-3 py-2 text-sm text-amber-300 hover:text-amber-200 hover:bg-amber-400/10 rounded-xl transition-colors text-left font-medium whitespace-nowrap gap-2"
             >
               <span className="flex items-center gap-3 whitespace-nowrap">
                 <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />

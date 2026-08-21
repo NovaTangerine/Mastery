@@ -60,6 +60,7 @@ import TrackersV2PostMortemView from './views/TrackersV2PostMortemView';
 import UXDocumentationView from './views/UXDocumentationView';
 import ProfileMockupView from './views/ProfileMockupView';
 import TagGroupingMockupView from './views/TagGroupingMockupView';
+import LiquidGlassMockupView from './views/LiquidGlassMockupView';
 
 import ProfileDropdown from './components/ProfileDropdown';
 import ProfileDrawer from './components/ProfileDrawer';
@@ -308,9 +309,15 @@ function MainApp() {
                         </button>
                         <button 
                           onClick={() => { clearHistory(); navigateTo('tag-grouping-mockup', null, null); }}
-                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 rounded-b-xl text-indigo-400 font-medium whitespace-nowrap ${view === 'tag-grouping-mockup' ? 'bg-zinc-800 text-indigo-300' : 'hover:text-indigo-300 hover:bg-indigo-500/10'}`}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 text-indigo-400 font-medium whitespace-nowrap ${view === 'tag-grouping-mockup' ? 'bg-zinc-800 text-indigo-300' : 'hover:text-indigo-300 hover:bg-indigo-500/10'}`}
                         >
                           Tag Grouping Heuristic
+                        </button>
+                        <button 
+                          onClick={() => { clearHistory(); navigateTo('liquid-glass-mockup', null, null); }}
+                          className={`px-4 py-2 text-left text-sm transition-colors border-t border-zinc-800/50 rounded-b-xl text-cyan-400 font-medium whitespace-nowrap ${view === 'liquid-glass-mockup' ? 'bg-zinc-800 text-cyan-300' : 'hover:text-cyan-300 hover:bg-cyan-500/10'}`}
+                        >
+                          Liquid Glass Menus
                         </button>
                       </div>
                     </div>
@@ -528,6 +535,7 @@ function MainApp() {
             {view === 'ux-documentation' && <UXDocumentationView />}
             {view === 'profile-mockups' && <ProfileMockupView />}
             {view === 'tag-grouping-mockup' && <TagGroupingMockupView />}
+            {view === 'liquid-glass-mockup' && <LiquidGlassMockupView />}
           </div>
         </main>
 

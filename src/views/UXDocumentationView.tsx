@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, BookOpen, Database, Layout, Users } from 'lucide-react';
+import { ArrowLeft, BookOpen, Database, Layout, Users, Sparkles, Layers } from 'lucide-react';
 import { useUI } from '../contexts/UIContext';
 import { useUserJourney } from '../contexts/UserJourneyContext';
 
@@ -184,6 +184,38 @@ export default function UXDocumentationView() {
                   <strong className="text-zinc-300">New User:</strong> Sees a verbose "Stay Quantified" call-to-action module outlining what trackers can do. This module is shown as long as the user is eligible for tracker onboarding (<code>isEligibleForTrackerOnboarding</code>), meaning they have created fewer than 10 trackers across all sessions and are not yet considered a power user.
                   <br /><strong className="text-zinc-300">Experienced User (!isEligibleForTrackerOnboarding):</strong> Sees a subtle ghost state indicating "No trackers added to this session".
                 </p>
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-6">
+            <div className="flex items-center gap-3 border-b border-zinc-800 pb-4">
+              <Sparkles className="w-6 h-6 text-cyan-400" />
+              <h2 className="text-2xl font-bold">Pop-up & Context Menu Architecture</h2>
+            </div>
+            
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 space-y-4">
+              <p className="text-zinc-300 leading-relaxed text-sm">
+                Production contextual menus across the application utilize the high-contrast <strong>Dark Zinc Pop-up</strong> design system (<code>bg-zinc-900 border-zinc-800 shadow-xl</code>) for maximum readability, swift interaction, and clean aesthetic cohesion. The experimental <strong>Liquid Glass</strong> design system remains available in Dev Tools as an interactive optical laboratory.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                <div className="p-4 rounded-xl bg-zinc-950/60 border border-zinc-800 space-y-1">
+                  <h4 className="font-bold text-xs uppercase tracking-wider text-zinc-300">1. Production Baseline</h4>
+                  <p className="text-xs text-zinc-400">High-contrast solid zinc surface (<code>bg-zinc-900</code>) with 1px structural hairline borders (<code>border-zinc-800</code>).</p>
+                </div>
+                <div className="p-4 rounded-xl bg-zinc-950/60 border border-zinc-800 space-y-1">
+                  <h4 className="font-bold text-xs uppercase tracking-wider text-zinc-300">2. Floating Placement</h4>
+                  <p className="text-xs text-zinc-400">Positioned via <code>@floating-ui/react</code> with portal elevation (<code>z-[9999]</code>) and collision prevention (flip/shift).</p>
+                </div>
+                <div className="p-4 rounded-xl bg-zinc-950/60 border border-zinc-800 space-y-1">
+                  <h4 className="font-bold text-xs uppercase tracking-wider text-zinc-300">3. Action Semantics</h4>
+                  <p className="text-xs text-zinc-400">Neutral actions in <code>text-zinc-300 hover:bg-zinc-800</code>; destructive actions in <code>text-red-400 hover:bg-red-500/10</code>.</p>
+                </div>
+                <div className="p-4 rounded-xl bg-zinc-950/60 border border-zinc-800 space-y-1">
+                  <h4 className="font-bold text-xs uppercase tracking-wider text-cyan-400">4. Liquid Glass Lab</h4>
+                  <p className="text-xs text-zinc-400">Available in Dev Tools under <strong>Liquid Glass Menus</strong> for live optical and blur parameter experimentation.</p>
+                </div>
               </div>
             </div>
           </section>

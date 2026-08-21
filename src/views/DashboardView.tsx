@@ -384,14 +384,14 @@ export default function DashboardView() {
                 </button>
                 
                 {openMenuId === game.id && (
-                  <div className="absolute left-0 top-full mt-2 min-w-[180px] w-auto bg-zinc-800 rounded-xl shadow-xl z-[60] border border-zinc-700 overflow-hidden whitespace-nowrap">
+                  <div className="absolute left-0 top-full mt-2 min-w-[180px] w-auto bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-[60] overflow-hidden whitespace-nowrap">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         setOpenMenuId(null);
                         setSyncTargetGame(game);
                       }}
-                      className="hidden sm:flex w-full text-left px-4 py-3 text-zinc-300 hover:text-amber-400 hover:bg-zinc-700/50 items-center gap-2 transition-colors font-bold text-sm border-b border-zinc-700/50 whitespace-nowrap"
+                      className="hidden sm:flex w-full text-left px-4 py-3 text-zinc-300 hover:text-amber-400 hover:bg-zinc-800 items-center gap-2 transition-colors font-bold text-sm border-b border-zinc-800 whitespace-nowrap"
                     >
                       <RefreshCw className="w-4 h-4 shrink-0" />
                       <span>Sync with IGDB</span>
@@ -399,7 +399,7 @@ export default function DashboardView() {
                     {game.title === 'Zero Parades: For Dead Spies' && (
                       <button
                         onClick={(e) => handleToggleBoxArt(e, game)}
-                        className="w-full text-left px-4 py-3 text-zinc-300 hover:bg-zinc-700/50 flex items-center gap-2 transition-colors font-semibold text-sm border-b border-zinc-700/50 whitespace-nowrap"
+                        className="w-full text-left px-4 py-3 text-zinc-300 hover:bg-zinc-800 flex items-center gap-2 transition-colors font-semibold text-sm border-b border-zinc-800 whitespace-nowrap"
                       >
                         <RefreshCw className="w-4 h-4 shrink-0" />
                         <span>Swap Box Art</span>
@@ -411,7 +411,7 @@ export default function DashboardView() {
                         setOpenMenuId(null);
                         handleDeleteClick(e, game);
                       }}
-                      className="w-full text-left px-4 py-3 text-red-400 hover:bg-zinc-700/50 flex items-center gap-2 transition-colors font-bold text-sm whitespace-nowrap"
+                      className="w-full text-left px-4 py-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 flex items-center gap-2 transition-colors font-bold text-sm whitespace-nowrap"
                     >
                       <Trash2 className="w-4 h-4 shrink-0" />
                       <span>Delete Game</span>
@@ -456,7 +456,7 @@ export default function DashboardView() {
                   
                   {openMenuId === game.id && (
                     <div 
-                      className="absolute right-0 top-full mt-2 min-w-[180px] w-auto bg-zinc-800 rounded-xl shadow-xl z-[60] border border-zinc-700 overflow-hidden whitespace-nowrap"
+                      className="absolute right-0 top-full mt-2 min-w-[180px] w-auto bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-[60] overflow-hidden whitespace-nowrap"
                     >
                       <button
                         onClick={(e) => {
@@ -464,7 +464,7 @@ export default function DashboardView() {
                           setOpenMenuId(null);
                           setSyncTargetGame(game);
                         }}
-                        className="hidden sm:flex w-full text-left px-4 py-3 text-zinc-300 hover:text-amber-400 hover:bg-zinc-700/50 items-center gap-2 transition-colors font-bold text-sm border-b border-zinc-700/50 whitespace-nowrap"
+                        className="hidden sm:flex w-full text-left px-4 py-3 text-zinc-300 hover:text-amber-400 hover:bg-zinc-800 items-center gap-2 transition-colors font-bold text-sm border-b border-zinc-800 whitespace-nowrap"
                       >
                         <RefreshCw className="w-4 h-4 shrink-0" />
                         <span>Sync with IGDB</span>
@@ -472,7 +472,7 @@ export default function DashboardView() {
                     {game.title === 'Zero Parades: For Dead Spies' && (
                       <button
                         onClick={(e) => handleToggleBoxArt(e, game)}
-                        className="w-full text-left px-4 py-3 text-zinc-300 hover:bg-zinc-700/50 flex items-center gap-2 transition-colors font-semibold text-sm border-b border-zinc-700/50 whitespace-nowrap"
+                        className="w-full text-left px-4 py-3 text-zinc-300 hover:bg-zinc-800 flex items-center gap-2 transition-colors font-semibold text-sm border-b border-zinc-800 whitespace-nowrap"
                       >
                         <RefreshCw className="w-4 h-4 shrink-0" />
                         <span>Swap Box Art</span>
@@ -484,7 +484,7 @@ export default function DashboardView() {
                           setOpenMenuId(null);
                           handleDeleteClick(e, game);
                         }}
-                        className="w-full text-left px-4 py-3 text-red-400 hover:bg-zinc-700/50 flex items-center gap-2 transition-colors font-bold text-sm whitespace-nowrap"
+                        className="w-full text-left px-4 py-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 flex items-center gap-2 transition-colors font-bold text-sm whitespace-nowrap"
                       >
                         <Trash2 className="w-4 h-4 shrink-0" />
                         <span>Delete Game</span>

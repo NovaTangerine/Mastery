@@ -11,3 +11,25 @@
     @apply bg-zinc-950 text-zinc-100 overflow-x-hidden;
   }
 }
+
+/* Core Liquid Glass Effect for Pop-up Menus */
+.liquid-glass-box {
+  /* 1. Translucent glass surface */
+  background: rgba(255, 255, 255, 0.1);
+
+  /* 2. Optical refraction & background blur */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+
+  /* 3. Subtle highlight border / frosted edge */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+
+  /* 4. Multi-layer depth shadows + accent ring */
+  box-shadow: 
+    0 0 0 1px rgba(132, 131, 200, 0.25), /* Soft ambient rim highlight */
+    0 20px 48px rgba(0, 0, 0, 0.16);        /* Deep floating drop shadow */
+
+  /* 5. Custom corner radii (sharp top, organic bottom) */
+  border-radius: 8px 8px 20px 20px;
+}
+

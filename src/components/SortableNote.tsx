@@ -606,7 +606,6 @@ export const SortableNote = memo(({
           >
             <MoreVertical className="w-4 h-4" />
           </button>
-
           <FloatingPortal>
               {isMenuOpen && (
                 <div 
@@ -649,7 +648,7 @@ export const SortableNote = memo(({
                       }}
                       onMouseLeave={() => {
                         hoverTimeoutRef.current = setTimeout(() => {
-                          setIsHoveringMove(false);
+                           setIsHoveringMove(false);
                         }, 300);
                       }}
                     >
@@ -669,7 +668,7 @@ export const SortableNote = memo(({
                       </button>
                       
                       {isHoveringMove && (
-                        <div className="absolute right-full top-0 mr-1 min-w-[180px] w-auto bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl py-1 max-h-64 overflow-y-auto z-[10000] whitespace-nowrap">
+                        <div className="absolute right-full top-0 mr-1 min-w-[180px] w-auto bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl py-1 max-h-64 overflow-y-auto z-[10000] whitespace-nowrap custom-scrollbar">
                           {availableSessions.filter(s => s.id !== (note.sessionId || 'global') && s.id !== (note.isGlobal ? 'global' : null)).map(session => (
                             <button
                               key={session.id}
@@ -695,14 +694,14 @@ export const SortableNote = memo(({
                       setShowDeleteConfirm(true);
                       setIsMenuOpen(false);
                     }}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-500 hover:text-red-400 hover:bg-red-500/10 transition-colors whitespace-nowrap"
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors whitespace-nowrap border-t border-zinc-800/60 mt-1 pt-2"
                   >
                     <Trash2 className="w-4 h-4 shrink-0" />
                     <span>Delete Note</span>
                   </button>
                 </div>
               )}
-            </FloatingPortal>
+          </FloatingPortal>
           </div>
       </div>
 

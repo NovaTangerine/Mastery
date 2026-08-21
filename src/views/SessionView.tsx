@@ -245,7 +245,6 @@ export default function SessionView() {
 
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [noteTags, setNoteTags] = useState<string[]>([]);
-  const [sessionTagInput, setSessionTagInput] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [isEditingTitleInline, setIsEditingTitleInline] = useState(false);
   const [inlineTitleInput, setInlineTitleInput] = useState('');
@@ -843,8 +842,6 @@ export default function SessionView() {
         trackerItemSuggestions={trackerItemSuggestions}
         handleAddTracker={handleAddTracker}
         existingTrackerTitles={existingTrackerTitles}
-        sessionTagInput={sessionTagInput}
-        setSessionTagInput={setSessionTagInput}
         activeSessionTags={activeSessionTags}
         handleUpdateSessionTags={handleUpdateSessionTags}
         structuredTags={structuredTags}

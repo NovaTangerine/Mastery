@@ -67,10 +67,10 @@ export const AddTrackerMenu: React.FC<AddTrackerMenuProps> = ({ onAddTracker, ex
               setCustomTitle('');
             }}
           />
-          <div className="fixed bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 rounded-t-3xl pb-safe shadow-2xl z-[70] animate-in slide-in-from-bottom-full duration-300 pointer-events-auto md:absolute md:top-full md:bottom-auto md:left-0 md:w-56 md:border md:rounded-2xl md:z-50 md:shadow-xl md:slide-in-from-top-2 md:duration-200 overflow-hidden">
+          <div className="fixed bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 rounded-t-3xl pb-safe shadow-2xl z-[70] animate-in slide-in-from-bottom-full duration-300 pointer-events-auto md:absolute md:top-full md:bottom-auto md:left-0 md:w-56 md:bg-zinc-900 md:border md:border-zinc-800 md:rounded-xl md:shadow-xl md:z-50 md:slide-in-from-top-2 md:duration-200 overflow-hidden">
             {!isCustom ? (
               <div className="flex flex-col py-2 pb-6 md:pb-2">
-                <div className="px-5 md:px-4 py-3 md:py-2 text-xs font-bold text-zinc-500 uppercase tracking-widest border-b border-zinc-800/50 mb-1 flex justify-between items-center">
+                <div className="px-5 md:px-4 py-3 md:py-2 text-xs font-bold text-zinc-400 uppercase tracking-widest border-b border-zinc-800 mb-1 flex justify-between items-center">
                   Presets
                   <button className="md:hidden" onClick={() => setIsOpen(false)}>
                     <X className="w-4 h-4" />
@@ -87,13 +87,13 @@ export const AddTrackerMenu: React.FC<AddTrackerMenuProps> = ({ onAddTracker, ex
                     </button>
                   ))}
                 </div>
-                <div className="h-px bg-zinc-800/50 my-1 md:my-1" />
+                <div className="h-px bg-zinc-800 my-1 md:my-1" />
                 <button
                   onClick={() => setIsCustom(true)}
-                  className="px-5 md:px-4 py-4 md:py-2 text-base md:text-sm text-left text-zinc-400 font-medium hover:bg-zinc-800 hover:text-zinc-100 transition-colors flex items-center justify-between group whitespace-nowrap"
+                  className="px-5 md:px-4 py-4 md:py-2 text-base md:text-sm text-left text-zinc-300 font-medium hover:bg-zinc-800 hover:text-zinc-100 transition-colors flex items-center justify-between group whitespace-nowrap"
                 >
                   <span>Custom...</span>
-                  <Plus className="w-5 h-5 md:w-4 md:h-4 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity text-zinc-500 md:text-inherit shrink-0" />
+                  <Plus className="w-5 h-5 md:w-4 md:h-4 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity text-zinc-400 md:text-inherit shrink-0" />
                 </button>
               </div>
             ) : (

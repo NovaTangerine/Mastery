@@ -108,4 +108,4 @@ export interface Draft {
   updatedAt: number;
 }
 
-export type ViewMode = 'home' | 'dashboard' | 'game-detail' | 'session-view' | 'all-insights' | 'all-notes' | 'note-editor' | 'profile' | 'profile-mockups' | 'igdb-game' | 'transition-mockups' | 'image-loading-mockups' | 'hover-effect-mockups' | 'texture-mockups' | 'pill-nav-mockups' | 'image-reveal-logic' | 'light-mode-library-mockup' | 'session-list-mockup' | 'trackers-sidebar-mockup' | 'tracker-modal-mockup' | 'tracker-sync-mockup' | 'note-visuals-mockup' | 'trackers-v2-post-mortem' | 'ux-documentation' | 'tag-grouping-mockup';
+export type ViewMode = 'home' | 'dashboard' | 'game-detail' | 'session-view' | 'all-insights' | 'all-notes' | 'note-editor' | 'profile' | 'profile-mockups' | 'igdb-game' | 'transition-mockups' | 'image-loading-mockups' | 'hover-effect-mockups' | 'texture-mockups' | 'pill-nav-mockups' | 'image-reveal-logic' | 'light-mode-library-mockup' | 'session-list-mockup' | 'trackers-sidebar-mockup' | 'tracker-modal-mockup' | 'tracker-sync-mockup' | 'note-visuals-mockup' | 'trackers-v2-post-mortem' | 'ux-documentation' | 'tag-grouping-mockup' | 'liquid-glass-mockup';

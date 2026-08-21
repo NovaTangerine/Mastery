@@ -17,7 +17,6 @@ import { cn } from '../../lib/utils';
 import { MetricCard } from '../MetricCard';
 import { TrackerCard } from '../TrackerCard';
 import { AddTrackerMenu } from '../AddTrackerMenu';
-import { TagAutocompleteInput } from '../TagAutocompleteInput';
 import { Game, GameSession, SessionMetric } from '../../types';
 
 export function SessionTagItem({ tag, count, setFilteredTag, scrollToTab, onRequestDeleteTag, handleRenameTag }: { 
@@ -270,8 +269,6 @@ export interface TrackersPanelProps {
   trackerItemSuggestions: Record<string, string[]>;
   handleAddTracker: any;
   existingTrackerTitles: string[];
-  sessionTagInput: string;
-  setSessionTagInput: React.Dispatch<React.SetStateAction<string>>;
   activeSessionTags: string[];
   handleUpdateSessionTags: any;
   structuredTags: any;
@@ -310,8 +307,6 @@ export function TrackersPanel(props: TrackersPanelProps) {
     trackerItemSuggestions,
     handleAddTracker,
     existingTrackerTitles,
-    sessionTagInput,
-    setSessionTagInput,
     activeSessionTags,
     handleUpdateSessionTags,
     structuredTags,
@@ -608,25 +603,6 @@ export function TrackersPanel(props: TrackersPanelProps) {
             </div>
             
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl flex flex-col overflow-hidden">
-              <div className="p-3 bg-zinc-900 border-b border-zinc-800">
-                <TagAutocompleteInput
-                  gameId={selectedGame?.id || null}
-                  value={sessionTagInput}
-                  onChange={setSessionTagInput}
-                  onAddTag={(tag) => {
-                    if (!activeSession) return;
-                    const trimmed = tag.trim().toLowerCase();
-                    if (trimmed && !activeSessionTags.includes(trimmed)) {
-                      handleUpdateSessionTags(activeSession.id, [...activeSessionTags, trimmed]);
-                      setSessionTagInput('');
-                    }
-                  }}
-                  existingTags={structuredTags.allTagsFlat}
-                  additionalSuggestions={globalSessionTags}
-                  placeholder="Add a tag..."
-                  className="bg-transparent border-none focus:ring-0 text-sm text-zinc-300 placeholder:text-zinc-600 outline-none w-full"
-                />
-              </div>
               <div className="p-5 flex-1 relative flex flex-col">
                 {structuredTags.totalTagsCount > 0 ? (
                   <div className="relative">

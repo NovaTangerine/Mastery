@@ -187,7 +187,7 @@ export function SidebarSessionItem({ session, ctx }: { session: GameSession, ctx
                         setActiveMenuId(null);
                         setActiveMenuType(null);
                       }}
-                      className="w-full text-left px-3 py-1.5 text-xs text-red-500 hover:text-red-400 hover:bg-zinc-800 flex items-center gap-2 border-t border-zinc-800/50 mt-1 pt-1.5 whitespace-nowrap"
+                      className="w-full text-left px-3 py-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 flex items-center gap-2 border-t border-zinc-800/60 mt-1 pt-1.5 whitespace-nowrap"
                     >
                       <Trash2 className="w-3.5 h-3.5 shrink-0" /> <span>Delete</span>
                     </button>
@@ -547,7 +547,7 @@ export function SessionSidebar(props: SessionSidebarProps) {
                                     setActiveMenuId(null);
                                     setActiveMenuType(null);
                                   }}
-                                  className="w-full text-left px-3 py-1.5 text-xs text-red-500 hover:text-red-400 hover:bg-zinc-800 flex items-center gap-2 border-t border-zinc-800/50 mt-1 pt-1.5 whitespace-nowrap"
+                                  className="w-full text-left px-3 py-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 flex items-center gap-2 border-t border-zinc-800/60 mt-1 pt-1.5 whitespace-nowrap"
                                 >
                                   <Trash2 className="w-3.5 h-3.5 shrink-0" /> <span>Delete</span>
                                 </button>
