@@ -9,6 +9,7 @@ import { cn } from '../lib/utils';
 import { TagAutocompleteInput } from './TagAutocompleteInput';
 import { motion, AnimatePresence } from 'motion/react';
 import { useFloating, offset, flip, shift, autoUpdate, FloatingPortal } from '@floating-ui/react';
+import { useUI } from '../contexts/UIContext';
 
 function NoteTagPill({
   tag,
@@ -218,6 +219,7 @@ export const SortableNote = memo(({
   availableSessions?: {id: string, name: string}[];
   onMoveNote?: (newSessionId: string) => void;
 }) => {
+  const { defaultTagVisibility } = useUI();
   const [isEditing, setIsEditing] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isHoveringMove, setIsHoveringMove] = useState(false);
@@ -737,7 +739,7 @@ export const SortableNote = memo(({
 
       {/* Tags at the bottom of the note on all breakpoints */}
       <AnimatePresence initial={false}>
-        {(note.tags.length > 0 || isManagingTags || !!taggingStatus) && (
+        {(note.tags.length > 0 || isManagingTags || !!taggingStatus) && (defaultTagVisibility || isExpanded || isManagingTags) && (
           <motion.div 
             initial={{ height: 0, opacity: 0, marginTop: 0 }}
             animate={{ height: 'auto', opacity: 1, marginTop: 20 }}

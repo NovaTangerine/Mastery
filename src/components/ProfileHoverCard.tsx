@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Shield, Sparkles, Gamepad2, Activity, LogOut } from 'lucide-react';
+import { Shield, Sparkles, Gamepad2, Activity, LogOut, Tag } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useUI } from '../contexts/UIContext';
 import { useUserJourney } from '../contexts/UserJourneyContext';
@@ -13,7 +13,7 @@ interface ProfileHoverCardProps {
 
 export default function ProfileHoverCard({ isOpen, onClose }: ProfileHoverCardProps) {
   const { user } = useAuth();
-  const { navigateTo } = useUI();
+  const { navigateTo, defaultTagVisibility, setDefaultTagVisibility } = useUI();
   const { totalGames, totalSessions, totalNotes } = useUserJourney();
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -81,27 +81,41 @@ export default function ProfileHoverCard({ isOpen, onClose }: ProfileHoverCardPr
           </div>
 
           {/* Action Row */}
-          <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between">
+          <div className="pt-2 mt-2 border-t border-zinc-800/80 flex flex-col gap-2">
             <button
-              onClick={() => {
-                onClose();
-                navigateTo('profile-mockups');
-              }}
-              className="text-[11px] font-semibold text-amber-400 hover:text-amber-300 flex items-center gap-1"
+              onClick={() => setDefaultTagVisibility(!defaultTagVisibility)}
+              className="w-full text-[11px] font-semibold text-zinc-300 hover:text-zinc-100 flex items-center justify-between group"
             >
-              <Sparkles className="w-3 h-3" />
-              <span>Options Lab</span>
+              <div className="flex items-center gap-1">
+                <Tag className="w-3 h-3 text-zinc-400 group-hover:text-zinc-300" />
+                <span>Show Tags</span>
+              </div>
+              <div className="relative inline-flex h-3 w-5 items-center rounded-full transition-colors" style={{ backgroundColor: defaultTagVisibility ? '#fbbf24' : '#3f3f46' }}>
+                <span className={`inline-block h-2 w-2 transform rounded-full bg-white transition-transform ${defaultTagVisibility ? 'translate-x-2.5' : 'translate-x-0.5'}`} />
+              </div>
             </button>
-            <button
-              onClick={() => {
-                onClose();
-                signOut();
-              }}
-              className="text-[11px] font-semibold text-red-400 hover:text-red-300 flex items-center gap-1"
-            >
-              <LogOut className="w-3 h-3" />
-              <span>Sign Out</span>
-            </button>
+            <div className="flex items-center justify-between border-t border-zinc-800/80 pt-2">
+              <button
+                onClick={() => {
+                  onClose();
+                  navigateTo('profile-mockups');
+                }}
+                className="text-[11px] font-semibold text-amber-400 hover:text-amber-300 flex items-center gap-1"
+              >
+                <Sparkles className="w-3 h-3" />
+                <span>Options Lab</span>
+              </button>
+              <button
+                onClick={() => {
+                  onClose();
+                  signOut();
+                }}
+                className="text-[11px] font-semibold text-red-400 hover:text-red-300 flex items-center gap-1"
+              >
+                <LogOut className="w-3 h-3" />
+                <span>Sign Out</span>
+              </button>
+            </div>
           </div>
         </motion.div>
       )}

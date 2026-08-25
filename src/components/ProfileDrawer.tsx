@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, LogOut, LayoutGrid, Gamepad2, FileText, Sparkles, Trophy, Shield, Calendar, Activity, ChevronRight } from 'lucide-react';
+import { X, LogOut, LayoutGrid, Gamepad2, FileText, Sparkles, Trophy, Shield, Calendar, Activity, ChevronRight, Tag } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useUI } from '../contexts/UIContext';
 import { useUserJourney } from '../contexts/UserJourneyContext';
@@ -14,7 +14,7 @@ interface ProfileDrawerProps {
 
 export default function ProfileDrawer({ isOpen, onClose }: ProfileDrawerProps) {
   const { user } = useAuth();
-  const { navigateTo } = useUI();
+  const { navigateTo, defaultTagVisibility, setDefaultTagVisibility } = useUI();
   const { totalGames, totalSessions, totalNotes, isPowerUser } = useUserJourney();
   const { games } = useGameLibrary();
 
@@ -176,6 +176,18 @@ export default function ProfileDrawer({ isOpen, onClose }: ProfileDrawerProps) {
                       <span>Compare All 5 Profile Options</span>
                     </span>
                     <ChevronRight className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setDefaultTagVisibility(!defaultTagVisibility)}
+                    className="w-full flex items-center justify-between px-3.5 py-2.5 text-sm bg-zinc-950/40 hover:bg-zinc-800/60 text-zinc-300 hover:text-zinc-100 rounded-xl transition-colors border border-zinc-800/60 font-medium"
+                  >
+                    <span className="flex items-center gap-3">
+                      <Tag className="w-4 h-4 text-zinc-400" />
+                      <span>Show Tags by Default</span>
+                    </span>
+                    <div className="relative inline-flex h-4 w-7 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900" style={{ backgroundColor: defaultTagVisibility ? '#fbbf24' : '#3f3f46' }}>
+                      <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${defaultTagVisibility ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+                    </div>
                   </button>
                 </div>
               </div>

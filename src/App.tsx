@@ -17,7 +17,8 @@ import {
   Home,
   Archive,
   BookOpen,
-  Package
+  Package,
+  Tag
 } from 'lucide-react';
 
 import { Toaster } from 'sonner';
@@ -110,7 +111,9 @@ function MainApp() {
     navigateTo,
     goBack,
     clearHistory,
-    selectedGameId
+    selectedGameId,
+    defaultTagVisibility,
+    setDefaultTagVisibility
   } = useUI();
   const { selectedGame, activeSession } = useGameContext();
 
@@ -391,6 +394,13 @@ function MainApp() {
                       {isBackBarVisible ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                     </button>
                   )}
+                  <button 
+                    onClick={() => setDefaultTagVisibility(!defaultTagVisibility)}
+                    className={`hidden sm:flex p-2 transition-colors ${defaultTagVisibility ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    title={defaultTagVisibility ? "Hide tags by default" : "Show tags by default"}
+                  >
+                    <Tag className="w-5 h-5" />
+                  </button>
                   <button 
                     onClick={() => setIsFeedbackModalOpen(true)}
                     className="p-2 text-zinc-500 hover:text-zinc-100 transition-colors"

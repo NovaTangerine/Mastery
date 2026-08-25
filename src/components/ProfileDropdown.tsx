@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { User, LogOut, LayoutGrid, Gamepad2, FileText, Settings, ShieldCheck, Sparkles, ExternalLink, Moon } from 'lucide-react';
+import { User, LogOut, LayoutGrid, Gamepad2, FileText, Settings, ShieldCheck, Sparkles, ExternalLink, Moon, Tag } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useUI } from '../contexts/UIContext';
 import { useUserJourney } from '../contexts/UserJourneyContext';
@@ -14,7 +14,7 @@ interface ProfileDropdownProps {
 
 export default function ProfileDropdown({ isOpen, onClose }: ProfileDropdownProps) {
   const { user } = useAuth();
-  const { navigateTo } = useUI();
+  const { navigateTo, defaultTagVisibility, setDefaultTagVisibility } = useUI();
   const { totalGames, totalSessions, totalNotes } = useUserJourney();
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -105,6 +105,21 @@ export default function ProfileDropdown({ isOpen, onClose }: ProfileDropdownProp
             >
               <LayoutGrid className="w-4 h-4 text-zinc-400 shrink-0" />
               <span>Library Dashboard</span>
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setDefaultTagVisibility(!defaultTagVisibility);
+              }}
+              className="w-full flex items-center justify-between px-3 py-2 text-sm text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/80 rounded-xl transition-colors text-left whitespace-nowrap"
+            >
+              <div className="flex items-center gap-3">
+                <Tag className="w-4 h-4 text-zinc-400 shrink-0" />
+                <span>Show Tags by Default</span>
+              </div>
+              <div className="relative inline-flex h-4 w-7 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900" style={{ backgroundColor: defaultTagVisibility ? '#fbbf24' : '#3f3f46' }}>
+                <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${defaultTagVisibility ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+              </div>
             </button>
           </div>
 

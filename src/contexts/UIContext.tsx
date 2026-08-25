@@ -9,6 +9,8 @@ interface UIContextType {
   activeSessionId: string | null;
   selectedIgdbId: number | null;
   viewState: any;
+  defaultTagVisibility: boolean;
+  setDefaultTagVisibility: (v: boolean) => void;
   navigateTo: (newView: ViewMode, game?: Game | null, session?: GameSession | null, igdbId?: number | null, state?: any) => void;
   goBack: () => void;
   clearHistory: () => void;
@@ -41,6 +43,15 @@ export function getPathFromView(
 export const UIProvider = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const navigate = useNavigate();
+
+  const [defaultTagVisibility, setDefaultTagVisibility] = React.useState<boolean>(() => {
+    const saved = localStorage.getItem('capsule_default_tag_visibility');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  React.useEffect(() => {
+    localStorage.setItem('capsule_default_tag_visibility', JSON.stringify(defaultTagVisibility));
+  }, [defaultTagVisibility]);
 
   // Parse current view mode and state from path
   const { view, selectedGameId, selectedIgdbId } = useMemo(() => {
@@ -148,6 +159,8 @@ export const UIProvider = ({ children }: { children: React.ReactNode }) => {
       activeSessionId,
       selectedIgdbId,
       viewState,
+      defaultTagVisibility,
+      setDefaultTagVisibility,
       navigateTo,
       goBack,
       clearHistory
