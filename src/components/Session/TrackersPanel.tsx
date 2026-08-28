@@ -159,7 +159,10 @@ export function SessionTagItem({ tag, count, setFilteredTag, scrollToTab, onRequ
         className="flex items-center h-full"
       >
         <div 
-          className="flex items-center pl-2.5 pr-1.5 h-full cursor-pointer shrink-0"
+          className={cn(
+            "flex items-center pl-2.5 h-full cursor-pointer shrink-0 transition-all duration-300",
+            count > 0 || isMenuOpen ? "pr-1.5" : "pr-2.5 group-hover:pr-1.5"
+          )}
           onClick={() => {
             setFilteredTag(tag);
             scrollToTab('notes');
@@ -169,7 +172,10 @@ export function SessionTagItem({ tag, count, setFilteredTag, scrollToTab, onRequ
         </div>
         
         {/* Container for Count / Ellipsis Button */}
-        <div className="overflow-hidden h-full w-[26px] relative shrink-0">
+        <div className={cn(
+          "overflow-hidden h-full relative shrink-0 transition-all duration-300",
+          count > 0 || isMenuOpen ? "w-[26px]" : "w-0 group-hover:w-[26px]"
+        )}>
           {/* Default State (Count) */}
           <div 
             className={cn(

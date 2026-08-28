@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { format } from 'date-fns';
-import { X, Edit2, Edit3, Trash2, Sparkles, AlertCircle, RefreshCw, MoreVertical, Check, FolderOutput, ArrowRight, Tag } from 'lucide-react';
+import { X, Edit2, Edit3, Trash2, Sparkles, AlertCircle, RefreshCw, MoreVertical, Check, FolderOutput, ArrowLeft, Tag } from 'lucide-react';
 import { Note } from '../types';
 import { cn } from '../lib/utils';
 import { TagAutocompleteInput } from './TagAutocompleteInput';
@@ -473,6 +473,12 @@ export const SortableNote = memo(({
           if (target.closest('button') || target.closest('input')) {
             return;
           }
+          
+          // Don't trigger expand/collapse if the user is highlighting text
+          if (window.getSelection()?.toString().length) {
+            return;
+          }
+
           const newExpanded = !isExpanded;
           if (newExpanded) {
             const event = new CustomEvent('note-expanding', { detail: { id: note.id, handled: false } });
@@ -666,11 +672,11 @@ export const SortableNote = memo(({
                           <FolderOutput className="w-4 h-4 shrink-0" />
                           <span>Move to Session</span>
                         </div>
-                        <ArrowRight className="w-3.5 h-3.5 shrink-0" />
+                        <ArrowLeft className="w-3.5 h-3.5 shrink-0" />
                       </button>
                       
                       {isHoveringMove && (
-                        <div className="absolute right-full top-0 mr-1 min-w-[180px] w-auto bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl py-1 max-h-64 overflow-y-auto z-[10000] whitespace-nowrap custom-scrollbar">
+                        <div className="absolute right-full top-0 mr-1 min-w-[180px] w-auto bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl py-1 max-h-64 overflow-y-auto z-[10000] flex flex-col custom-scrollbar">
                           {availableSessions.filter(s => s.id !== (note.sessionId || 'global') && s.id !== (note.isGlobal ? 'global' : null)).map(session => (
                             <button
                               key={session.id}
