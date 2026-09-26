@@ -12,6 +12,16 @@
   }
 }
 
+::selection {
+  background-color: #c4b5fd; /* violet-300 (lilac) */
+  color: #2e1065; /* violet-950 (dark bold violet) */
+}
+
+::-moz-selection {
+  background-color: #c4b5fd;
+  color: #2e1065;
+}
+
 /* Core Liquid Glass Effect for Pop-up Menus */
 .liquid-glass-box {
   /* 1. Translucent glass surface */

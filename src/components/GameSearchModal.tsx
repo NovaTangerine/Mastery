@@ -148,6 +148,7 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             onClick={onClose}
             className="fixed inset-0 z-[100] bg-zinc-950/50 backdrop-blur-[12px]"
           />
@@ -159,13 +160,12 @@ export default function GameSearchModal({ isOpen, onClose, onSelectGame, slotNum
                   duration: 0.4,
                   ease: [0.16, 1, 0.3, 1]
                 },
-                opacity: { duration: 0.3, ease: "easeOut" },
-                scale: { duration: 0.3, ease: "easeOut" },
-                y: { duration: 0.3, ease: "easeOut" }
+                opacity: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
+                scale: { duration: 0.2, ease: [0.16, 1, 0.3, 1] }
               }}
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
               className="relative w-full max-w-[800px] bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] pointer-events-auto"
             >
           <div className="p-4 border-b border-zinc-800 flex items-center gap-3">
