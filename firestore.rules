@@ -38,7 +38,7 @@ service cloud.firestore {
     // Domain Validators
     // ===============================================================
     function isValidGame(data) {
-      return hasOnlyAllowedFields(['title', 'platform', 'status', 'coverUrl', 'overallNotes', 'storySynopsis', 'uid', 'createdAt', 'updatedAt', 'dismissedSessionBanner']) &&
+      return hasOnlyAllowedFields(['title', 'platform', 'status', 'coverUrl', 'overallNotes', 'storySynopsis', 'uid', 'createdAt', 'updatedAt', 'dismissedSessionBanner', 'completion']) &&
              data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
              data.status in ['playing', 'completed', 'backlog', 'abandoned'] &&
              data.uid is string && data.uid.size() > 0 && data.uid.size() < 128 &&
@@ -49,7 +49,17 @@ service cloud.firestore {
              (!('coverUrl' in data) || data.coverUrl == null || (data.coverUrl is string && data.coverUrl.size() < 2000)) &&
              (!('overallNotes' in data) || data.overallNotes == null || (data.overallNotes is string && data.overallNotes.size() < 10000)) &&
              (!('storySynopsis' in data) || data.storySynopsis == null || (data.storySynopsis is string && data.storySynopsis.size() < 10000)) &&
-             (!('dismissedSessionBanner' in data) || data.dismissedSessionBanner == null || data.dismissedSessionBanner is bool);
+             (!('dismissedSessionBanner' in data) || data.dismissedSessionBanner == null || data.dismissedSessionBanner is bool) &&
+             (!('completion' in data) || data.completion == null || isValidGameCompletion(data.completion));
+    }
+
+    function isValidGameCompletion(c) {
+      return c is map &&
+             c.keys().hasOnly(['rating', 'tags', 'review', 'completedAt']) &&
+             c.rating is int && c.rating >= 1 && c.rating <= 5 &&
+             c.tags is list && c.tags.size() <= 10 &&
+             c.review is string && c.review.size() < 6000 &&
+             c.completedAt is number;
     }
 
     function isValidSession(data) {
@@ -67,7 +77,9 @@ service cloud.firestore {
              (!('trackers' in data) || data.trackers == null || (data.trackers is list && data.trackers.size() <= 50)) &&
              (!('metrics' in data) || data.metrics == null || (data.metrics is list && data.metrics.size() <= 50)) &&
              (!('tags' in data) || data.tags == null || (data.tags is list && data.tags.size() <= 50)) &&
-             (!('updatedAt' in data) || data.updatedAt == null || data.updatedAt is number);
+             (!('updatedAt' in data) || data.updatedAt == null || data.updatedAt is number) &&
+             (!('bio' in data) || data.bio == null || (data.bio is string && data.bio.size() <= 160)) &&
+             (!('socialLinks' in data) || data.socialLinks == null || (data.socialLinks is list && data.socialLinks.size() <= 5));
     }
 
     function isValidSessionGroup(data) {
@@ -119,7 +131,7 @@ service cloud.firestore {
     }
 
     function isValidUser(data) {
-      return hasOnlyAllowedFields(['role', 'displayName', 'email', 'photoURL', 'updatedAt']) &&
+      return hasOnlyAllowedFields(['role', 'displayName', 'email', 'photoURL', 'updatedAt', 'bio', 'socialLinks']) &&
              data.role == 'user' &&
              (!('displayName' in data) || data.displayName == null || (data.displayName is string && data.displayName.size() < 256)) &&
              (!('email' in data) || data.email == null || (data.email is string && data.email.size() < 256)) &&

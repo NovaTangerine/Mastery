@@ -21,6 +21,9 @@ import {
   Tag
 } from 'lucide-react';
 
+import GameStatusBadge from './components/GameStatusBadge';
+import GameCompletionModal from './components/GameCompletionModal';
+
 import { Toaster } from 'sonner';
 
 import { signInWithGoogle, signOut } from './firebase';
@@ -116,7 +119,8 @@ function MainApp() {
     defaultTagVisibility,
     setDefaultTagVisibility
   } = useUI();
-  const { selectedGame, activeSession } = useGameContext();
+  const { selectedGame, activeSession, handleUpdateGameStatus, handleSubmitGameCompletion } = useGameContext();
+  const [isCompletionModalOpen, setIsCompletionModalOpen] = useState(false);
 
   const handleResetToDashboard = () => {
     clearHistory();
@@ -357,15 +361,18 @@ function MainApp() {
                   )}
 
                   {selectedGame && (
-                    <button 
-                      onClick={() => navigateTo('session-view')}
-                      className="flex items-center gap-2 text-zinc-500 hover:text-zinc-300 transition-colors"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                      <span className="text-zinc-100 font-medium truncate max-w-[150px] sm:max-w-none">
-                        {selectedGame.title}
-                      </span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => navigateTo('session-view')}
+                        className="flex items-center gap-2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                        <span className="text-zinc-100 font-medium truncate max-w-[150px] sm:max-w-none">
+                          {selectedGame.title}
+                        </span>
+                      </button>
+                      <GameStatusBadge status={selectedGame.status} onChange={handleUpdateGameStatus} onSelectCompleted={() => setIsCompletionModalOpen(true)} />
+                    </div>
                   )}
                 </div>
 
@@ -468,21 +475,26 @@ function MainApp() {
                   >
                     <ChevronRight className="w-6 h-6 rotate-180" />
                   </button>
-                  <button 
-                    onClick={() => {
-                      // Trigger an event that SessionView listens for
-                      window.dispatchEvent(new CustomEvent('open-session-details'));
-                    }}
-                    className="flex-1 min-w-0 flex flex-col items-center justify-center p-1 hover:bg-zinc-900/50 rounded-xl transition-colors group"
-                  >
-                    <div className="flex items-center gap-1.5 w-full justify-center">
-                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest truncate max-w-[120px]">{selectedGame?.title}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 w-full justify-center text-zinc-100">
-                      <span className="font-bold text-sm truncate">{activeSession?.name || activeSession?.chapter || activeSession?.progressMarker || 'Current Session'}</span>
-                      <ChevronDown className="w-3.5 h-3.5 text-zinc-500 group-hover:text-zinc-300 transition-colors shrink-0" />
-                    </div>
-                  </button>
+                  <div className="flex-1 min-w-0 flex flex-col items-center justify-center gap-1 p-1">
+                    {selectedGame && (
+                      <GameStatusBadge status={selectedGame.status} onChange={handleUpdateGameStatus} onSelectCompleted={() => setIsCompletionModalOpen(true)} />
+                    )}
+                    <button
+                      onClick={() => {
+                        // Trigger an event that SessionView listens for
+                        window.dispatchEvent(new CustomEvent('open-session-details'));
+                      }}
+                      className="w-full flex flex-col items-center justify-center hover:bg-zinc-900/50 rounded-xl transition-colors group"
+                    >
+                      <div className="flex items-center gap-1.5 w-full justify-center">
+                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest truncate max-w-[120px]">{selectedGame?.title}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 w-full justify-center text-zinc-100">
+                        <span className="font-bold text-sm truncate">{activeSession?.name || activeSession?.chapter || activeSession?.progressMarker || 'Current Session'}</span>
+                        <ChevronDown className="w-3.5 h-3.5 text-zinc-500 group-hover:text-zinc-300 transition-colors shrink-0" />
+                      </div>
+                    </button>
+                  </div>
                   <div className="w-10 shrink-0" /> {/* Spacer to balance the back button */}
                 </div>
               )}
@@ -559,6 +571,14 @@ function MainApp() {
 
         <ProfileDrawer isOpen={isProfileDrawerOpen} onClose={() => setIsProfileDrawerOpen(false)} />
         <ProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} />
+        {selectedGame && (
+          <GameCompletionModal
+            isOpen={isCompletionModalOpen}
+            game={selectedGame}
+            onClose={() => setIsCompletionModalOpen(false)}
+            onSubmit={handleSubmitGameCompletion}
+          />
+        )}
         <FeedbackModal 
           isOpen={isFeedbackModalOpen} 
           onClose={() => setIsFeedbackModalOpen(false)} 

@@ -9,6 +9,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useUI } from '../contexts/UIContext';
 import GameSearchModal from '../components/GameSearchModal';
 import GameSyncModal from '../components/GameSyncModal';
+import BlurRevealImage from '../components/BlurRevealImage';
+import { useResumeGame } from '../hooks/useResumeGame';
 
 export default function DashboardView() {
   const { user } = useAuth();
@@ -150,44 +152,7 @@ export default function DashboardView() {
      setDeleteInfo(null);
   };
 
-  const resumeOrCreateSession = async (game: Game) => {
-    try {
-      const q = query(
-        collection(db, 'sessions'),
-        where('gameId', '==', game.id), where('uid', '==', user!.uid),
-        orderBy('startTime', 'desc'),
-        limit(1)
-      );
-      const snapshot = await getDocs(q);
-      if (!snapshot.empty) {
-        const sessionDoc = snapshot.docs[0];
-        const sessionData = { id: sessionDoc.id, ...sessionDoc.data() } as GameSession;
-        navigateTo('session-view', game, sessionData);
-      } else {
-        const { addDoc } = await import('firebase/firestore');
-        const now = new Date();
-        const hour = now.getHours();
-        let timeOfDay = 'Morning';
-        if (hour >= 12 && hour < 17) timeOfDay = 'Afternoon';
-        else if (hour >= 17 && hour < 21) timeOfDay = 'Evening';
-        else if (hour >= 21 || hour < 4) timeOfDay = 'Night';
-
-        const sessionName = `${format(now, 'MMM d')}, ${timeOfDay} Session`;
-        const sessionData: any = {
-          name: sessionName,
-          gameId: game.id,
-          uid: user!.uid,
-          startTime: now.getTime(),
-          progressMarker: 'Starting session',
-        };
-        const docRef = await addDoc(collection(db, 'sessions'), sessionData);
-        const newSession = { id: docRef.id, ...sessionData } as GameSession;
-        navigateTo('session-view', game, newSession);
-      }
-    } catch (error) {
-      console.error("Error creating or fetching session", error);
-    }
-  };
+  const resumeOrCreateSession = useResumeGame();
 
   const handleQuickResume = async (e: React.MouseEvent, game: Game) => {
     e.stopPropagation();
@@ -577,56 +542,5 @@ export default function DashboardView() {
         </div>
       )}
     </div>
-  );
-}
-
-function BlurRevealImage({ url, alt, className, revealDelay }: { url: string, alt: string, className?: string, revealDelay?: number }) {
-  const [loaded, setLoaded] = useState(false);
-  const imgRef = React.useRef<HTMLImageElement>(null);
-  
-  // Use passed delay or fallback to random
-  const fallbackDelay = React.useMemo(() => Math.floor(Math.random() * 600), []);
-  const delay = revealDelay !== undefined ? revealDelay : fallbackDelay;
-  const [transitionDone, setTransitionDone] = useState(false);
-
-  const handleImageLoaded = () => {
-    // Wait a tiny bit before triggering the transition to ensure the initial blurry state has rendered
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setLoaded(true);
-      });
-    });
-  };
-
-  React.useEffect(() => {
-    if (imgRef.current?.complete) {
-      handleImageLoaded();
-    }
-  }, [url]);
-
-  React.useEffect(() => {
-    if (loaded) {
-      const timer = setTimeout(() => {
-        setTransitionDone(true);
-      }, delay + 700); // Wait for delay + transition duration
-      return () => clearTimeout(timer);
-    }
-  }, [loaded, delay]);
-  
-  return (
-    <>
-      <div 
-        className={`absolute inset-0 bg-zinc-800 transition-opacity duration-700 z-10 pointer-events-none ${loaded ? 'opacity-0' : 'animate-pulse'}`} 
-        style={{ transitionDelay: loaded ? `${delay}ms` : '0ms' }}
-      />
-      <img
-        ref={imgRef}
-        src={url}
-        alt={alt}
-        onLoad={handleImageLoaded}
-        className={`${className || ''} ${loaded ? 'opacity-100 blur-none' : 'opacity-0 blur-md'}`}
-        style={{ transitionDelay: transitionDone ? '0ms' : `${loaded ? delay : 0}ms` }}
-      />
-    </>
   );
 }

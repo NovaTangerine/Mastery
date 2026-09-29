@@ -7,8 +7,21 @@ export interface Game {
   overallNotes: string;
   storySynopsis: string;
   dismissedSessionBanner?: boolean;
+  completion?: GameCompletion;
   createdAt: number;
   updatedAt: number;
+}
+
+export interface UserProfile {
+  bio?: string; // up to 160 chars
+  socialLinks?: string[]; // up to 5 URLs
+}
+
+export interface GameCompletion {
+  rating: number; // 1-5
+  tags: string[]; // up to 10
+  review: string; // up to 500 words
+  completedAt: number;
 }
 
 export type QuantifierType = 'none' | 'checkbox' | 'progress' | 'stepper';

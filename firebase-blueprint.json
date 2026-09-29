@@ -12,6 +12,17 @@
         "coverUrl": { "type": "string" },
         "overallNotes": { "type": "string" },
         "storySynopsis": { "type": "string" },
+        "completion": {
+          "type": "object",
+          "description": "Set when the user marks the game completed.",
+          "properties": {
+            "rating": { "type": "integer", "minimum": 1, "maximum": 5 },
+            "tags": { "type": "array", "items": { "type": "string" }, "maxItems": 10 },
+            "review": { "type": "string" },
+            "completedAt": { "type": "number" }
+          },
+          "required": ["rating", "tags", "review", "completedAt"]
+        },
         "uid": { "type": "string" },
         "createdAt": { "type": "number" },
         "updatedAt": { "type": "number" }

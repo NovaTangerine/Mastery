@@ -18,7 +18,7 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
-import { Game, GameSession, Note, ViewMode, Draft, SessionGroup, TrackerItem, SessionMetric } from '../types';
+import { Game, GameCompletion, GameSession, Note, ViewMode, Draft, SessionGroup, TrackerItem, SessionMetric } from '../types';
 import { toast } from 'sonner';
 import { safeGenerateKeyBetween } from '../lib/fractionalIndexing';
 import { useAuth } from './AuthContext';
@@ -48,6 +48,7 @@ export interface ActiveSessionContextType {
   handleUpdateSessionTags: (sessionId: string, tags: string[]) => Promise<void>;
   handleUpdateGameField: (field: 'overallNotes' | 'storySynopsis', value: string) => Promise<void>;
   handleUpdateGameStatus: (status: Game['status']) => Promise<void>;
+  handleSubmitGameCompletion: (completion: Omit<GameCompletion, 'completedAt'>) => Promise<boolean>;
   handleDeleteSession: (sessionId: string) => Promise<void>;
   handleDeleteSessionAndShiftFocus: (sessionId: string) => Promise<void>;
   checkSessionHasNotes: (sessionId: string) => Promise<boolean>;
@@ -348,6 +349,23 @@ export const ActiveSessionProvider = ({ children }: { children: React.ReactNode 
       toast.success('Game status updated');
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'games');
+    }
+  };
+
+  const handleSubmitGameCompletion = async (completion: Omit<GameCompletion, 'completedAt'>) => {
+    if (!selectedGame) return false;
+    try {
+      const now = Date.now();
+      await updateDoc(doc(db, 'games', selectedGame.id), {
+        status: 'completed',
+        completion: { ...completion, completedAt: now },
+        updatedAt: now
+      });
+      toast.success('Your review has been submitted');
+      return true;
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'games');
+      return false;
     }
   };
 
@@ -960,6 +978,7 @@ export const ActiveSessionProvider = ({ children }: { children: React.ReactNode 
       handleUpdateSessionTags,
       handleUpdateGameField,
       handleUpdateGameStatus,
+      handleSubmitGameCompletion,
       handleDeleteSession,
       handleDeleteSessionAndShiftFocus,
       checkSessionHasNotes,
