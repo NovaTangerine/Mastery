@@ -1,13 +1,12 @@
 // Review a game — wireframes 03-review-flow.html (R1–R4), reworked:
-// Game → Status → Words (with highs/lows/moment/tags as nudges) → Score → Review.
+// Game → Status → Words (+ tags) → Score → Review → reveal.
 // Status and Words are required. The Review step replaces R4 Extras.
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Reorder, motion, useDragControls } from 'motion/react';
+import { motion } from 'motion/react';
 import {
   CapsuleStatus,
-  ExtraItem,
   Game,
   MOCK_GAMES,
   RECENTLY_PLAYED,
@@ -18,13 +17,12 @@ import {
   VERDICT_PRESETS,
   WRITING_PROMPTS,
   formatDate,
-  newId,
   scoreSentence,
   suggestTagsLocally,
 } from '../data';
 import { useCapsuleStore, useHeadlineCapsule } from '../store';
 import { useGameSearch } from '../useGameSearch';
-import { Btn, Chip, CoverThumb, FieldLabel, H1, Logo, Note, Page, Panel, Ph, cx, inputCls } from '../ui';
+import { Btn, Chip, CoverThumb, FieldLabel, H1, Logo, Note, Page, Ph, cx, inputCls } from '../ui';
 
 const STEPS = [
   { key: 'game', label: 'Game' },
@@ -305,15 +303,15 @@ function StepStatus() {
   );
 }
 
-// R2 · Words, with optional "nudges" ---------------------------------------------
-// Highs, lows, favorite moment and tags used to be their own step (R4 Extras).
-// They now sit beside the writing box as levers to pull when you're stuck, and
-// "Turn my notes into words" stitches them into a starting draft.
+// R2 · Words + tags ----------------------------------------------------------------
+// Highs/lows, favorite moment and the "nudges" were cut for now: the review
+// is your words plus tags. A templated "workspace" of questions is still being
+// explored (Paper page "R2 · Two workspaces (explore)").
 
 /** Compact status row on the Words step: the choice from the Status step, still editable. */
 function StatusRow({ value, onChange }: { value?: CapsuleStatus; onChange: (s: CapsuleStatus) => void }) {
   return (
-    <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label="Where you are with it">
+    <div className="flex flex-wrap items-center justify-center gap-2" role="radiogroup" aria-label="Where you are with it">
       <span className="mr-1 text-[12px] font-semibold uppercase tracking-wide text-[#888]">Status</span>
       {STATUS_CHOICES.map((c) => (
         <Chip key={c.value} selected={value === c.value} onClick={() => onChange(c.value)}>
@@ -324,237 +322,53 @@ function StatusRow({ value, onChange }: { value?: CapsuleStatus; onChange: (s: C
   );
 }
 
-const HIGH_ICONS = ['H', '★', '♥', '⚡', '✦'];
-const LOW_ICONS = ['L', '✕', '☹', '⌛', '⚠'];
-
-/** One high/low row. Only the ⋮⋮ handle starts a drag, so the text stays selectable. */
-function ExtraRow({
-  item,
-  onChange,
-  onCycleIcon,
-  onRemove,
-}: {
-  item: ExtraItem;
-  onChange: (patch: Partial<ExtraItem>) => void;
-  onCycleIcon: () => void;
-  onRemove: () => void;
-  key?: string;
-}) {
-  const controls = useDragControls();
-  return (
-    <Reorder.Item
-      value={item}
-      dragListener={false}
-      dragControls={controls}
-      className="flex items-center gap-2 rounded-[10px] border border-[#E2E2E2] bg-white px-2 py-2"
-    >
-      <span
-        className="cursor-grab touch-none select-none text-[13px] font-bold text-[#BBB] active:cursor-grabbing"
-        onPointerDown={(e) => controls.start(e)}
-        aria-label="Drag to reorder"
-      >
-        ⋮⋮
-      </span>
-      <button
-        type="button"
-        title="Change icon"
-        aria-label="Change icon"
-        onClick={onCycleIcon}
-        className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-[#DADADA] text-[10px] font-semibold text-[#666] hover:bg-[#CFCFCF]"
-      >
-        {item.icon}
-      </button>
-      <input
-        className="min-w-0 flex-1 bg-transparent text-[13px] font-medium outline-none"
-        value={item.text}
-        placeholder="Describe it"
-        autoFocus={!item.text}
-        onChange={(e) => onChange({ text: e.target.value })}
-      />
-      <button type="button" aria-label="Remove" className="text-[14px] font-bold text-[#AAA] hover:text-[#222]" onClick={onRemove}>
-        ×
-      </button>
-    </Reorder.Item>
-  );
-}
-
-function ExtraList({
-  items,
-  icons,
-  onChange,
-  addLabel,
-}: {
-  items: ExtraItem[];
-  icons: string[];
-  onChange: (items: ExtraItem[]) => void;
-  addLabel: string;
-}) {
-  const update = (id: string, patch: Partial<ExtraItem>) => onChange(items.map((x) => (x.id === id ? { ...x, ...patch } : x)));
-  return (
-    <div className="flex flex-col gap-2">
-      <Reorder.Group axis="y" values={items} onReorder={onChange} className="flex flex-col gap-2">
-        {items.map((it) => (
-          <ExtraRow
-            key={it.id}
-            item={it}
-            onChange={(patch) => update(it.id, patch)}
-            onCycleIcon={() => update(it.id, { icon: icons[(icons.indexOf(it.icon) + 1) % icons.length] })}
-            onRemove={() => onChange(items.filter((x) => x.id !== it.id))}
-          />
-        ))}
-      </Reorder.Group>
-      <div className="flex items-center gap-2">
-        <Btn variant="link" onClick={() => onChange([...items, { id: newId('x'), text: '', icon: icons[0] }])}>
-          {addLabel}
-        </Btn>
-        {items.length > 1 && <Note>drag ⋮⋮ to reorder</Note>}
-      </div>
-    </div>
-  );
-}
-
-/** A collapsible module in the nudge panel. */
-function Lever({
-  title,
-  summary,
-  open,
-  onToggle,
-  children,
-}: {
-  title: string;
-  summary?: string;
-  open: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-[10px] border border-[#E2E2E2] bg-white">
-      <button type="button" onClick={onToggle} aria-expanded={open} className="flex w-full items-center gap-2 px-3 py-[10px] text-left">
-        <span className="text-[13px] font-bold">{title}</span>
-        {summary && <span className="min-w-0 flex-1 truncate text-[12px] text-[#888]">{summary}</span>}
-        <span className="ml-auto text-[12px] text-[#888]">{open ? '▾' : '▸'}</span>
-      </button>
-      {open && <div className="flex flex-col gap-2 border-t border-[#EFEFEF] px-3 pb-3 pt-2">{children}</div>}
-    </div>
-  );
-}
-
-const joinList = (xs: string[]) => (xs.length <= 1 ? xs[0] ?? '' : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
-const trimEnd = (s: string) => s.trim().replace(/[.!?]+$/, '');
-/** "The train ride" reads better mid-sentence as "the train ride"; names like "Zero-G" stay as typed. */
-const midSentence = (s: string) => s.replace(/^(The|A|An|My|That|This|Every|Some|When|How)\b/, (w) => w.toLowerCase());
-
-/**
- * Stitches the nudges into a few editable sentences. A local stand-in for
- * AI-assisted drafting, which comes with the real backend.
- */
-export function composeFromNotes(d: { highs: ExtraItem[]; lows: ExtraItem[]; favoriteMoment: string }) {
-  const highs = d.highs.map((h) => midSentence(trimEnd(h.text))).filter(Boolean);
-  const lows = d.lows.map((l) => midSentence(trimEnd(l.text))).filter(Boolean);
-  const moment = midSentence(trimEnd(d.favoriteMoment));
-  const parts: string[] = [];
-  if (highs.length) parts.push(`What stuck with me most: ${joinList(highs)}.`);
-  if (lows.length) parts.push(`Where it lost me: ${joinList(lows)}.`);
-  if (moment) parts.push(`The moment I’ll remember: ${moment}.`);
-  return parts.join(' ');
-}
-
-type LeverKey = 'highs' | 'lows' | 'moment' | 'tags';
-
-function NudgePanel({ onUseDraft }: { onUseDraft: (text: string) => void }) {
+/** Tags picked up from the words as you write, plus your own. Sits under the text, centered. */
+function TagsPanel() {
   const { draft, updateDraft } = useCapsuleStore();
-  const [open, setOpen] = useState<Record<LeverKey, boolean>>(() => ({
-    highs: draft.highs.length > 0,
-    lows: draft.lows.length > 0,
-    moment: !!draft.favoriteMoment,
-    tags: true,
-  }));
-  const toggle = (k: LeverKey) => setOpen((o) => ({ ...o, [k]: !o[k] }));
   const [custom, setCustom] = useState('');
-  const [addingTag, setAddingTag] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  const suggested = useMemo(
-    () => suggestTagsLocally(`${draft.text} ${draft.favoriteMoment} ${[...draft.highs, ...draft.lows].map((h) => h.text).join(' ')}`),
-    [draft.text, draft.favoriteMoment, draft.highs, draft.lows],
-  );
-  const allTags = Array.from(new Set([...draft.tags, ...suggested]));
-  const toggleTag = (t: string) => updateDraft({ tags: draft.tags.includes(t) ? draft.tags.filter((x) => x !== t) : [...draft.tags, t] });
-  const composed = composeFromNotes(draft);
-  const countLabel = (n: number) => (n ? String(n) : undefined);
+  const [adding, setAdding] = useState(false);
+  const suggested = useMemo(() => suggestTagsLocally(draft.text), [draft.text]);
+  const all = Array.from(new Set([...draft.tags, ...suggested]));
+  const toggle = (t: string) => updateDraft({ tags: draft.tags.includes(t) ? draft.tags.filter((x) => x !== t) : [...draft.tags, t] });
 
   return (
-    <Panel className="w-full gap-3 lg:w-[360px] lg:shrink-0">
-      <div className="flex flex-col gap-1">
-        <p className="text-[13px] font-bold">Need a nudge?</p>
-        <Note>Jot down the pieces. They show on your capsule, and they can get your words going.</Note>
+    <section className="flex w-full flex-col items-center gap-2 border-t border-[#EFEFEF] pt-5">
+      <p className="text-[13px] font-bold">Tags</p>
+      <Note>Picked up from what you write. Tap to keep.</Note>
+      <div className="flex min-h-[26px] flex-wrap items-center justify-center gap-[6px]">
+        {all.length === 0 && <span className="text-[12px] text-[#AAA]">Nothing yet</span>}
+        {all.map((t) => (
+          <Chip key={t} dashed={!draft.tags.includes(t)} selected={draft.tags.includes(t)} onClick={() => toggle(t)}>
+            {t}
+          </Chip>
+        ))}
+        {adding ? (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const t = custom.trim().toLowerCase();
+              if (t && !draft.tags.includes(t)) updateDraft({ tags: [...draft.tags, t] });
+              setCustom('');
+              setAdding(false);
+            }}
+          >
+            <input
+              autoFocus
+              className="w-[110px] rounded-full border-[1.5px] border-[#222] bg-white px-3 py-1 text-[12px] outline-none"
+              placeholder="tag"
+              maxLength={24}
+              value={custom}
+              onChange={(e) => setCustom(e.target.value)}
+              onBlur={() => setAdding(false)}
+            />
+          </form>
+        ) : (
+          <Chip dashed onClick={() => setAdding(true)}>
+            + custom
+          </Chip>
+        )}
       </div>
-      <Lever title="Highs" summary={countLabel(draft.highs.filter((h) => h.text.trim()).length)} open={open.highs} onToggle={() => toggle('highs')}>
-        <ExtraList items={draft.highs} icons={HIGH_ICONS} onChange={(highs) => updateDraft({ highs })} addLabel="+ Add a high" />
-      </Lever>
-      <Lever title="Lows" summary={countLabel(draft.lows.filter((l) => l.text.trim()).length)} open={open.lows} onToggle={() => toggle('lows')}>
-        <ExtraList items={draft.lows} icons={LOW_ICONS} onChange={(lows) => updateDraft({ lows })} addLabel="+ Add a low" />
-      </Lever>
-      <Lever title="Favorite moment" summary={open.moment ? undefined : draft.favoriteMoment || undefined} open={open.moment} onToggle={() => toggle('moment')}>
-        <input
-          className={cx(inputCls, 'py-2')}
-          placeholder="Describe it…"
-          value={draft.favoriteMoment}
-          onChange={(e) => updateDraft({ favoriteMoment: e.target.value })}
-        />
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => updateDraft({ screenshotName: e.target.files?.[0]?.name })} />
-        <Ph
-          dashed
-          className="h-[72px]"
-          onClick={() => fileRef.current?.click()}
-          label={draft.screenshotName ? `Screenshot: ${draft.screenshotName} (click to change)` : '+ Drop a screenshot'}
-        />
-      </Lever>
-      <Lever title="Tags" summary={countLabel(draft.tags.length)} open={open.tags} onToggle={() => toggle('tags')}>
-        <div className="flex flex-wrap items-center gap-[6px]">
-          {allTags.length === 0 && <span className="text-[12px] text-[#AAA]">Nothing picked up yet</span>}
-          {allTags.map((t) => (
-            <Chip key={t} dashed={!draft.tags.includes(t)} selected={draft.tags.includes(t)} onClick={() => toggleTag(t)}>
-              {t}
-            </Chip>
-          ))}
-          {addingTag ? (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const t = custom.trim().toLowerCase();
-                if (t && !draft.tags.includes(t)) updateDraft({ tags: [...draft.tags, t] });
-                setCustom('');
-                setAddingTag(false);
-              }}
-            >
-              <input
-                autoFocus
-                className="rounded-full border-[1.5px] border-[#222] px-3 py-1 text-[12px] outline-none"
-                placeholder="tag"
-                maxLength={24}
-                value={custom}
-                onChange={(e) => setCustom(e.target.value)}
-                onBlur={() => setAddingTag(false)}
-              />
-            </form>
-          ) : (
-            <Chip dashed onClick={() => setAddingTag(true)}>
-              + custom
-            </Chip>
-          )}
-        </div>
-        <Note>Picked up from what you write. Tap to keep.</Note>
-      </Lever>
-      {composed && (
-        <div className="flex flex-col gap-1 pt-1">
-          <Btn variant="secondary" onClick={() => onUseDraft(composed)}>
-            ✦ Turn my notes into words
-          </Btn>
-          <Note>Adds a starting draft from your highs, lows and moment. Edit it however you like.</Note>
-        </div>
-      )}
-    </Panel>
+    </section>
   );
 }
 
@@ -609,38 +423,37 @@ function StepWords() {
         </>
       }
     >
-      <div className="flex flex-col items-start gap-9 lg:flex-row">
-        <div className="flex w-full min-w-0 flex-1 flex-col gap-4">
-          <GameChip game={draft.game!} status={draft.status} date={draft.createdAt} />
-          <StatusRow value={draft.status} onChange={(status) => updateDraft({ status })} />
-          <H1>So… how was it?</H1>
-          <div className="relative">
-            <textarea
-              ref={ref}
-              autoFocus
-              className={cx(inputCls, 'h-[260px] resize-none text-[14px] leading-[19px]')}
-              placeholder="Start typing. A sentence is enough."
-              value={draft.text}
-              maxLength={limit}
-              onChange={(e) => updateDraft({ text: e.target.value })}
-            />
-            {near && (
-              <span className="absolute bottom-3 right-4 text-[11px] font-semibold text-[#888]">
-                {draft.text.length} / {limit}
-              </span>
-            )}
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-[12px] font-semibold text-[#555]">Stuck? Try a prompt:</p>
-            {WRITING_PROMPTS.map((p) => (
-              <Chip key={p} dashed onClick={() => append(`${p}: `)}>
-                {p}
-              </Chip>
-            ))}
-          </div>
-          <Note>A sentence is enough. No minimum, no character counter until you get close to the limit.</Note>
+      {/* One centered column; the text field is ~600px (two-thirds of the old ~900px). */}
+      <div className="mx-auto flex w-full max-w-[600px] flex-col items-center gap-4">
+        <GameChip game={draft.game!} status={draft.status} date={draft.createdAt} />
+        <StatusRow value={draft.status} onChange={(status) => updateDraft({ status })} />
+        <H1 className="pt-2 text-center">So… how was it?</H1>
+        <div className="relative w-full">
+          <textarea
+            ref={ref}
+            autoFocus
+            className={cx(inputCls, 'h-[260px] resize-none text-[14px] leading-[19px]')}
+            placeholder="Start typing. A sentence is enough."
+            value={draft.text}
+            maxLength={limit}
+            onChange={(e) => updateDraft({ text: e.target.value })}
+          />
+          {near && (
+            <span className="absolute bottom-3 right-4 text-[11px] font-semibold text-[#888]">
+              {draft.text.length} / {limit}
+            </span>
+          )}
         </div>
-        <NudgePanel onUseDraft={append} />
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <p className="text-[12px] font-semibold text-[#555]">Stuck? Try a prompt:</p>
+          {WRITING_PROMPTS.map((p) => (
+            <Chip key={p} dashed onClick={() => append(`${p}: `)}>
+              {p}
+            </Chip>
+          ))}
+        </div>
+        <Note className="text-center">A sentence is enough. No minimum, no character counter until you get close to the limit.</Note>
+        <TagsPanel />
       </div>
     </FlowShell>
   );
@@ -890,8 +703,6 @@ function StepReview() {
   const { draft } = useCapsuleStore();
   const edit = (step: StepKey) => `/capsule/new/${step}?return=review`;
   const scores = (['stars', 'ten', 'percent'] as NumericScale[]).filter((s) => draft.rating[s] != null);
-  const highs = draft.highs.filter((h) => h.text.trim());
-  const lows = draft.lows.filter((l) => l.text.trim());
 
   return (
     <FlowShell
@@ -938,31 +749,6 @@ function StepReview() {
               ))
             ) : (
               <Empty>No score. That’s fine: it’s optional.</Empty>
-            )}
-          </ReviewSection>
-          <ReviewSection title="Highs & lows" editTo={edit('words')}>
-            {highs.length + lows.length === 0 ? (
-              <Empty>None added</Empty>
-            ) : (
-              <ul className="flex flex-col gap-[6px]">
-                {[...highs.map((h) => ({ ...h, kind: 'High' })), ...lows.map((l) => ({ ...l, kind: 'Low' }))].map((x) => (
-                  <li key={x.id} className="flex items-center gap-2 text-[14px] text-[#333]">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#DADADA] text-[10px] font-semibold text-[#666]">{x.icon}</span>
-                    <span className="text-[11px] font-semibold uppercase text-[#999]">{x.kind}</span>
-                    {x.text}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </ReviewSection>
-          <ReviewSection title="Favorite moment" editTo={edit('words')}>
-            {draft.favoriteMoment.trim() ? (
-              <p className="text-[14px] text-[#333]">
-                {draft.favoriteMoment.trim()}
-                {draft.screenshotName && <span className="text-[#888]"> · screenshot: {draft.screenshotName}</span>}
-              </p>
-            ) : (
-              <Empty>None added</Empty>
             )}
           </ReviewSection>
           <ReviewSection title="Tags" editTo={edit('words')}>

@@ -6,7 +6,7 @@ import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-
 import { motion } from 'motion/react';
 import { STATUS_LABEL, formatDate, shortScore } from '../data';
 import { useCapsuleStore } from '../store';
-import { Btn, ExtraIcon, Flash, Ph, copyText, cx, useFlash } from '../ui';
+import { Btn, Flash, Ph, copyText, cx, useFlash } from '../ui';
 import { ShareModal, capsuleLink } from './Share';
 
 /** All timings in seconds from the start of the reveal. */
@@ -20,7 +20,6 @@ export const REVEAL = {
   firstLineAt: 1.65,
   lineGap: 0.32,
   lineDur: 0.5,
-  iconGap: 0.09,
   hold: 0.55, // soft hold after the last icon settles
   outro: 0.7, // bars retract, page lightens, actions fade in
 };
@@ -47,11 +46,9 @@ export function RevealScreen() {
   const [msg, flash] = useFlash();
 
   const lines = useMemo(() => splitLines(capsule?.text ?? ''), [capsule?.text]);
-  const icons = useMemo(() => (capsule ? [...capsule.highs, ...capsule.lows] : []), [capsule]);
 
   const lastLineAt = REVEAL.firstLineAt + Math.max(0, lines.length - 1) * REVEAL.lineGap + REVEAL.lineDur;
-  const iconsAt = lastLineAt - 0.1;
-  const settledAt = iconsAt + icons.length * REVEAL.iconGap + 0.4;
+  const settledAt = lastLineAt + 0.3; // tags settle last
   const doneAt = settledAt + REVEAL.hold;
 
   // The capsule is saved; let go of the draft so R1 starts fresh next time.
@@ -178,21 +175,6 @@ export function RevealScreen() {
                 </motion.p>
               ))}
             </div>
-            {icons.length > 0 && (
-              <div className="flex gap-[10px]">
-                {icons.map((x, i) => (
-                  <motion.span
-                    key={x.id}
-                    className="inline-flex"
-                    initial={init({ opacity: 0, scale: 1.35, y: -6 })}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ delay: at(iconsAt + i * REVEAL.iconGap), type: 'spring', stiffness: 260, damping: 18 }}
-                  >
-                    <ExtraIcon icon={x.icon} label={x.text} kind={i < capsule.highs.length ? 'High' : 'Low'} dark={!light} />
-                  </motion.span>
-                ))}
-              </div>
-            )}
             {capsule.tags.length > 0 && (
               <motion.div className="flex flex-wrap gap-2" initial={init({ opacity: 0 })} animate={{ opacity: 1 }} transition={{ delay: at(settledAt - 0.2), duration: 0.5 }}>
                 {capsule.tags.map((t) => (

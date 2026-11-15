@@ -19,12 +19,6 @@ export interface Rating {
   percent?: number; // 0–100
 }
 
-export interface ExtraItem {
-  id: string;
-  text: string;
-  icon: string; // placeholder glyph for now
-}
-
 export interface Capsule {
   id: string;
   uid: string;
@@ -36,9 +30,6 @@ export interface Capsule {
   rating?: Rating;
   headline?: string;
   verdict?: string;
-  highs: ExtraItem[];
-  lows: ExtraItem[];
-  favoriteMoment?: { text: string; screenshotUrl?: string };
   tags: string[];
   createdAt: number;
   updatedAt: number;
@@ -215,9 +206,6 @@ export const MOCK_USER: CapsuleUser = {
 const day = 24 * 60 * 60 * 1000;
 const NOW = Date.UTC(2026, 10, 15);
 
-let seq = 0;
-const item = (text: string, icon: string): ExtraItem => ({ id: `x${++seq}`, text, icon });
-
 export const MOCK_CAPSULES: Capsule[] = [
   {
     id: 'c-ds2',
@@ -227,9 +215,6 @@ export const MOCK_CAPSULES: Capsule[] = [
     status: 'finished',
     text: 'Tighter and meaner than the first. The Ishimura return made every save room feel like a lie — I kept waiting for the trick.',
     rating: { stars: 4 },
-    highs: [item('The eye-poke machine scene', 'H'), item('Zero-G sections', 'H')],
-    lows: [item('Final boss fizzles out', 'L')],
-    favoriteMoment: { text: 'The train ride into the Sprawl — total quiet, then chaos.' },
     tags: ['tense', 'horror', 'sequel'],
     createdAt: NOW - 1 * day,
     updatedAt: NOW - 1 * day,
@@ -244,8 +229,6 @@ export const MOCK_CAPSULES: Capsule[] = [
     text: 'The art direction is unreal and the combat is tight, but the map design wore me down around Deepnest. I want to come back to it when I have the patience it asks for.',
     headline: 'Beautiful, brutal, and not for me — yet.',
     verdict: 'Flawed gem',
-    highs: [item('Every boss intro', 'H')],
-    lows: [item('Backtracking through Deepnest', 'L')],
     tags: ['metroidvania', 'hard'],
     createdAt: NOW - 40 * day,
     updatedAt: NOW - 40 * day,
@@ -259,8 +242,6 @@ export const MOCK_CAPSULES: Capsule[] = [
     status: 'favorite',
     text: 'The perfect game. Fight me.',
     rating: { stars: 5, ten: 10 },
-    highs: [item('The village opening', 'H')],
-    lows: [],
     tags: ['action', 'horror', 'classic'],
     createdAt: NOW - 90 * day,
     updatedAt: NOW - 90 * day,
@@ -274,8 +255,6 @@ export const MOCK_CAPSULES: Capsule[] = [
     status: 'finished',
     text: 'A platformer about anxiety that actually understands it.',
     rating: { stars: 4.5, ten: 9 },
-    highs: [item('Reflection', 'H')],
-    lows: [],
     tags: ['platformer', 'precise'],
     createdAt: NOW - 60 * day,
     updatedAt: NOW - 60 * day,

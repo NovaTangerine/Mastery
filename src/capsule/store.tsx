@@ -6,7 +6,6 @@ import {
   Capsule,
   CapsuleStatus,
   CapsuleUser,
-  ExtraItem,
   Game,
   MOCK_CAPSULES,
   MOCK_UID,
@@ -29,10 +28,6 @@ export interface Draft {
   rating: Rating;
   headline: string;
   verdict: string;
-  highs: ExtraItem[];
-  lows: ExtraItem[];
-  favoriteMoment: string;
-  screenshotName?: string;
   tags: string[];
 }
 
@@ -42,9 +37,6 @@ export const emptyDraft = (): Draft => ({
   rating: {},
   headline: '',
   verdict: '',
-  highs: [],
-  lows: [],
-  favoriteMoment: '',
   tags: [],
 });
 
@@ -140,9 +132,6 @@ export function CapsuleStoreProvider({ children }: { children: React.ReactNode }
         rating: c.rating ?? {},
         headline: c.headline ?? '',
         verdict: c.verdict ?? '',
-        highs: c.highs,
-        lows: c.lows,
-        favoriteMoment: c.favoriteMoment?.text ?? '',
         tags: c.tags,
       };
       return { ...s, draft };
@@ -169,11 +158,6 @@ export function CapsuleStoreProvider({ children }: { children: React.ReactNode }
         rating: hasRating ? d.rating : undefined,
         headline: d.headline.trim() || undefined,
         verdict: d.verdict.trim() || undefined,
-        highs: d.highs.filter((h) => h.text.trim()),
-        lows: d.lows.filter((l) => l.text.trim()),
-        favoriteMoment: d.favoriteMoment.trim()
-          ? { text: d.favoriteMoment.trim(), screenshotUrl: d.screenshotName }
-          : undefined,
         tags: d.tags,
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,

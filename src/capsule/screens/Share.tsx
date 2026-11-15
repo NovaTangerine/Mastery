@@ -27,7 +27,7 @@ export function ShareModal({
 }) {
   const [format, setFormat] = useState<(typeof FORMATS)[number]>('3D spin');
   const [bg, setBg] = useState(BACKGROUNDS[0]);
-  const [show, setShow] = useState({ score: true, text: true, extras: true, tags: true });
+  const [show, setShow] = useState({ score: true, text: true, tags: true });
   const [msg, flash] = useFlash();
   const link = capsuleLink(handle, capsule);
   const score = shortScore(capsule, scale);
@@ -78,15 +78,6 @@ export function ShareModal({
                 <p className="text-[15px] font-extrabold uppercase tracking-wide">{capsule.gameTitle}</p>
                 {show.score && <p className="text-[14px]">{score ?? (capsule.headline ? `“${capsule.headline}”` : '')}</p>}
                 {show.text && <p className="line-clamp-2 max-w-[320px] text-center text-[12px] opacity-80">“{capsule.text}”</p>}
-                {show.extras && (capsule.highs.length > 0 || capsule.lows.length > 0) && (
-                  <div className="flex gap-1">
-                    {[...capsule.highs, ...capsule.lows].map((x) => (
-                      <span key={x.id} className="flex h-5 w-5 items-center justify-center rounded-full bg-[#DADADA] text-[9px] text-[#666]">
-                        {x.icon}
-                      </span>
-                    ))}
-                  </div>
-                )}
                 {show.tags && capsule.tags.length > 0 && <p className="text-[11px] opacity-70">{capsule.tags.map((t) => `#${t}`).join(' ')}</p>}
               </div>
               <div className="flex w-full flex-col gap-4 md:w-[340px]">
@@ -116,7 +107,6 @@ export function ShareModal({
                   [
                     ['score', 'Rating / headline'],
                     ['text', 'Review text'],
-                    ['extras', 'Highs & lows'],
                     ['tags', 'Tags'],
                   ] as const
                 ).map(([k, label]) => (

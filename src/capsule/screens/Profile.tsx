@@ -459,21 +459,6 @@ export function PublicCapsule() {
             {STATUS_LABEL[capsule.status]} · {formatDate(capsule.updatedAt, true)}
           </p>
           <p className="text-[17px] leading-6 text-[#333]">“{capsule.text}”</p>
-          {capsule.highs.length > 0 && (
-            <p className="text-[14px] text-[#444]">
-              <span className="font-bold text-[#222]">Highs</span> · {capsule.highs.map((h) => h.text).join(' · ')}
-            </p>
-          )}
-          {capsule.lows.length > 0 && (
-            <p className="text-[14px] text-[#444]">
-              <span className="font-bold text-[#222]">Lows</span> · {capsule.lows.map((h) => h.text).join(' · ')}
-            </p>
-          )}
-          {capsule.favoriteMoment && (
-            <p className="text-[14px] text-[#444]">
-              <span className="font-bold text-[#222]">Favorite moment</span> · {capsule.favoriteMoment.text}
-            </p>
-          )}
           {capsule.tags.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {capsule.tags.map((t) => (
