@@ -29,6 +29,9 @@ export interface Draft {
   headline: string;
   verdict: string;
   tags: string[];
+  /** Optional; drafts saved before these existed won't have them. */
+  hoursPlayed?: string;
+  difficulty?: string;
 }
 
 export const emptyDraft = (): Draft => ({
@@ -133,6 +136,8 @@ export function CapsuleStoreProvider({ children }: { children: React.ReactNode }
         headline: c.headline ?? '',
         verdict: c.verdict ?? '',
         tags: c.tags,
+        hoursPlayed: c.hoursPlayed,
+        difficulty: c.difficulty,
       };
       return { ...s, draft };
     });
@@ -159,6 +164,8 @@ export function CapsuleStoreProvider({ children }: { children: React.ReactNode }
         headline: d.headline.trim() || undefined,
         verdict: d.verdict.trim() || undefined,
         tags: d.tags,
+        hoursPlayed: d.hoursPlayed?.trim() || undefined,
+        difficulty: d.difficulty?.trim() || undefined,
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
         likeCount: existing?.likeCount ?? 0,

@@ -373,7 +373,7 @@ export function TagsPanel() {
 }
 
 /** The writing field, prompts and tags. Shared by the page flow and the modal flow. */
-export function WordsFields({ textareaClassName = 'h-[260px]' }: { textareaClassName?: string }) {
+export function WordsFields({ textareaClassName = 'h-[260px]', showTags = true }: { textareaClassName?: string; showTags?: boolean }) {
   const { draft, updateDraft, user } = useCapsuleStore();
   const unrated = draft.noScore || user.ratingScale === 'none';
   const limit = unrated ? TEXT_LIMIT_UNRATED : TEXT_LIMIT_RATED;
@@ -422,7 +422,7 @@ export function WordsFields({ textareaClassName = 'h-[260px]' }: { textareaClass
         ))}
       </div>
       <Note className="text-center">A sentence is enough. No minimum, no character counter until you get close to the limit.</Note>
-      <TagsPanel />
+      {showTags && <TagsPanel />}
     </>
   );
 }
@@ -765,6 +765,16 @@ export function ReviewSummary({ edit }: { edit: (step: 'status' | 'words' | 'sco
           <Empty>None added</Empty>
         )}
       </ReviewSection>
+      {/* Only the modal flow asks for these, so the section stays out of the way otherwise. */}
+      {(draft.hoursPlayed?.trim() || draft.difficulty?.trim()) && (
+        <ReviewSection title="Details" edit={edit('words')}>
+          <p className="text-[15px] font-semibold text-[#444]">
+            {[draft.hoursPlayed?.trim() && `${draft.hoursPlayed.trim()} hours played`, draft.difficulty?.trim() && `Difficulty: ${draft.difficulty.trim()}`]
+              .filter(Boolean)
+              .join(' · ')}
+          </p>
+        </ReviewSection>
+      )}
     </>
   );
 }

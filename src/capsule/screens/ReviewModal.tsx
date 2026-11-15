@@ -13,17 +13,16 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { Search, X } from 'lucide-react';
 import { auth } from '../../firebase';
-import { CapsuleStatus, Game, MOCK_GAMES, RECENTLY_PLAYED, STATUS_LABEL, formatDate } from '../data';
+import { CapsuleStatus, Game, MOCK_GAMES, RECENTLY_PLAYED, STATUS_LABEL, formatDate, suggestTagsLocally } from '../data';
 import { useCapsuleStore, useHeadlineCapsule } from '../store';
 import { useGameSearch } from '../useGameSearch';
-import { Btn, CoverThumb, Note, Ph, cx } from '../ui';
+import { Btn, Chip, CoverThumb, Note, Ph, cx } from '../ui';
 import { CapsulePageA1 } from './Profile';
 import {
   HeadlineFields,
   ReviewSummary,
   STATUS_CHOICES,
   ScoreFields,
-  StatusRow,
   WordsFields,
   useDefaultScorePath,
   usePublishAndReveal,
@@ -118,18 +117,124 @@ function SavedIndicator() {
   return <p className="hidden text-[12px] font-medium text-[#8A8A8A] sm:block">{saving ? 'Saving…' : 'Saved'}</p>;
 }
 
-/** Cover on the left (the sealed capsule on the last step), the step's content on the right. */
-function TwoCol({ game, sealed, children }: { game: Game; sealed?: boolean; children: React.ReactNode }) {
+// Details under the cover ----------------------------------------------------------
+// Once a status is picked, the facts about your playthrough live under the
+// cover art and stay editable while you write and score: status (dropdown),
+// tags, hours played and difficulty (plain text).
+
+const sideField =
+  'w-full rounded-md border border-[#E2E2E2] bg-white px-2 py-[5px] text-[13px] font-semibold text-[#222] outline-none transition-colors placeholder:font-medium placeholder:text-[#AAA] hover:border-[#999] focus:border-[#222]';
+
+function SideItem({ label, htmlFor, children }: { label: string; htmlFor?: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <label htmlFor={htmlFor} className="text-[10px] font-semibold uppercase tracking-wider text-[#999]">
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function CapsuleDetails() {
+  const { draft, updateDraft } = useCapsuleStore();
+  const [tagInput, setTagInput] = useState('');
+  const suggested = useMemo(() => suggestTagsLocally(draft.text).filter((t) => !draft.tags.includes(t)), [draft.text, draft.tags]);
+  const addTag = (raw: string) => {
+    const t = raw.trim().toLowerCase();
+    if (t && !draft.tags.includes(t)) updateDraft({ tags: [...draft.tags, t] });
+  };
+
+  return (
+    <div className="flex flex-col gap-3">
+      <SideItem label="Status" htmlFor="side-status">
+        <select id="side-status" className={sideField} value={draft.status ?? ''} onChange={(e) => updateDraft({ status: e.target.value as CapsuleStatus })}>
+          {!draft.status && <option value="">Choose…</option>}
+          {STATUS_CHOICES.map((c) => (
+            <option key={c.value} value={c.value}>
+              {c.label}
+            </option>
+          ))}
+        </select>
+      </SideItem>
+      <SideItem label="Tags" htmlFor="side-tag">
+        {(draft.tags.length > 0 || suggested.length > 0) && (
+          <div className="flex flex-wrap gap-[5px]">
+            {draft.tags.map((t) => (
+              <Chip key={t} selected onClick={() => updateDraft({ tags: draft.tags.filter((x) => x !== t) })}>
+                {t} ×
+              </Chip>
+            ))}
+            {suggested.map((t) => (
+              <Chip key={t} dashed onClick={() => addTag(t)}>
+                + {t}
+              </Chip>
+            ))}
+          </div>
+        )}
+        <input
+          id="side-tag"
+          className={sideField}
+          placeholder="Add a tag"
+          maxLength={24}
+          value={tagInput}
+          onChange={(e) => setTagInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ',') {
+              e.preventDefault();
+              addTag(tagInput);
+              setTagInput('');
+            }
+          }}
+          onBlur={() => {
+            addTag(tagInput);
+            setTagInput('');
+          }}
+        />
+      </SideItem>
+      <SideItem label="Hours played" htmlFor="side-hours">
+        <input
+          id="side-hours"
+          className={sideField}
+          placeholder="Add hours"
+          inputMode="decimal"
+          maxLength={12}
+          value={draft.hoursPlayed ?? ''}
+          onChange={(e) => updateDraft({ hoursPlayed: e.target.value })}
+        />
+      </SideItem>
+      <SideItem label="Difficulty" htmlFor="side-difficulty">
+        <input
+          id="side-difficulty"
+          className={sideField}
+          placeholder="Add difficulty"
+          maxLength={24}
+          value={draft.difficulty ?? ''}
+          onChange={(e) => updateDraft({ difficulty: e.target.value })}
+        />
+      </SideItem>
+    </div>
+  );
+}
+
+/**
+ * Cover on the left (the sealed capsule on the last step), the step's content
+ * on the right. `details` puts the editable playthrough details under the cover.
+ */
+function TwoCol({ game, sealed, details, children }: { game: Game; sealed?: boolean; details?: boolean; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-5 sm:flex-row sm:gap-6">
-      <div className="hidden w-40 shrink-0 self-start sm:block">
-        {sealed ? (
-          <motion.div animate={{ scale: [1, 1.015, 1] }} transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}>
-            <Ph className="aspect-[264/374] w-full" label={<>your capsule<br />sealed until you create it</>} />
-          </motion.div>
-        ) : (
-          <BigCover game={game} />
-        )}
+      <div className={cx('w-full shrink-0 flex-col gap-4 self-start sm:flex sm:w-44', details ? 'flex' : 'hidden')}>
+        <div className="hidden sm:block">
+          {sealed ? (
+            <motion.div animate={{ scale: [1, 1.015, 1] }} transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}>
+              <Ph className="aspect-[264/374] w-full" label={<>your capsule<br />sealed until you create it</>} />
+            </motion.div>
+          ) : (
+            <BigCover game={game} />
+          )}
+        </div>
+        {details && <CapsuleDetails />}
       </div>
       <div className="flex min-w-0 flex-1 flex-col">{children}</div>
     </div>
@@ -311,11 +416,10 @@ export function ReviewModal({ onClose }: { onClose: () => void }) {
     );
   } else if (step === 'words') {
     body = (
-      <TwoCol game={game}>
+      <TwoCol game={game} details>
         <div className="flex flex-col items-center gap-3">
           <Heading>So… how was {game.title}?</Heading>
-          <StatusRow value={draft.status} onChange={(status) => updateDraft({ status })} />
-          <WordsFields textareaClassName="h-[170px]" />
+          <WordsFields textareaClassName="h-[240px]" showTags={false} />
         </div>
       </TwoCol>
     );
@@ -342,7 +446,7 @@ export function ReviewModal({ onClose }: { onClose: () => void }) {
     );
   } else if (step === 'score') {
     body = (
-      <TwoCol game={game}>
+      <TwoCol game={game} details>
         <ScoreStep />
       </TwoCol>
     );

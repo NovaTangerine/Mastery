@@ -31,6 +31,9 @@ export interface Capsule {
   headline?: string;
   verdict?: string;
   tags: string[];
+  /** Free text for now ("42", "about 60"). Only the modal flow asks for these so far. */
+  hoursPlayed?: string;
+  difficulty?: string;
   createdAt: number;
   updatedAt: number;
   likeCount: number;
