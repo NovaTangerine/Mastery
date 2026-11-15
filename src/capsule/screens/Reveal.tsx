@@ -6,7 +6,7 @@ import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-
 import { motion } from 'motion/react';
 import { STATUS_LABEL, formatDate, shortScore } from '../data';
 import { useCapsuleStore } from '../store';
-import { Btn, Flash, Ph, copyText, cx, useFlash } from '../ui';
+import { Btn, ExtraIcon, Flash, Ph, copyText, cx, useFlash } from '../ui';
 import { ShareModal, capsuleLink } from './Share';
 
 /** All timings in seconds from the start of the reveal. */
@@ -183,13 +183,12 @@ export function RevealScreen() {
                 {icons.map((x, i) => (
                   <motion.span
                     key={x.id}
-                    title={x.text}
-                    className="flex h-7 w-7 items-center justify-center rounded-full bg-[#DADADA] text-[10px] font-semibold text-[#666]"
+                    className="inline-flex"
                     initial={init({ opacity: 0, scale: 1.35, y: -6 })}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     transition={{ delay: at(iconsAt + i * REVEAL.iconGap), type: 'spring', stiffness: 260, damping: 18 }}
                   >
-                    {x.icon}
+                    <ExtraIcon icon={x.icon} label={x.text} kind={i < capsule.highs.length ? 'High' : 'Low'} dark={!light} />
                   </motion.span>
                 ))}
               </div>

@@ -29,9 +29,9 @@ const SCREENS: { flow: string; items: [string, string, string][] }[] = [
     items: [
       ['R1', 'Pick the game', '/capsule/new/game'],
       ['New', 'Status: where are you with it?', '/capsule/new/status'],
-      ['R2', 'Words', '/capsule/new/words'],
+      ['R2', 'Words + nudges (highs, lows, moment, tags)', '/capsule/new/words'],
       ['R3', 'Score / no-score headline', '/capsule/new/score'],
-      ['R4', 'Extras', '/capsule/new/extras'],
+      ['New', 'Review before the reveal (replaces R4 Extras)', '/capsule/new/review'],
       ['R5–R6', 'Reveal + after the reveal (sample capsule)', '/capsule/reveal/c-ds2'],
       ['R5–R6', 'Reveal, unrated (sample capsule)', '/capsule/reveal/c-hk'],
     ],
