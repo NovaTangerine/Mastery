@@ -109,7 +109,7 @@ function FlowShell({
   );
 }
 
-function GameChip({ game, status, date, className }: { game: Game; status?: CapsuleStatus; date?: number; className?: string }) {
+export function GameChip({ game, status, date, className }: { game: Game; status?: CapsuleStatus; date?: number; className?: string }) {
   return (
     <div className={cx('flex items-center gap-3', className)}>
       <CoverThumb src={game.coverUrl} />
@@ -147,7 +147,7 @@ function useReturnToReview() {
   return params.get('return') === 'review';
 }
 
-function usePublishAndReveal() {
+export function usePublishAndReveal() {
   const navigate = useNavigate();
   const { publishDraft } = useCapsuleStore();
   const busy = useRef(false);
@@ -238,7 +238,7 @@ function StepGame() {
 
 // Status (new, between R1 and R2; not in the wireframes) -------------------------
 
-const STATUS_CHOICES: { value: CapsuleStatus; label: string; hint: string }[] = [
+export const STATUS_CHOICES: { value: CapsuleStatus; label: string; hint: string }[] = [
   { value: 'finished', label: 'Finished it', hint: 'Rolled credits, or as done as you’ll get.' },
   { value: 'dropped', label: 'Dropped it', hint: 'Stays on your Capsule, left out of discovery.' },
   { value: 'favorite', label: 'All-time favorite', hint: 'One of the games that made you.' },
@@ -309,7 +309,7 @@ function StepStatus() {
 // explored (Paper page "R2 · Two workspaces (explore)").
 
 /** Compact status row on the Words step: the choice from the Status step, still editable. */
-function StatusRow({ value, onChange }: { value?: CapsuleStatus; onChange: (s: CapsuleStatus) => void }) {
+export function StatusRow({ value, onChange }: { value?: CapsuleStatus; onChange: (s: CapsuleStatus) => void }) {
   return (
     <div className="flex flex-wrap items-center justify-center gap-2" role="radiogroup" aria-label="Where you are with it">
       <span className="mr-1 text-[12px] font-semibold uppercase tracking-wide text-[#888]">Status</span>
@@ -323,7 +323,7 @@ function StatusRow({ value, onChange }: { value?: CapsuleStatus; onChange: (s: C
 }
 
 /** Tags picked up from the words as you write, plus your own. Sits under the text, centered. */
-function TagsPanel() {
+export function TagsPanel() {
   const { draft, updateDraft } = useCapsuleStore();
   const [custom, setCustom] = useState('');
   const [adding, setAdding] = useState(false);
@@ -372,9 +372,8 @@ function TagsPanel() {
   );
 }
 
-function StepWords() {
-  const navigate = useNavigate();
-  const returning = useReturnToReview();
+/** The writing field, prompts and tags. Shared by the page flow and the modal flow. */
+export function WordsFields({ textareaClassName = 'h-[260px]' }: { textareaClassName?: string }) {
   const { draft, updateDraft, user } = useCapsuleStore();
   const unrated = draft.noScore || user.ratingScale === 'none';
   const limit = unrated ? TEXT_LIMIT_UNRATED : TEXT_LIMIT_RATED;
@@ -396,6 +395,42 @@ function StepWords() {
     focusEnd();
   };
 
+  return (
+    <>
+      <div className="relative w-full">
+        <textarea
+          ref={ref}
+          autoFocus
+          className={cx(inputCls, 'resize-none text-[14px] leading-[19px]', textareaClassName)}
+          placeholder="Start typing. A sentence is enough."
+          value={draft.text}
+          maxLength={limit}
+          onChange={(e) => updateDraft({ text: e.target.value })}
+        />
+        {near && (
+          <span className="absolute bottom-3 right-4 text-[11px] font-semibold text-[#888]">
+            {draft.text.length} / {limit}
+          </span>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <p className="text-[12px] font-semibold text-[#555]">Stuck? Try a prompt:</p>
+        {WRITING_PROMPTS.map((p) => (
+          <Chip key={p} dashed onClick={() => append(`${p}: `)}>
+            {p}
+          </Chip>
+        ))}
+      </div>
+      <Note className="text-center">A sentence is enough. No minimum, no character counter until you get close to the limit.</Note>
+      <TagsPanel />
+    </>
+  );
+}
+
+function StepWords() {
+  const navigate = useNavigate();
+  const returning = useReturnToReview();
+  const { draft, updateDraft } = useCapsuleStore();
   const hasText = !!draft.text.trim();
 
   return (
@@ -428,32 +463,7 @@ function StepWords() {
         <GameChip game={draft.game!} status={draft.status} date={draft.createdAt} />
         <StatusRow value={draft.status} onChange={(status) => updateDraft({ status })} />
         <H1 className="pt-2 text-center">So… how was it?</H1>
-        <div className="relative w-full">
-          <textarea
-            ref={ref}
-            autoFocus
-            className={cx(inputCls, 'h-[260px] resize-none text-[14px] leading-[19px]')}
-            placeholder="Start typing. A sentence is enough."
-            value={draft.text}
-            maxLength={limit}
-            onChange={(e) => updateDraft({ text: e.target.value })}
-          />
-          {near && (
-            <span className="absolute bottom-3 right-4 text-[11px] font-semibold text-[#888]">
-              {draft.text.length} / {limit}
-            </span>
-          )}
-        </div>
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <p className="text-[12px] font-semibold text-[#555]">Stuck? Try a prompt:</p>
-          {WRITING_PROMPTS.map((p) => (
-            <Chip key={p} dashed onClick={() => append(`${p}: `)}>
-              {p}
-            </Chip>
-          ))}
-        </div>
-        <Note className="text-center">A sentence is enough. No minimum, no character counter until you get close to the limit.</Note>
-        <TagsPanel />
+        <WordsFields />
       </div>
     </FlowShell>
   );
@@ -531,148 +541,160 @@ function ScaleInput({ scale, value, onChange }: { scale: NumericScale; value?: n
 
 const SCALE_NAME: Record<NumericScale, string> = { stars: 'Stars', ten: '1–10', percent: '%' };
 
-function StepScore() {
-  const navigate = useNavigate();
-  const returning = useReturnToReview();
+/** A "no scores" user starts on the headline path; they can still add a score. */
+export function useDefaultScorePath() {
   const { draft, updateDraft, user } = useCapsuleStore();
-  const noScoreUser = user.ratingScale === 'none';
-  // A "no scores" user starts on the headline path; they can still add a score.
   useEffect(() => {
     const hasAny = Object.values(draft.rating).some((v) => v != null);
     // Only until the user picks a path themselves (scoreChoice).
-    if (noScoreUser && !hasAny && !draft.noScore && !draft.scoreChoice) updateDraft({ noScore: true });
+    if (user.ratingScale === 'none' && !hasAny && !draft.noScore && !draft.scoreChoice) updateDraft({ noScore: true });
     // Only on arriving at this step.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+}
 
-  const main: NumericScale = noScoreUser ? 'stars' : (user.ratingScale as NumericScale);
-  const others = (['stars', 'ten', 'percent'] as NumericScale[]).filter((s) => s !== main);
-  const [showOthers, setShowOthers] = useState(() => others.some((s) => draft.rating[s] != null));
+/** R3b: headline + verdict stamp instead of a score. */
+export function HeadlineFields() {
+  const { draft, updateDraft } = useCapsuleStore();
   const [customVerdict, setCustomVerdict] = useState(() =>
     draft.verdict && !VERDICT_PRESETS.includes(draft.verdict) ? draft.verdict : '',
   );
   const [writingVerdict, setWritingVerdict] = useState(!!customVerdict);
-
-  const setRating = (s: NumericScale, v: number) => updateDraft({ rating: { ...draft.rating, [s]: v } });
-  const mainValue = draft.rating[main];
-
-  const footer = (
+  return (
     <>
-      <Btn variant="link" to="/capsule/new/words">
-        ← Back
+      <div className="flex w-full max-w-[560px] flex-col gap-[6px]">
+        <FieldLabel htmlFor="headline">Headline</FieldLabel>
+        <input
+          id="headline"
+          autoFocus
+          className={inputCls}
+          maxLength={90}
+          placeholder="Beautiful, brutal, and not for me — yet."
+          value={draft.headline}
+          onChange={(e) => updateDraft({ headline: e.target.value })}
+        />
+        <Note>Shown big on your card, where a score would sit.</Note>
+      </div>
+      <div className="flex w-full max-w-[560px] flex-col gap-[6px]">
+        <FieldLabel>Verdict stamp</FieldLabel>
+        <div className="flex flex-wrap gap-2">
+          {VERDICT_PRESETS.map((v) => (
+            <Chip
+              key={v}
+              selected={draft.verdict === v}
+              onClick={() => {
+                setWritingVerdict(false);
+                updateDraft({ verdict: draft.verdict === v ? '' : v });
+              }}
+            >
+              {v}
+            </Chip>
+          ))}
+          {writingVerdict ? (
+            <input
+              autoFocus
+              className="rounded-full border-[1.5px] border-[#222] px-3 py-1 text-[12px] outline-none"
+              placeholder="Your stamp"
+              maxLength={24}
+              value={customVerdict}
+              onChange={(e) => {
+                setCustomVerdict(e.target.value);
+                updateDraft({ verdict: e.target.value });
+              }}
+            />
+          ) : (
+            <Chip dashed onClick={() => setWritingVerdict(true)}>
+              + write your own
+            </Chip>
+          )}
+        </div>
+      </div>
+      <Note>Unrated capsules also get a longer review limit.</Note>
+      <Btn variant="link" onClick={() => updateDraft({ noScore: false, scoreChoice: 'score' })}>
+        Changed your mind? Add a score
       </Btn>
-      <Btn onClick={() => navigate('/capsule/new/review')}>{returning ? 'Back to review →' : 'Next: review →'}</Btn>
     </>
   );
+}
 
-  if (draft.noScore) {
-    return (
-      <FlowShell step={3} footer={footer}>
-        <div className="flex flex-col items-center gap-[18px]">
-          <GameChip game={draft.game!} status={draft.status} date={draft.createdAt} />
-          <H1 className="text-center">Say it in a line instead</H1>
-          <div className="flex w-full max-w-[560px] flex-col gap-[6px]">
-            <FieldLabel htmlFor="headline">Headline</FieldLabel>
-            <input
-              id="headline"
-              autoFocus
-              className={inputCls}
-              maxLength={90}
-              placeholder="Beautiful, brutal, and not for me — yet."
-              value={draft.headline}
-              onChange={(e) => updateDraft({ headline: e.target.value })}
-            />
-            <Note>Shown big on your card, where a score would sit.</Note>
-          </div>
-          <div className="flex w-full max-w-[560px] flex-col gap-[6px]">
-            <FieldLabel>Verdict stamp</FieldLabel>
-            <div className="flex flex-wrap gap-2">
-              {VERDICT_PRESETS.map((v) => (
-                <Chip
-                  key={v}
-                  selected={draft.verdict === v}
-                  onClick={() => {
-                    setWritingVerdict(false);
-                    updateDraft({ verdict: draft.verdict === v ? '' : v });
-                  }}
-                >
-                  {v}
-                </Chip>
-              ))}
-              {writingVerdict ? (
-                <input
-                  autoFocus
-                  className="rounded-full border-[1.5px] border-[#222] px-3 py-1 text-[12px] outline-none"
-                  placeholder="Your stamp"
-                  maxLength={24}
-                  value={customVerdict}
-                  onChange={(e) => {
-                    setCustomVerdict(e.target.value);
-                    updateDraft({ verdict: e.target.value });
-                  }}
-                />
-              ) : (
-                <Chip dashed onClick={() => setWritingVerdict(true)}>
-                  + write your own
-                </Chip>
-              )}
+/** R3a: the user's main scale, the other scales on request, and the way out to a headline. */
+export function ScoreFields() {
+  const { draft, updateDraft, user } = useCapsuleStore();
+  const noScoreUser = user.ratingScale === 'none';
+  const main: NumericScale = noScoreUser ? 'stars' : (user.ratingScale as NumericScale);
+  const others = (['stars', 'ten', 'percent'] as NumericScale[]).filter((s) => s !== main);
+  const [showOthers, setShowOthers] = useState(() => others.some((s) => draft.rating[s] != null));
+  const setRating = (s: NumericScale, v: number) => updateDraft({ rating: { ...draft.rating, [s]: v } });
+  const mainValue = draft.rating[main];
+  return (
+    <>
+      <Note>
+        {noScoreUser ? 'You picked “no scores” in Settings, so this is just for this one.' : `Your scale: ${SCALE_NAME[main]} (change it in Settings).`} Totally
+        optional.
+      </Note>
+      <ScaleInput scale={main} value={mainValue} onChange={(v) => setRating(main, v)} />
+      <p className="min-h-5 text-[15px] font-semibold text-[#555]">{mainValue != null ? scoreSentence(main, mainValue) : 'Tap to score'}</p>
+      <Note>
+        Each step gets a word label so the number has a voice.{main === 'stars' && ' Half-stars: tap the left half of a star.'}
+      </Note>
+      {showOthers && (
+        <div className="flex w-full flex-col items-center gap-4 rounded-xl border border-[#E2E2E2] p-4">
+          {others.map((s) => (
+            <div key={s} className="flex w-full flex-col items-center gap-2">
+              <FieldLabel>{SCALE_NAME[s]}</FieldLabel>
+              <ScaleInput scale={s} value={draft.rating[s]} onChange={(v) => setRating(s, v)} />
+              {draft.rating[s] != null && <p className="text-[12px] font-semibold text-[#777]">{scoreSentence(s, draft.rating[s]!)}</p>}
             </div>
-          </div>
-          <Note>Unrated capsules also get a longer review limit.</Note>
-          <Btn variant="link" onClick={() => updateDraft({ noScore: false, scoreChoice: 'score' })}>
-            Changed your mind? Add a score
-          </Btn>
+          ))}
         </div>
-      </FlowShell>
-    );
-  }
+      )}
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        {!showOthers && (
+          <>
+            <Btn variant="link" onClick={() => setShowOthers(true)}>
+              + Also add {others.map((s) => SCALE_NAME[s]).join(' or ')}
+            </Btn>
+            <span className="text-[13px] text-[#BBB]">·</span>
+          </>
+        )}
+        {Object.values(draft.rating).some((v) => v != null) && (
+          <>
+            <Btn variant="link" onClick={() => updateDraft({ rating: {} })}>
+              Clear score
+            </Btn>
+            <span className="text-[13px] text-[#BBB]">·</span>
+          </>
+        )}
+        <Btn variant="link" onClick={() => updateDraft({ noScore: true, scoreChoice: 'headline' })}>
+          No score — use a headline instead
+        </Btn>
+      </div>
+    </>
+  );
+}
+
+function StepScore() {
+  const navigate = useNavigate();
+  const returning = useReturnToReview();
+  const { draft } = useCapsuleStore();
+  useDefaultScorePath();
 
   return (
-    <FlowShell step={3} footer={footer}>
+    <FlowShell
+      step={3}
+      footer={
+        <>
+          <Btn variant="link" to="/capsule/new/words">
+            ← Back
+          </Btn>
+          <Btn onClick={() => navigate('/capsule/new/review')}>{returning ? 'Back to review →' : 'Next: review →'}</Btn>
+        </>
+      }
+    >
       <div className="flex flex-col items-center gap-[18px]">
         <GameChip game={draft.game!} status={draft.status} date={draft.createdAt} />
-        <H1 className="text-center">Want to put a number on it?</H1>
-        <Note>
-          {noScoreUser ? 'You picked “no scores” in Settings, so this is just for this one.' : `Your scale: ${SCALE_NAME[main]} (change it in Settings).`} Totally
-          optional.
-        </Note>
-        <ScaleInput scale={main} value={mainValue} onChange={(v) => setRating(main, v)} />
-        <p className="min-h-5 text-[15px] font-semibold text-[#555]">{mainValue != null ? scoreSentence(main, mainValue) : 'Tap to score'}</p>
-        <Note>
-          Each step gets a word label so the number has a voice.{main === 'stars' && ' Half-stars: tap the left half of a star.'}
-        </Note>
-        {showOthers && (
-          <div className="flex w-full flex-col items-center gap-4 rounded-xl border border-[#E2E2E2] p-4">
-            {others.map((s) => (
-              <div key={s} className="flex w-full flex-col items-center gap-2">
-                <FieldLabel>{SCALE_NAME[s]}</FieldLabel>
-                <ScaleInput scale={s} value={draft.rating[s]} onChange={(v) => setRating(s, v)} />
-                {draft.rating[s] != null && <p className="text-[12px] font-semibold text-[#777]">{scoreSentence(s, draft.rating[s]!)}</p>}
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          {!showOthers && (
-            <>
-              <Btn variant="link" onClick={() => setShowOthers(true)}>
-                + Also add {others.map((s) => SCALE_NAME[s]).join(' or ')}
-              </Btn>
-              <span className="text-[13px] text-[#BBB]">·</span>
-            </>
-          )}
-          {Object.values(draft.rating).some((v) => v != null) && (
-            <>
-              <Btn variant="link" onClick={() => updateDraft({ rating: {} })}>
-                Clear score
-              </Btn>
-              <span className="text-[13px] text-[#BBB]">·</span>
-            </>
-          )}
-          <Btn variant="link" onClick={() => updateDraft({ noScore: true, scoreChoice: 'headline' })}>
-            No score — use a headline instead
-          </Btn>
-        </div>
+        <H1 className="text-center">{draft.noScore ? 'Say it in a line instead' : 'Want to put a number on it?'}</H1>
+        {draft.noScore ? <HeadlineFields /> : <ScoreFields />}
       </div>
     </FlowShell>
   );
@@ -682,12 +704,14 @@ function StepScore() {
 // One last look at everything before the reveal. Each section's Edit jumps to
 // its step with ?return=review, so you come straight back here.
 
-function ReviewSection({ title, editTo, children }: { title: string; editTo: string; children: React.ReactNode }) {
+type EditLink = { to?: string; onClick?: () => void };
+
+function ReviewSection({ title, edit, children }: { title: string; edit: EditLink; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-2 border-b border-[#EFEFEF] pb-4">
       <div className="flex items-center justify-between gap-3">
         <p className="text-[11px] font-bold uppercase tracking-wide text-[#888]">{title}</p>
-        <Btn variant="link" to={editTo}>
+        <Btn variant="link" {...edit}>
           Edit
         </Btn>
       </div>
@@ -698,11 +722,56 @@ function ReviewSection({ title, editTo, children }: { title: string; editTo: str
 
 const Empty = ({ children }: { children: React.ReactNode }) => <p className="text-[13px] text-[#AAA]">{children}</p>;
 
+/** Everything that goes into the capsule, each part with its own Edit link. */
+export function ReviewSummary({ edit }: { edit: (step: 'status' | 'words' | 'score') => EditLink }) {
+  const { draft } = useCapsuleStore();
+  const scores = (['stars', 'ten', 'percent'] as NumericScale[]).filter((s) => draft.rating[s] != null);
+  return (
+    <>
+      <ReviewSection title="Game" edit={edit('status')}>
+        <GameChip game={draft.game!} status={draft.status} date={draft.createdAt} />
+      </ReviewSection>
+      <ReviewSection title="Your words" edit={edit('words')}>
+        <p className="whitespace-pre-line text-[15px] leading-[22px] text-[#333]">“{draft.text.trim()}”</p>
+      </ReviewSection>
+      <ReviewSection title={draft.noScore ? 'Headline' : 'Score'} edit={edit('score')}>
+        {draft.noScore ? (
+          <>
+            {draft.headline.trim() ? <p className="text-[18px] font-bold">“{draft.headline.trim()}”</p> : <Empty>No headline</Empty>}
+            {draft.verdict.trim() && (
+              <span className="self-start rounded-full border border-[#222] px-[10px] py-[3px] text-[11px] font-bold uppercase tracking-wide">
+                Verdict · {draft.verdict.trim()}
+              </span>
+            )}
+          </>
+        ) : scores.length ? (
+          scores.map((s) => (
+            <p key={s} className="text-[15px] font-semibold text-[#444]">
+              {scoreSentence(s, draft.rating[s]!)}
+            </p>
+          ))
+        ) : (
+          <Empty>No score. That’s fine: it’s optional.</Empty>
+        )}
+      </ReviewSection>
+      <ReviewSection title="Tags" edit={edit('words')}>
+        {draft.tags.length ? (
+          <div className="flex flex-wrap gap-2">
+            {draft.tags.map((t) => (
+              <Chip key={t}>{t}</Chip>
+            ))}
+          </div>
+        ) : (
+          <Empty>None added</Empty>
+        )}
+      </ReviewSection>
+    </>
+  );
+}
+
 function StepReview() {
   const reveal = usePublishAndReveal();
   const { draft } = useCapsuleStore();
-  const edit = (step: StepKey) => `/capsule/new/${step}?return=review`;
-  const scores = (['stars', 'ten', 'percent'] as NumericScale[]).filter((s) => draft.rating[s] != null);
 
   return (
     <FlowShell
@@ -725,43 +794,7 @@ function StepReview() {
         </div>
         <div className="flex w-full max-w-[560px] flex-col gap-4">
           <H1>Look it over</H1>
-          <ReviewSection title="Game" editTo={edit('status')}>
-            <GameChip game={draft.game!} status={draft.status} date={draft.createdAt} />
-          </ReviewSection>
-          <ReviewSection title="Your words" editTo={edit('words')}>
-            <p className="whitespace-pre-line text-[15px] leading-[22px] text-[#333]">“{draft.text.trim()}”</p>
-          </ReviewSection>
-          <ReviewSection title={draft.noScore ? 'Headline' : 'Score'} editTo={edit('score')}>
-            {draft.noScore ? (
-              <>
-                {draft.headline.trim() ? <p className="text-[18px] font-bold">“{draft.headline.trim()}”</p> : <Empty>No headline</Empty>}
-                {draft.verdict.trim() && (
-                  <span className="self-start rounded-full border border-[#222] px-[10px] py-[3px] text-[11px] font-bold uppercase tracking-wide">
-                    Verdict · {draft.verdict.trim()}
-                  </span>
-                )}
-              </>
-            ) : scores.length ? (
-              scores.map((s) => (
-                <p key={s} className="text-[15px] font-semibold text-[#444]">
-                  {scoreSentence(s, draft.rating[s]!)}
-                </p>
-              ))
-            ) : (
-              <Empty>No score. That’s fine: it’s optional.</Empty>
-            )}
-          </ReviewSection>
-          <ReviewSection title="Tags" editTo={edit('words')}>
-            {draft.tags.length ? (
-              <div className="flex flex-wrap gap-2">
-                {draft.tags.map((t) => (
-                  <Chip key={t}>{t}</Chip>
-                ))}
-              </div>
-            ) : (
-              <Empty>None added</Empty>
-            )}
-          </ReviewSection>
+          <ReviewSummary edit={(step) => ({ to: `/capsule/new/${step}?return=review` })} />
         </div>
       </div>
     </FlowShell>

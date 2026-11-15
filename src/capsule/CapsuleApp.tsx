@@ -8,6 +8,7 @@ import { CapsuleStoreProvider, useCapsuleStore } from './store';
 import { CapsuleShell, Btn, Note, Page, TopBar } from './ui';
 import { CapsuleLive, Claim, FillTop, GoogleSignIn, Landing, StartCapsule } from './screens/Onboarding';
 import { ReviewFlow } from './screens/ReviewFlow';
+import { ReviewModalRoute } from './screens/ReviewModal';
 import { RevealScreen } from './screens/Reveal';
 import { AllGames, CapsulePageA1, PublicCapsule, Settings } from './screens/Profile';
 
@@ -34,6 +35,7 @@ const SCREENS: { flow: string; items: [string, string, string][] }[] = [
       ['New', 'Review before the reveal (replaces R4 Extras)', '/capsule/new/review'],
       ['R5–R6', 'Reveal + after the reveal (sample capsule)', '/capsule/reveal/c-ds2'],
       ['R5–R6', 'Reveal, unrated (sample capsule)', '/capsule/reveal/c-hk'],
+      ['Modal', 'Whole review flow in a modal (experiment)', '/capsule/u/alex/review'],
     ],
   },
   {
@@ -133,6 +135,7 @@ export default function CapsuleApp() {
           <Route path="settings" element={<Settings />} />
           <Route path="u/:handle" element={<CapsulePageA1 />} />
           <Route path="u/:handle/games" element={<AllGames />} />
+          <Route path="u/:handle/review" element={<ReviewModalRoute />} />
           <Route path="u/:handle/:capsuleId" element={<PublicCapsule />} />
           <Route path="*" element={<Navigate to="/capsule" replace />} />
         </Routes>

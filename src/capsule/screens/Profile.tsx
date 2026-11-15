@@ -89,6 +89,17 @@ function OwnerTopBar() {
             >
               Copy link
             </Btn>
+            {/* Experiment: the same review flow inside a modal (ReviewModal.tsx). */}
+            <Btn
+              variant="secondary"
+              className="hidden sm:inline-flex"
+              onClick={() => {
+                startDraft();
+                navigate(`/capsule/u/${user.handle}/review`);
+              }}
+            >
+              + Review in modal
+            </Btn>
             <Btn
               onClick={() => {
                 startDraft();
