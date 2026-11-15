@@ -28,6 +28,7 @@ const SCREENS: { flow: string; items: [string, string, string][] }[] = [
     flow: 'Review a game (03)',
     items: [
       ['R1', 'Pick the game', '/capsule/new/game'],
+      ['New', 'Status: where are you with it?', '/capsule/new/status'],
       ['R2', 'Words', '/capsule/new/words'],
       ['R3', 'Score / no-score headline', '/capsule/new/score'],
       ['R4', 'Extras', '/capsule/new/extras'],
@@ -85,7 +86,7 @@ function ScreenIndex() {
           </div>
         ))}
       </div>
-      <Note>R2–R4 need a game picked in R1 first and redirect back if there isn’t one. M1–M3 are these same routes at phone width.</Note>
+      <Note>Status, R2–R4 need a game picked in R1 first and redirect back if there isn’t one. M1–M3 are these same routes at phone width.</Note>
     </Page>
   );
 }
