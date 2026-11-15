@@ -111,6 +111,10 @@ export const ActiveSessionProvider = ({ children }: { children: React.ReactNode 
   const sessionsLimit = 50 + historicalSessions.length;
 
   const selectedGame = games.find(g => g.id === selectedGameId) || null;
+  // The id of the game once it has actually loaded. On a page refresh selectedGameId comes
+  // from the URL immediately but `games` is still empty, so subscriptions that need the game
+  // must re-run when this flips from null to the id, not only when selectedGameId changes.
+  const loadedGameId = selectedGame?.id ?? null;
   const activeSession = sessions.find(s => s.id === activeSessionId) || null;
 
   const loadMoreSessions = useCallback(async () => {
@@ -215,7 +219,7 @@ export const ActiveSessionProvider = ({ children }: { children: React.ReactNode 
     });
 
     return () => unsubscribe();
-  }, [user, selectedGameId]);
+  }, [user, loadedGameId]);
 
   useEffect(() => {
     if (!user || !selectedGame) {
@@ -236,7 +240,7 @@ export const ActiveSessionProvider = ({ children }: { children: React.ReactNode 
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'sessionGroups'));
 
     return () => unsubscribe();
-  }, [user, selectedGameId, sessionGroupsLimit]);
+  }, [user, loadedGameId, sessionGroupsLimit]);
 
   useEffect(() => {
     if (!user || !isAuthReady) return;

@@ -99,8 +99,11 @@ export function useNotes(gameId: string | null, sessionId?: string | null, tagFi
     }
 
     return merged.sort((a, b) => {
-      if (typeof a.order === 'string' && typeof b.order === 'string') {
-        return a.order.localeCompare(b.order);
+      // Fractional-index keys must be compared by code unit (0-9 < A-Z < a-z).
+      // localeCompare is case-insensitive and puts "aa" before "aA", which misplaces
+      // every note after the 36th and makes new notes reuse the same key.
+      if (typeof a.order === 'string' && typeof b.order === 'string' && a.order !== b.order) {
+        return a.order < b.order ? -1 : 1;
       }
       return a.timestamp - b.timestamp;
     });
