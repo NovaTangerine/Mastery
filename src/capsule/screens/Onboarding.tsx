@@ -135,6 +135,13 @@ export function GoogleSignIn() {
 const TAKEN_HANDLES = ['admin', 'capsule', 'settings', 'u', 'new', 'jess', 'sam'];
 const HANDLE_RE = /^[a-z0-9_]{3,20}$/;
 
+/**
+ * Rating-scale pick on S3 is hidden for now to keep onboarding short. New
+ * users keep the default scale (stars) and can change it in Settings.
+ * Flip this to bring the picker back.
+ */
+const SHOW_SCALE_AT_CLAIM = false;
+
 export const SCALE_CHOICES: { value: RatingScale; label: string }[] = [
   { value: 'stars', label: '★ Stars' },
   { value: 'ten', label: '1–10' },
@@ -164,7 +171,7 @@ export function Claim() {
         onSubmit={(e) => {
           e.preventDefault();
           if (!handleState.ok || !name.trim()) return;
-          updateUser({ displayName: name.trim(), handle, ratingScale: scale });
+          updateUser({ displayName: name.trim(), handle, ...(SHOW_SCALE_AT_CLAIM ? { ratingScale: scale } : {}) });
           navigate('/capsule/start');
         }}
       >
@@ -197,15 +204,19 @@ export function Claim() {
           </div>
         </div>
         <p className={cx('text-[12px] font-semibold', handleState.ok ? 'text-[#3A7A3A]' : 'text-[#9A3A3A]')}>{handleState.msg}</p>
-        <p className="text-[13px] font-semibold text-[#555]">How do you like to rate games?</p>
-        <div className="flex flex-wrap justify-center gap-2">
-          {SCALE_CHOICES.map((s) => (
-            <Chip key={s.value} selected={scale === s.value} onClick={() => setScale(s.value)}>
-              {s.label}
-            </Chip>
-          ))}
-        </div>
-        <Note>You can change this anytime. Rating is always optional.</Note>
+        {SHOW_SCALE_AT_CLAIM && (
+          <>
+            <p className="text-[13px] font-semibold text-[#555]">How do you like to rate games?</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {SCALE_CHOICES.map((s) => (
+                <Chip key={s.value} selected={scale === s.value} onClick={() => setScale(s.value)}>
+                  {s.label}
+                </Chip>
+              ))}
+            </div>
+            <Note>You can change this anytime. Rating is always optional.</Note>
+          </>
+        )}
         <Btn type="submit" disabled={!handleState.ok || !name.trim()}>
           Continue →
         </Btn>
@@ -243,14 +254,10 @@ export function StartCapsule() {
           </Panel>
           <Panel className="w-full gap-[10px] p-5 sm:w-[320px]">
             <p className="text-[16px] font-bold leading-[22px]">Build my all-time favorites</p>
-            <p className="text-[13px] leading-[18px] text-[#555]">Pick a Top 3, 5 or 10 to fill your shelf fast.</p>
-            <div className="mt-auto flex gap-[6px]">
-              {[3, 5, 10].map((n) => (
-                <Chip key={n} onClick={() => navigate(`/capsule/favorites?size=${n}`)}>
-                  Top {n}
-                </Chip>
-              ))}
-            </div>
+            <p className="text-[13px] leading-[18px] text-[#555]">Pick your favorites to fill your shelf fast.</p>
+            <Btn className="mt-auto" to="/capsule/favorites">
+              Build my favorites
+            </Btn>
           </Panel>
         </div>
         <Btn variant="quiet" to="/capsule/live">
@@ -263,28 +270,39 @@ export function StartCapsule() {
 
 // S5 ------------------------------------------------------------------------
 
+const MAX_FAVORITES = 10;
+
 export function FillTop() {
   const navigate = useNavigate();
-  const [params] = useSearchParams();
-  const size = [3, 5, 10].includes(Number(params.get('size'))) ? Number(params.get('size')) : 5;
+  const [params, setParams] = useSearchParams();
   // Same screen serves onboarding (S5) and "Edit" on the profile's Top 5.
+  // In onboarding the user picks 3 / 5 / 10 here; the profile is always a Top 5.
   const fromProfile = params.get('from') === 'profile';
+  const size = fromProfile ? 5 : [3, 5, 10].includes(Number(params.get('size'))) ? Number(params.get('size')) : 5;
+  const setSize = (n: number) => setParams((p) => { p.set('size', String(n)); return p; }, { replace: true });
   const { user, updateUser } = useCapsuleStore();
   const profilePath = `/capsule/u/${user.handle}`;
+  // Always 10 slots; only the first `size` show. Shrinking to a Top 3 keeps
+  // picks #4–10 around in case the user switches back.
   const [slots, setSlots] = useState<(Game | null)[]>(() =>
-    Array.from({ length: size }, (_, i) => (user.top5[i] ? findGame(user.top5[i]) ?? null : null)),
+    Array.from({ length: MAX_FAVORITES }, (_, i) => (user.top5[i] ? findGame(user.top5[i]) ?? null : null)),
   );
+  const visible = slots.slice(0, size);
   const [query, setQuery] = useState('');
   const { results } = useGameSearch(query);
   const [dragFrom, setDragFrom] = useState<number | null>(null);
-  const filled = slots.filter(Boolean).length;
+  const filled = visible.filter(Boolean).length;
 
   const add = (g: Game) => {
     setSlots((prev) => {
-      if (prev.some((s) => s?.id === g.id)) return prev;
-      const i = prev.findIndex((s) => !s);
-      if (i === -1) return prev;
-      return prev.map((s, j) => (j === i ? g : s));
+      const empty = prev.findIndex((s, j) => j < size && !s);
+      const existing = prev.findIndex((s) => s?.id === g.id);
+      if (existing !== -1 && existing < size) return prev;
+      if (empty === -1) return prev;
+      const next = [...prev];
+      if (existing !== -1) next[existing] = null; // a hidden pick moves back into view
+      next[empty] = g;
+      return next;
     });
     setQuery('');
   };
@@ -303,14 +321,23 @@ export function FillTop() {
   return (
     <Page className="min-h-screen gap-[18px]">
       <TopBar logoTo={fromProfile ? profilePath : undefined} right={fromProfile ? undefined : <StepCount n={3} />} />
-      <div className="flex items-center gap-[14px]">
+      <div className="flex flex-wrap items-center gap-[14px]">
         <h1 className="text-[28px] font-extrabold leading-[38px]">{fromProfile ? `Edit your Top ${size}` : `Your Top ${size}`}</h1>
         <p className="text-[15px] font-semibold text-[#888]">
           {filled} / {size}
         </p>
+        {!fromProfile && (
+          <div className="flex gap-[6px] sm:ml-auto" role="group" aria-label="How many favorites">
+            {[3, 5, 10].map((n) => (
+              <Chip key={n} selected={size === n} onClick={() => setSize(n)}>
+                Top {n}
+              </Chip>
+            ))}
+          </div>
+        )}
       </div>
       <div className={cx('grid gap-[14px]', size === 10 ? 'grid-cols-2 sm:grid-cols-5' : size === 3 ? 'grid-cols-3' : 'grid-cols-2 sm:grid-cols-5')}>
-        {slots.map((g, i) => (
+        {visible.map((g, i) => (
           // Plain div on purpose: motion.div treats onDragStart as its own
           // gesture prop and never attaches the native HTML5 handler.
           <div
@@ -362,7 +389,7 @@ export function FillTop() {
       <p className="text-[14px] font-bold">Popular picks</p>
       <div className="grid grid-cols-4 gap-[10px] sm:grid-cols-8">
         {picks.map((g) => {
-          const used = slots.some((s) => s?.id === g.id);
+          const used = visible.some((s) => s?.id === g.id);
           return (
             <Ph key={g.id} onClick={used ? undefined : () => add(g)} className={cx('h-[150px]', used && 'opacity-40')} label={g.title} />
           );
@@ -374,9 +401,10 @@ export function FillTop() {
         </Btn>
         <Btn
           onClick={() => {
-            const picked = slots.filter(Boolean).map((g) => g!.id);
-            // Keep any favorites beyond this list's size (e.g. a Top 10 edited as a Top 5).
-            const beyond = user.top5.slice(size).filter((id) => !picked.includes(id));
+            const picked = visible.filter(Boolean).map((g) => g!.id);
+            // From the profile, keep favorites beyond the Top 5 (e.g. #6–10 of
+            // an onboarding Top 10). In onboarding, the chosen size is the list.
+            const beyond = fromProfile ? slots.slice(size).filter(Boolean).map((g) => g!.id) : [];
             updateUser({ top5: [...picked, ...beyond] });
             navigate(fromProfile ? profilePath : '/capsule/live');
           }}

@@ -20,7 +20,7 @@ const SCREENS: { flow: string; items: [string, string, string][] }[] = [
       ['S2', 'Google sign-in (mock)', '/capsule/signin'],
       ['S3', 'Claim your Capsule', '/capsule/claim'],
       ['S4', 'Start your Capsule', '/capsule/start'],
-      ['S5', 'Fill your Top 5', '/capsule/favorites?size=5'],
+      ['S5', 'Fill your favorites (Top 3 / 5 / 10)', '/capsule/favorites'],
       ['S6', 'Your Capsule is live', '/capsule/live'],
     ],
   },

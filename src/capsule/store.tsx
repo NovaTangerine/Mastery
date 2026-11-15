@@ -18,7 +18,8 @@ import {
 export interface Draft {
   editingId?: string; // set when editing an existing capsule
   game?: Game;
-  status: CapsuleStatus;
+  /** Unset until the user answers "Where are you with it?" on the Words step. */
+  status?: CapsuleStatus;
   text: string;
   noScore: boolean; // R3b path
   /** Set once the user explicitly picks the score or headline path in R3. */
@@ -36,7 +37,6 @@ export interface Draft {
 }
 
 export const emptyDraft = (): Draft => ({
-  status: 'finished',
   text: '',
   noScore: false,
   rating: {},
@@ -164,7 +164,7 @@ export function CapsuleStoreProvider({ children }: { children: React.ReactNode }
         gameId: d.game?.id ?? 'unknown',
         gameTitle: d.game?.title ?? 'Untitled game',
         coverUrl: d.game?.coverUrl,
-        status: d.status,
+        status: d.status ?? 'finished',
         text: d.text.trim(),
         rating: hasRating ? d.rating : undefined,
         headline: d.headline.trim() || undefined,

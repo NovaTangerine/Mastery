@@ -3,7 +3,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Reorder, useDragControls } from 'motion/react';
+import { Reorder, motion, useDragControls } from 'motion/react';
 import {
   CapsuleStatus,
   ExtraItem,
@@ -109,14 +109,14 @@ function FlowShell({
   );
 }
 
-function GameChip({ game, status, date, className }: { game: Game; status: CapsuleStatus; date?: number; className?: string }) {
+function GameChip({ game, status, date, className }: { game: Game; status?: CapsuleStatus; date?: number; className?: string }) {
   return (
     <div className={cx('flex items-center gap-3', className)}>
       <CoverThumb src={game.coverUrl} />
       <div className="flex flex-col gap-[2px]">
         <p className="text-[15px] font-bold leading-5">{game.title}</p>
         <p className="text-[12px] font-medium text-[#888]">
-          {STATUS_LABEL[status]} · {formatDate(date ?? Date.now())}
+          {[status && STATUS_LABEL[status], formatDate(date ?? Date.now())].filter(Boolean).join(' · ')}
         </p>
       </div>
     </div>
@@ -131,7 +131,7 @@ export function ReviewFlow() {
   const idx = STEPS.findIndex((s) => s.key === step);
   if (idx === -1) return <Navigate to="/capsule/new/game" replace />;
   if (idx > 0 && !draft.game) return <Navigate to="/capsule/new/game" replace />;
-  if (idx > 1 && !draft.text.trim()) return <Navigate to="/capsule/new/words" replace />;
+  if (idx > 1 && (!draft.text.trim() || !draft.status)) return <Navigate to="/capsule/new/words" replace />;
   const key = step as StepKey;
   if (key === 'game') return <StepGame />;
   if (key === 'words') return <StepWords />;
@@ -223,21 +223,42 @@ function StepGame() {
           })}
         </div>
         <Note>Your headline game is suggested first. Empty search shows recently played.</Note>
-        <p className="text-[15px] font-bold">Where are you with it?</p>
-        <div className="flex flex-wrap justify-center gap-2">
-          {(['finished', 'dropped', 'favorite'] as CapsuleStatus[]).map((s) => (
-            <Chip key={s} selected={draft.status === s} onClick={() => updateDraft({ status: s })}>
-              {s === 'finished' ? 'Finished it' : s === 'dropped' ? 'Dropped it' : 'All-time favorite'}
-            </Chip>
-          ))}
-        </div>
-        <Note>This only sets the label on your capsule. Dropped ones stay out of discovery.</Note>
       </div>
     </FlowShell>
   );
 }
 
-// R2 · Words ----------------------------------------------------------------
+// R2 · Status, then words ------------------------------------------------------
+
+const STATUS_CHOICES: { value: CapsuleStatus; label: string }[] = [
+  { value: 'finished', label: 'Finished it' },
+  { value: 'dropped', label: 'Dropped it' },
+  { value: 'favorite', label: 'All-time favorite' },
+];
+
+/**
+ * First thing on the review screen. Before a choice it's the main question;
+ * after, it shrinks to a row above the writing area and stays editable.
+ */
+function StatusPicker({ value, onChange }: { value?: CapsuleStatus; onChange: (s: CapsuleStatus) => void }) {
+  return (
+    <motion.div layout className="flex flex-col gap-3">
+      {value ? (
+        <p className="text-[12px] font-semibold uppercase tracking-wide text-[#888]">Where you are with it</p>
+      ) : (
+        <H1>Where are you with it?</H1>
+      )}
+      <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Where are you with it?">
+        {STATUS_CHOICES.map((c) => (
+          <Chip key={c.value} selected={value === c.value} onClick={() => onChange(c.value)} className={value ? undefined : 'px-4 py-2 text-[14px]'}>
+            {c.label}
+          </Chip>
+        ))}
+      </div>
+      {!value && <Note>This only sets the label on your capsule. You can change it any time. Dropped ones stay out of discovery.</Note>}
+    </motion.div>
+  );
+}
 
 function StepWords() {
   const navigate = useNavigate();
@@ -265,6 +286,7 @@ function StepWords() {
   };
 
   const hasText = !!draft.text.trim();
+  const canGo = hasText && !!draft.status;
 
   return (
     <FlowShell
@@ -275,10 +297,10 @@ function StepWords() {
             ← Back
           </Btn>
           <div className="flex items-center gap-[18px]">
-            <Btn variant="quiet" disabled={!hasText} onClick={reveal}>
+            <Btn variant="quiet" disabled={!canGo} onClick={reveal}>
               Skip to reveal
             </Btn>
-            <Btn disabled={!hasText} onClick={() => navigate('/capsule/new/score')}>
+            <Btn disabled={!canGo} onClick={() => navigate('/capsule/new/score')}>
               Next: score →
             </Btn>
           </div>
@@ -288,46 +310,53 @@ function StepWords() {
       <div className="flex flex-col items-start gap-9 lg:flex-row">
         <div className="flex w-full min-w-0 flex-1 flex-col gap-4">
           <GameChip game={draft.game!} status={draft.status} date={draft.createdAt} />
-          <H1>So… how was it?</H1>
-          <div className="relative">
-            <textarea
-              ref={ref}
-              autoFocus
-              className={cx(inputCls, 'h-[260px] resize-none text-[14px] leading-[19px]')}
-              placeholder="Start typing. A sentence is enough."
-              value={draft.text}
-              maxLength={limit}
-              onChange={(e) => updateDraft({ text: e.target.value })}
-            />
-            {near && (
-              <span className="absolute bottom-3 right-4 text-[11px] font-semibold text-[#888]">
-                {draft.text.length} / {limit}
-              </span>
-            )}
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-[12px] font-semibold text-[#555]">Stuck? Try a prompt:</p>
-            {WRITING_PROMPTS.map((p) => (
-              <Chip key={p} dashed onClick={() => usePrompt(p)}>
-                {p}
-              </Chip>
-            ))}
-          </div>
+          <StatusPicker value={draft.status} onChange={(status) => updateDraft({ status })} />
+          {draft.status && (
+            <motion.div className="flex flex-col gap-4" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+              <H1>So… how was it?</H1>
+              <div className="relative">
+                <textarea
+                  ref={ref}
+                  autoFocus
+                  className={cx(inputCls, 'h-[260px] resize-none text-[14px] leading-[19px]')}
+                  placeholder="Start typing. A sentence is enough."
+                  value={draft.text}
+                  maxLength={limit}
+                  onChange={(e) => updateDraft({ text: e.target.value })}
+                />
+                {near && (
+                  <span className="absolute bottom-3 right-4 text-[11px] font-semibold text-[#888]">
+                    {draft.text.length} / {limit}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-[12px] font-semibold text-[#555]">Stuck? Try a prompt:</p>
+                {WRITING_PROMPTS.map((p) => (
+                  <Chip key={p} dashed onClick={() => usePrompt(p)}>
+                    {p}
+                  </Chip>
+                ))}
+              </div>
+            </motion.div>
+          )}
         </div>
-        <Panel className="w-full lg:w-[280px] lg:shrink-0">
-          <p className="text-[13px] font-bold">As you write</p>
-          <Note>Tags we’re picking up (tap to keep):</Note>
-          <div className="flex min-h-[26px] flex-wrap gap-[6px]">
-            {picked.length === 0 && draft.tags.length === 0 && <span className="text-[12px] text-[#AAA]">Nothing yet</span>}
-            {Array.from(new Set([...draft.tags, ...picked])).map((t) => (
-              <Chip key={t} dashed={!draft.tags.includes(t)} selected={draft.tags.includes(t)} onClick={() => toggleTag(t)}>
-                {t}
-              </Chip>
-            ))}
-          </div>
-          <div className="h-px bg-[#E2E2E2]" />
-          <Note>A sentence is enough. No minimum, no character counter until you get close to the limit.</Note>
-        </Panel>
+        {draft.status && (
+          <Panel className="w-full lg:w-[280px] lg:shrink-0">
+            <p className="text-[13px] font-bold">As you write</p>
+            <Note>Tags we’re picking up (tap to keep):</Note>
+            <div className="flex min-h-[26px] flex-wrap gap-[6px]">
+              {picked.length === 0 && draft.tags.length === 0 && <span className="text-[12px] text-[#AAA]">Nothing yet</span>}
+              {Array.from(new Set([...draft.tags, ...picked])).map((t) => (
+                <Chip key={t} dashed={!draft.tags.includes(t)} selected={draft.tags.includes(t)} onClick={() => toggleTag(t)}>
+                  {t}
+                </Chip>
+              ))}
+            </div>
+            <div className="h-px bg-[#E2E2E2]" />
+            <Note>A sentence is enough. No minimum, no character counter until you get close to the limit.</Note>
+          </Panel>
+        )}
       </div>
     </FlowShell>
   );
@@ -506,7 +535,7 @@ function StepScore() {
         <GameChip game={draft.game!} status={draft.status} date={draft.createdAt} />
         <H1 className="text-center">Want to put a number on it?</H1>
         <Note>
-          {noScoreUser ? 'You picked “no scores” at sign-up, so this is just for this one.' : `Your scale: ${SCALE_NAME[main]} (set at sign-up).`} Totally
+          {noScoreUser ? 'You picked “no scores” in Settings, so this is just for this one.' : `Your scale: ${SCALE_NAME[main]} (change it in Settings).`} Totally
           optional.
         </Note>
         <ScaleInput scale={main} value={mainValue} onChange={(v) => setRating(main, v)} />
