@@ -34,7 +34,8 @@ import { GameProvider, useGameContext } from './contexts/GameContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { UIProvider, useUI } from './contexts/UIContext';
 import { UserJourneyProvider } from './contexts/UserJourneyContext';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import CapsuleApp from './capsule/CapsuleApp';
 import { useNetworkStatus } from './hooks/useNetworkStatus';
 
 import HomeView from './views/HomeView';
@@ -612,13 +613,22 @@ export default function App() {
     <ErrorBoundary>
       <BrowserRouter>
         <AuthProvider>
-          <UserJourneyProvider>
-            <UIProvider>
-              <GameProvider>
-                <MainApp />
-              </GameProvider>
-            </UIProvider>
-          </UserJourneyProvider>
+          <Routes>
+            {/* Capsule reboot (CLAUDE.md) lives alongside the Mastery screens. */}
+            <Route path="/capsule/*" element={<CapsuleApp />} />
+            <Route
+              path="*"
+              element={
+                <UserJourneyProvider>
+                  <UIProvider>
+                    <GameProvider>
+                      <MainApp />
+                    </GameProvider>
+                  </UIProvider>
+                </UserJourneyProvider>
+              }
+            />
+          </Routes>
         </AuthProvider>
       </BrowserRouter>
     </ErrorBoundary>
