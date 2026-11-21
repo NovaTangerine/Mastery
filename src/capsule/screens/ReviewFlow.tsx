@@ -4,7 +4,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import {
   CapsuleStatus,
   Game,
@@ -334,7 +334,6 @@ function TagsPanel() {
   return (
     <section className="flex w-full flex-col items-center gap-2 border-t border-[#EFEFEF] pt-5">
       <p className="text-[13px] font-bold">Tags</p>
-      <Note>Picked up from what you write. Tap to keep.</Note>
       <div className="flex min-h-[26px] flex-wrap items-center justify-center gap-[6px]">
         {all.length === 0 && <span className="text-[12px] text-[#AAA]">Nothing yet</span>}
         {all.map((t) => (
@@ -369,6 +368,73 @@ function TagsPanel() {
         )}
       </div>
     </section>
+  );
+}
+
+const PROMPTS_PER_SET = 3;
+const PROMPT_ROTATE_MS = 8000;
+
+/**
+ * Writing prompts in the empty review box: three at a time. Every 8s the set
+ * eases out to the left and the next eases in from the right, the three chips
+ * slightly staggered so the row settles as one soft motion. Pauses while
+ * hovered so a chip doesn't move out from under the pointer.
+ */
+function PromptCarousel({ onPick }: { onPick: (prompt: string) => void }) {
+  const sets = useMemo(() => {
+    const out: string[][] = [];
+    for (let i = 0; i < WRITING_PROMPTS.length; i += PROMPTS_PER_SET) out.push(WRITING_PROMPTS.slice(i, i + PROMPTS_PER_SET));
+    return out;
+  }, []);
+  const [index, setIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (paused || sets.length < 2) return;
+    const t = window.setInterval(() => setIndex((i) => (i + 1) % sets.length), PROMPT_ROTATE_MS);
+    return () => window.clearInterval(t);
+  }, [paused, sets.length]);
+
+  const shift = reduceMotion ? 0 : 12;
+  const ease = [0.22, 1, 0.36, 1] as const; // soft ease-out
+  const row = {
+    enter: { transition: { staggerChildren: 0.08 } },
+    exit: { transition: { staggerChildren: 0.05 } },
+  };
+  const chip = {
+    from: { opacity: 0, x: shift },
+    enter: { opacity: 1, x: 0, transition: { duration: 0.6, ease } },
+    exit: { opacity: 0, x: -shift, transition: { duration: 0.3, ease: 'easeIn' } },
+  };
+  return (
+    <div
+      className="pointer-events-auto flex min-h-[30px] items-center justify-center"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={() => setPaused(false)}
+    >
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={index}
+          className="flex flex-wrap items-center justify-center gap-2"
+          variants={row}
+          initial="from"
+          animate="enter"
+          exit="exit"
+        >
+          {sets[index].map((p) => (
+            // mousedown is prevented so the text box keeps focus and the caret.
+            <motion.span key={p} variants={chip} onMouseDown={(e) => e.preventDefault()}>
+              <Chip dashed onClick={() => onPick(p)}>
+                {p}
+              </Chip>
+            </motion.span>
+          ))}
+        </motion.div>
+      </AnimatePresence>
+    </div>
   );
 }
 
@@ -433,26 +499,32 @@ function StepWords() {
             ref={ref}
             autoFocus
             className={cx(inputCls, 'h-[260px] resize-none text-[14px] leading-[19px]')}
-            placeholder="Start typing. A sentence is enough."
+            aria-label="So… how was it?"
             value={draft.text}
             maxLength={limit}
             onChange={(e) => updateDraft({ text: e.target.value })}
           />
+          {/* Empty state: centered in the box, gone the moment there's any text. */}
+          <AnimatePresence initial={false}>
+            {draft.text.length === 0 && (
+              <motion.div
+                key="empty"
+                className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center"
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4, transition: { duration: 0.15, ease: 'easeOut' } }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+              >
+                <PromptCarousel onPick={(p) => append(`${p}: `)} />
+              </motion.div>
+            )}
+          </AnimatePresence>
           {near && (
             <span className="absolute bottom-3 right-4 text-[11px] font-semibold text-[#888]">
               {draft.text.length} / {limit}
             </span>
           )}
         </div>
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <p className="text-[12px] font-semibold text-[#555]">Stuck? Try a prompt:</p>
-          {WRITING_PROMPTS.map((p) => (
-            <Chip key={p} dashed onClick={() => append(`${p}: `)}>
-              {p}
-            </Chip>
-          ))}
-        </div>
-        <Note className="text-center">A sentence is enough. No minimum, no character counter until you get close to the limit.</Note>
         <TagsPanel />
       </div>
     </FlowShell>

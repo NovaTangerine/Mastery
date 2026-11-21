@@ -137,7 +137,18 @@ export const STATUS_LABEL: Record<CapsuleStatus, string> = {
 
 export const VERDICT_PRESETS = ['Flawed gem', 'Comfort food', 'Masterpiece', 'Not for me'];
 
-export const WRITING_PROMPTS = ['One moment you’ll remember', 'Who should play it?', 'What surprised you?'];
+/** Shown three at a time in the empty review box, rotating every few seconds. */
+export const WRITING_PROMPTS = [
+  'One moment you’ll remember',
+  'Who should play it?',
+  'What surprised you?',
+  'How did it make you feel?',
+  'Would you play it again?',
+  'Where did it lose you?',
+  'What did it do best?',
+  'What would you change?',
+  'What will you tell a friend?',
+];
 
 export const TEXT_LIMIT_RATED = 600;
 export const TEXT_LIMIT_UNRATED = 1500;
